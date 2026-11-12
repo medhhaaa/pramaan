@@ -121,6 +121,11 @@ def deidentify(text, known_names=()):
     # 9. Hospitals, clinics and labs: capitalised words ending in a keyword
     replace_all(rf"\b(?:{INSTITUTION_WORD} +){{1,5}}{INSTITUTION_KEYWORD}\b", "HOSPITAL")
 
+    # 10. Safety net: anything we already found once is removed everywhere else too
+    for token, original in sorted(tokens.mapping.items(), key=lambda kv: -len(kv[1])):
+        if len(original) >= 5:
+            text = text.replace(original, token)
+
     return text, tokens.mapping
 
 
