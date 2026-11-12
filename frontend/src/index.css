@@ -11,31 +11,6 @@
 @import "./styles/medications.css";
 @import "./styles/flags.css";
 @import "./styles/brief.css";
-
-/* ---- not yet restyled (replaced step by step) ---- */
-
-.table { border-collapse: collapse; margin-top: 8px; width: 100%; background: #fff; }
-.table th, .table td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; font-size: 14px; }
-.ask-form { display: flex; gap: 8px; }
-.ask-form input { flex: 1; padding: 6px; }
-.answer { border: 1px solid #ddd; background: #fff; padding: 4px 12px; margin-top: 10px; }
-.not-documented { color: #7a5a00; }
-.citations { margin-top: 0; }
-.danger { background: #b00020; color: #fff; border: none; padding: 6px 12px; }
-.danger:disabled { background: #d9a0aa; }
-.stats { display: flex; gap: 16px; margin: 12px 0; }
-.stats div { display: flex; flex-direction: column; align-items: center; padding: 8px 20px; border: 1px solid #ddd; background: #fff; }
-.stats strong { font-size: 28px; }
-.chart { background: #fff; border: 1px solid #ddd; padding: 4px 12px; margin-bottom: 12px; }
-
-.with-sidebar { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
-@media (max-width: 900px) { .with-sidebar { grid-template-columns: 1fr; } }
-.sidebar { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; border: 1px solid #ccc; background: #fff; padding: 8px 12px; }
-.sidebar h2 { font-size: 18px; margin: 4px 0 8px; }
-.questions { list-style: none; padding: 0; }
-.question { border: 1px solid #ddd; background: #fff; padding: 6px 10px; margin-bottom: 8px; }
-.question p { margin: 4px 0; }
-.question-done { opacity: 0.7; }
-.answer-buttons { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
-.oq-facts { list-style: none; padding: 0; margin: 4px 0; }
-.oq-facts li { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; padding: 3px 0; border-top: 1px dashed #eee; }
+@import "./styles/ask.css";
+@import "./styles/questions.css";
+@import "./styles/admin.css";

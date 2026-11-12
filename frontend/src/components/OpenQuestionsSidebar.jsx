@@ -61,9 +61,9 @@ function OpenQuestion({ question, user, onResolved }) {
             <span>
               {describeWithStatus(f)} <small>({f.document_id}, {f.event_date})</small>
             </span>
-            <span>
-              <button onClick={() => confirm(f)} disabled={busy}>Confirm</button>{" "}
-              <button onClick={() => setCorrecting(correcting?.fact_id === f.fact_id ? null : f)} disabled={busy}>
+            <span className="oq-actions">
+              <button className="btn-primary" onClick={() => confirm(f)} disabled={busy}>Confirm</button>{" "}
+              <button className="btn-secondary" onClick={() => setCorrecting(correcting?.fact_id === f.fact_id ? null : f)} disabled={busy}>
                 Correct
               </button>
             </span>
@@ -77,7 +77,7 @@ function OpenQuestion({ question, user, onResolved }) {
           onCorrected={(updated) => run(() => answerQuestion(question.id, "correct", updated.fact_id))}
         />
       )}
-      <button onClick={markUnclear} disabled={busy}>Mark unclear</button>
+      <button className="btn-ghost" onClick={markUnclear} disabled={busy}>Mark unclear</button>
       {error && <p className="error">{error}</p>}
     </li>
   );
