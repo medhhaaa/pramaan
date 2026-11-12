@@ -68,10 +68,15 @@ def make_searchable(pdf_bytes):
             continue
 
         lines = handwriting.tesseract_lines(page) if handwriting.enabled() else None
-        if lines is not None and handwriting.needs_vision(lines) and handwriting.vision_available():
-            # handwriting: the local vision model reads it, Tesseract says where the lines are
+        texts = None
+        if lines is not None and handwriting.needs_vision(lines):
+            # handwriting (or mixed): a vision model reads it -- the cloud one only after the
+            # patient's details are blacked out; None = no model can safely read it
+            texts = handwriting.transcribe(page, lines)
+        if texts is not None:
+            # Tesseract still says where the lines are, for click-to-proof
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
-            for line in handwriting.place_lines(handwriting.transcribe(page), lines):
+            for line in handwriting.place_lines(texts, lines):
                 _add_invisible_line(out[-1], line["text"], line["rect"])
             handwritten.append(page.number + 1)
             continue
