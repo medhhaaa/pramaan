@@ -21,9 +21,9 @@
   box-shadow: var(--shadow-raised);
 }
 .proof-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
-.proof-head strong { font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: var(--primary); }
+.proof-head strong { font-size: 15px; color: var(--primary); }
 .proof-head button { min-height: 40px; padding: var(--s1) var(--s3); }
-.proof h3 { font-size: 14px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; }
+.proof h3 { font-size: 14px; color: var(--muted); }
 
 /* the exact quote */
 .proof blockquote {
@@ -90,7 +90,7 @@
   border: 1px solid var(--border);
   border-radius: var(--radius-sm);
 }
-.correction h3 { margin: 0 0 var(--s2); font-size: 14px; color: var(--text); text-transform: none; letter-spacing: 0; }
+.correction h3 { margin: 0 0 var(--s2); font-size: 14px; color: var(--text); }
 .correction-form { display: flex; gap: var(--s2); flex-wrap: wrap; }
 .correction-form input, .correction-form select { flex: 1 1 140px; min-width: 0; }
 
