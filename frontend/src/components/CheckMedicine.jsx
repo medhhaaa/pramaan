@@ -1,10 +1,11 @@
 // Check-a-medicine: the doctor types a brand or generic name; warnings come from the records only.
+// The warning text, class label and note arrive from the backend in the user's language.
 import { useState } from "react";
 import { checkMedicine } from "../api";
-
-const KIND_TEXT = { allergy: "Allergy", same_medicine: "Already listed", same_class: "Same group" };
+import { useT } from "../i18n";
 
 export default function CheckMedicine({ patient }) {
+  const t = useT();
   const [drug, setDrug] = useState("");
   const [result, setResult] = useState(null);
   const [busy, setBusy] = useState(false);
@@ -25,16 +26,16 @@ export default function CheckMedicine({ patient }) {
 
   return (
     <div className="check-medicine">
-      <h2>Check a medicine</h2>
+      <h2>{t("med.title")}</h2>
       <form onSubmit={handleCheck} className="ask-form">
         <input
           value={drug}
           onChange={(e) => setDrug(e.target.value)}
-          placeholder="Brand or generic name, e.g. Augmentin"
+          placeholder={t("med.placeholder")}
           maxLength={100}
         />
         <button type="submit" disabled={busy || !drug.trim()}>
-          {busy ? "Checking..." : "Check"}
+          {busy ? t("med.busy") : t("med.button")}
         </button>
       </form>
       {error && <p className="error">{error}</p>}
@@ -46,18 +47,18 @@ export default function CheckMedicine({ patient }) {
             {result.known ? (
               <> = {result.generic} ({result.class_label})</>
             ) : (
-              <span className="hint"> not in Pramaan's drug list; checked by name only.</span>
+              <span className="hint">{t("med.notInList")}</span>
             )}
           </p>
           {result.warnings.length === 0 ? (
-            <p className="ok">No matching allergy or current medicine in the records.</p>
+            <p className="ok">{t("med.noMatch")}</p>
           ) : (
             <ul className="warnings">
               {result.warnings.map((w, i) => (
                 <li key={i} className={`warning warning-${w.kind}`}>
-                  <strong>{KIND_TEXT[w.kind] || w.kind}:</strong> {w.text}
+                  <strong>{t(`med.kind.${w.kind}`, null, w.kind)}:</strong> {w.text}
                   {w.source?.page && (
-                    <small> (page {w.source.page}, line {w.source.line})</small>
+                    <small> {t("med.pageLine", { page: w.source.page, line: w.source.line })}</small>
                   )}
                 </li>
               ))}

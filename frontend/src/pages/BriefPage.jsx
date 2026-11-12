@@ -4,11 +4,14 @@ import { useCallback, useEffect, useState } from "react";
 import { getBrief } from "../api";
 import CheckMedicine from "../components/CheckMedicine";
 import OpenQuestionsSidebar from "../components/OpenQuestionsSidebar";
+import { docTypeLabel } from "../format";
+import { useT } from "../i18n";
 
 // "prescription 2019-03-12" with the exact quote on hover
 function Source({ source }) {
+  const t = useT();
   if (!source) return null;
-  const kind = (source.doc_type || "record").replace("_", " ");
+  const kind = docTypeLabel(source.doc_type, t);
   return (
     <small className="source" title={source.quote ? `"${source.quote}"` : ""}>
       {" "}
@@ -18,37 +21,38 @@ function Source({ source }) {
 }
 
 export default function BriefPage({ patient, user }) {
+  const t = useT();
   const [brief, setBrief] = useState(null);
   const [error, setError] = useState("");
 
   const load = useCallback(() => {
     getBrief(patient.id).then(setBrief).catch((err) => setError(err.message));
-  }, [patient.id]);
+  }, [patient.id, t.lang]); // red flags and questions come from the backend in the user's language
 
   useEffect(load, [load]);
 
   return (
     <section className="with-sidebar">
       <div>
-        <h1>Brief: {patient.name}</h1>
+        <h1>{t("brief.title", { name: patient.name })}</h1>
         {error && <p className="error">{error}</p>}
-        {!brief && !error && <p>Loading...</p>}
+        {!brief && !error && <p>{t("loading")}</p>}
         {brief && (
           <>
             <p className="hint">
-              {brief.patient.sex} · born {brief.patient.dob} · blood group {brief.patient.blood_group}.
-              Hover a source to see the exact line.
+              {t("patient.meta", { sex: brief.patient.sex, dob: brief.patient.dob, blood: brief.patient.blood_group })}.{" "}
+              {t("brief.hover")}
             </p>
 
             <CheckMedicine patient={patient} />
 
             {brief.red_flags.length > 0 && (
               <div className="brief-block brief-red">
-                <h2>Red flags ({brief.red_flags.length})</h2>
+                <h2>{t("brief.redFlags", { n: brief.red_flags.length })}</h2>
                 <ul>
                   {brief.red_flags.map((f, i) => (
                     <li key={i}>
-                      <strong>{f.flag.replace("_", " ")}:</strong> {f.text}
+                      <strong>{t(`chip.${f.flag}`, null, f.flag.replace("_", " "))}:</strong> {f.text}
                     </li>
                   ))}
                 </ul>
@@ -57,8 +61,8 @@ export default function BriefPage({ patient, user }) {
 
             <div className="brief-grid">
               <div className="brief-block">
-                <h2>Current medicines</h2>
-                <p className="hint">Latest record doesn't say stopped. Not proof of taking it today.</p>
+                <h2>{t("brief.currentMeds")}</h2>
+                <p className="hint">{t("brief.currentHint")}</p>
                 <ul>
                   {brief.current_medicines.map((m) => (
                     <li key={m.name} className={m.only_copies_since ? "warn" : ""}>
@@ -66,25 +70,22 @@ export default function BriefPage({ patient, user }) {
                       <Source source={m.source} />
                       {m.only_copies_since && (
                         <div>
-                          <small>
-                            Last real evidence {m.only_copies_since}; {m.echo_count} later mention(s) are
-                            copies.
-                          </small>
+                          <small>{t("brief.onlyCopies", { date: m.only_copies_since, n: m.echo_count })}</small>
                         </div>
                       )}
                     </li>
                   ))}
-                  {brief.current_medicines.length === 0 && <li>None in the records.</li>}
+                  {brief.current_medicines.length === 0 && <li>{t("noneInRecords")}</li>}
                 </ul>
               </div>
 
               <div className="brief-block">
-                <h2>Allergies</h2>
+                <h2>{t("brief.allergies")}</h2>
                 <ul>
                   {brief.allergies.map((a) => (
                     <li key={a.source.fact_id} className={a.conflicting ? "warn" : ""}>
                       {a.status === "negated" ? (
-                        <>Records say: "{a.source.quote}"</>
+                        <>{t("brief.recordsSay", { quote: a.source.quote })}</>
                       ) : (
                         <>
                           <strong>{a.name}</strong>
@@ -92,33 +93,33 @@ export default function BriefPage({ patient, user }) {
                         </>
                       )}
                       <Source source={a.source} />
-                      {a.conflicting && <small> · conflicting</small>}
+                      {a.conflicting && <small> · {t("chip.conflicting")}</small>}
                     </li>
                   ))}
                   {brief.allergies.length === 0 && (
-                    <li className="warn">Not documented. That does not mean no allergies.</li>
+                    <li className="warn">{t("brief.allergiesNotDoc")}</li>
                   )}
                 </ul>
               </div>
 
               <div className="brief-block">
-                <h2>Conditions in the records</h2>
+                <h2>{t("brief.conditions")}</h2>
                 <ul>
                   {brief.conditions.map((c) => (
                     <li key={c.name}>
                       <strong>{c.name}</strong>
                       <small>
                         {" "}
-                        · first {c.first_date}, last mentioned {c.last_date}
+                        · {t("brief.condDates", { first: c.first_date, last: c.last_date })}
                       </small>
                     </li>
                   ))}
-                  {brief.conditions.length === 0 && <li>None in the records.</li>}
+                  {brief.conditions.length === 0 && <li>{t("noneInRecords")}</li>}
                 </ul>
               </div>
 
               <div className="brief-block">
-                <h2>Latest results</h2>
+                <h2>{t("brief.results")}</h2>
                 <ul>
                   {brief.latest_results.map((r) => (
                     <li key={r.name}>
@@ -126,18 +127,18 @@ export default function BriefPage({ patient, user }) {
                       {r.previous && (
                         <small>
                           {" "}
-                          · before: {r.previous.value} {r.previous.unit} ({r.previous.date})
+                          · {t("brief.before", { value: r.previous.value, unit: r.previous.unit, date: r.previous.date })}
                         </small>
                       )}
-                      {r.flags.includes("unit_mismatch") && <small className="warn"> · units differ, not converted</small>}
+                      {r.flags.includes("unit_mismatch") && <small className="warn"> · {t("brief.unitsDiffer")}</small>}
                     </li>
                   ))}
-                  {brief.latest_results.length === 0 && <li>None in the records.</li>}
+                  {brief.latest_results.length === 0 && <li>{t("noneInRecords")}</li>}
                 </ul>
               </div>
 
               <div className="brief-block">
-                <h2>Key events</h2>
+                <h2>{t("brief.events")}</h2>
                 <ul>
                   {brief.events.map((e) => (
                     <li key={e.source.fact_id}>
@@ -145,7 +146,7 @@ export default function BriefPage({ patient, user }) {
                       <Source source={e.source} />
                     </li>
                   ))}
-                  {brief.events.length === 0 && <li>None in the records.</li>}
+                  {brief.events.length === 0 && <li>{t("noneInRecords")}</li>}
                 </ul>
               </div>
             </div>

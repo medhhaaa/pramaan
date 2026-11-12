@@ -7,6 +7,8 @@ Response: {"drug", "generic", "drug_class", "class_label", "known", "warnings": 
 Plain code: a small dictionary of brand and generic names -> (generic, class).
 Checks the drug against documented allergies and current medicines in the records only.
 It never says whether a drug is safe; it only points to what the records say.
+Warning text, class_label and note follow the user's language (English or Kannada);
+drug names, doses, dates and quotes stay exactly as written.
 """
 import json
 import re
@@ -18,6 +20,7 @@ from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn
 from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import load_documents, load_facts, medication_summaries, source_info
+from backend.routes.language import doc_type_label, user_language
 
 router = APIRouter()
 
@@ -107,7 +110,35 @@ ALLERGY_WORDS = {
     "quinolone": "fluoroquinolone", "fluoroquinolone": "fluoroquinolone", "fluoroquinolones": "fluoroquinolone",
 }
 
+CLASS_LABELS_KN = {
+    "penicillin": "ಪೆನಿಸಿಲಿನ್ ಆಂಟಿಬಯಾಟಿಕ್‌ಗಳು",
+    "cephalosporin": "ಸೆಫಲೋಸ್ಪೊರಿನ್ ಆಂಟಿಬಯಾಟಿಕ್‌ಗಳು",
+    "macrolide": "ಮ್ಯಾಕ್ರೋಲೈಡ್ ಆಂಟಿಬಯಾಟಿಕ್‌ಗಳು",
+    "fluoroquinolone": "ಫ್ಲೂರೋಕ್ವಿನೋಲೋನ್ ಆಂಟಿಬಯಾಟಿಕ್‌ಗಳು",
+    "sulfonamide": "ಸಲ್ಫೋನಮೈಡ್‌ಗಳು (ಸಲ್ಫಾ ಔಷಧಗಳು)",
+    "nsaid": "NSAID ನೋವು ನಿವಾರಕಗಳು",
+    "paracetamol": "ಪ್ಯಾರಸಿಟಮಾಲ್",
+    "beta_blocker": "ಬೀಟಾ ಬ್ಲಾಕರ್‌ಗಳು",
+    "biguanide": "ಬೈಗ್ವಾನೈಡ್‌ಗಳು",
+    "sulfonylurea": "ಸಲ್ಫೋನಿಲ್ಯೂರಿಯಾಗಳು",
+    "calcium_channel_blocker": "ಕ್ಯಾಲ್ಸಿಯಂ ಚಾನೆಲ್ ಬ್ಲಾಕರ್‌ಗಳು",
+    "ace_inhibitor": "ACE ಇನ್‌ಹಿಬಿಟರ್‌ಗಳು",
+    "arb": "ಆಂಜಿಯೋಟೆನ್ಸಿನ್ ರಿಸೆಪ್ಟರ್ ಬ್ಲಾಕರ್‌ಗಳು",
+    "statin": "ಸ್ಟ್ಯಾಟಿನ್‌ಗಳು",
+    "thyroid_hormone": "ಥೈರಾಯ್ಡ್ ಹಾರ್ಮೋನ್",
+    "ppi": "ಪ್ರೋಟಾನ್ ಪಂಪ್ ಇನ್‌ಹಿಬಿಟರ್‌ಗಳು",
+}
+
 NOTE = "Checked against these records only. This is not prescribing advice."
+NOTE_KN = "ಈ ದಾಖಲೆಗಳೊಂದಿಗೆ ಮಾತ್ರ ಪರಿಶೀಲಿಸಲಾಗಿದೆ. ಇದು ಔಷಧ ಬರೆಯುವ ಸಲಹೆಯಲ್ಲ."
+
+
+def class_label(drug_class, lang):
+    if not drug_class:
+        return None
+    if lang == "kn" and drug_class in CLASS_LABELS_KN:
+        return CLASS_LABELS_KN[drug_class]
+    return CLASS_LABELS.get(drug_class, drug_class)
 
 
 def words(text):
@@ -139,6 +170,8 @@ class CheckBody(BaseModel):
 @router.post("/patients/{patient_id}/check-medicine")
 def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_current_user)):
     require_patient_access(user, patient_id)
+    lang = user_language(user)
+    kn = lang == "kn"
     drug = body.drug.strip()
     generic, drug_class = lookup(drug)
     typed_words = set(words(drug))
@@ -170,19 +203,25 @@ def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_curr
             continue
         doc = docs.get(allergy["document_id"], {})
         reaction = f" ({allergy['value']})" if allergy["value"] else ""
-        text = (
-            f"{allergy['name']} allergy{reaction} is documented in the "
-            f"{(doc.get('doc_type') or 'record').replace('_', ' ')} from "
-            f"{doc.get('document_date') or allergy['event_date']}: \"{allergy['quote']}\"."
-        )
+        doc_kind = doc_type_label(doc.get("doc_type"), lang) if doc.get("doc_type") else ("ದಾಖಲೆ" if kn else "record")
+        doc_date = doc.get("document_date") or allergy["event_date"]
+        if kn:
+            text = f"{allergy['name']} ಅಲರ್ಜಿ{reaction} ದಾಖಲಾಗಿದೆ ({doc_date} ರ {doc_kind}): \"{allergy['quote']}\"."
+        else:
+            text = f"{allergy['name']} allergy{reaction} is documented in the {doc_kind} from {doc_date}: \"{allergy['quote']}\"."
         if by_class and not by_drug and not by_name:
-            text = f"{drug} is one of the {CLASS_LABELS.get(drug_class, drug_class)}. " + text
+            label = class_label(drug_class, lang)
+            text = (f"{drug} ಈ ಗುಂಪಿಗೆ ಸೇರಿದೆ: {label}. " if kn else f"{drug} is one of the {label}. ") + text
         resolution = resolved_by_fact.get(allergy["fact_id"])
         if resolution and resolution.get("answer") in ("confirm", "correct"):
-            text += f" Confirmed by {resolution.get('by', 'a doctor')} on {resolution.get('at', '')[:10]}."
+            by, at = resolution.get("by", "a doctor"), resolution.get("at", "")[:10]
+            text += f" {at} ರಂದು {by} ದೃಢೀಕರಿಸಿದ್ದಾರೆ." if kn else f" Confirmed by {by} on {at}."
         elif "contradiction" in allergy["flags"] and no_allergy_quotes:
             other = no_allergy_quotes[0]
-            text += f' Another record says "{other["quote"]}" ({other["event_date"]}); this conflict is not resolved.'
+            if kn:
+                text += f' ಇನ್ನೊಂದು ದಾಖಲೆಯಲ್ಲಿ "{other["quote"]}" ({other["event_date"]}) ಎಂದಿದೆ; ಈ ಸಂಘರ್ಷ ಇನ್ನೂ ಬಗೆಹರಿದಿಲ್ಲ.'
+            else:
+                text += f' Another record says "{other["quote"]}" ({other["event_date"]}); this conflict is not resolved.'
         warnings.append({"kind": "allergy", "text": text, "source": source_info(allergy, docs)})
 
     # 2. current medicines: same drug or same class
@@ -192,27 +231,32 @@ def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_curr
         m_generic, m_class = lookup(med["name"])
         fresh = med["latest_fresh"]
         dose = " ".join(p for p in [fresh["dose"], fresh["frequency"]] if p)
-        when = f"last new record {med['last_fresh_evidence_date'] or 'unknown'}"
-        if med["echo_count"]:
-            when += f", {med['echo_count']} later mention(s) are copies"
+        if kn:
+            when = f"ಕೊನೆಯ ಹೊಸ ದಾಖಲೆ {med['last_fresh_evidence_date'] or 'ತಿಳಿದಿಲ್ಲ'}"
+            if med["echo_count"]:
+                when += f", ನಂತರದ {med['echo_count']} ಉಲ್ಲೇಖ(ಗಳು) ನಕಲು"
+        else:
+            when = f"last new record {med['last_fresh_evidence_date'] or 'unknown'}"
+            if med["echo_count"]:
+                when += f", {med['echo_count']} later mention(s) are copies"
         same_drug = (generic and m_generic == generic) or bool(typed_words & set(words(med["name"])))
         if same_drug:
-            warnings.append({"kind": "same_medicine",
-                             "text": f"The records already list {med['name']} {dose} as a current medicine ({when}).",
-                             "source": source_info(fresh, docs)})
+            text = (f"ದಾಖಲೆಗಳಲ್ಲಿ {med['name']} {dose} ಈಗಾಗಲೇ ಪ್ರಸ್ತುತ ಔಷಧವಾಗಿ ಇದೆ ({when})." if kn
+                    else f"The records already list {med['name']} {dose} as a current medicine ({when}).")
+            warnings.append({"kind": "same_medicine", "text": text, "source": source_info(fresh, docs)})
         elif drug_class and m_class == drug_class:
-            warnings.append({"kind": "same_class",
-                             "text": f"{drug} is in the same group ({CLASS_LABELS.get(drug_class, drug_class)}) "
-                                     f"as current medicine {med['name']} {dose} ({when}).",
-                             "source": source_info(fresh, docs)})
+            label = class_label(drug_class, lang)
+            text = (f"{drug} ಮತ್ತು ಪ್ರಸ್ತುತ ಔಷಧ {med['name']} {dose} ಒಂದೇ ಗುಂಪಿನವು ({label}) ({when})." if kn
+                    else f"{drug} is in the same group ({label}) as current medicine {med['name']} {dose} ({when}).")
+            warnings.append({"kind": "same_class", "text": text, "source": source_info(fresh, docs)})
 
     log_action(user, "check_medicine", patient_id, f"{drug}: {len(warnings)} warning(s)")
     return {
         "drug": drug,
         "generic": generic,
         "drug_class": drug_class,
-        "class_label": CLASS_LABELS.get(drug_class) if drug_class else None,
+        "class_label": class_label(drug_class, lang),
         "known": generic is not None,
         "warnings": warnings,
-        "note": NOTE,
+        "note": NOTE_KN if kn else NOTE,
     }

@@ -1,9 +1,11 @@
 // Simple page state instead of a router: login -> patients -> one patient's pages.
-import { useCallback, useState } from "react";
-import { hasSession, logout, setDummyUser } from "./api";
+import { useCallback, useEffect, useState } from "react";
+import { hasSession, logout, setDummyUser, setLanguage } from "./api";
 import Countdown from "./components/Countdown";
 import Disclaimer from "./components/Disclaimer";
 import Header from "./components/Header";
+import LanguagePopup from "./components/LanguagePopup";
+import { LanguageContext, translate } from "./i18n";
 import AskPage from "./pages/AskPage";
 import AuditPage from "./pages/AuditPage";
 import BriefPage from "./pages/BriefPage";
@@ -37,17 +39,17 @@ function save(key, value) {
   }
 }
 
-// tabs shown for an open patient; the first tab differs by role
+// tabs shown for an open patient; the first tab differs by role (labels: "tab.<key>" in i18n.jsx)
 const tabsFor = (role) => [
-  role === "doctor" ? ["brief", "Brief"] : ["questions", "Things to check"],
-  ["timeline", "Timeline"],
-  ["medications", "Medications"],
-  ["flags", "Flags"],
-  ["ask", "Ask my records"],
-  ["upload", "Upload"],
-  ["audit", "Audit log"],
-  ["delete", "Delete data"],
-  ...(role === "patient" ? [["share", "Share by QR"]] : []),
+  role === "doctor" ? "brief" : "questions",
+  "timeline",
+  "medications",
+  "flags",
+  "ask",
+  "upload",
+  "audit",
+  "delete",
+  ...(role === "patient" ? ["share"] : []),
 ];
 
 // a doctor viewing records shared by QR / code can only read: hide the tabs that change data
@@ -72,11 +74,30 @@ export default function App() {
   const [patient, setPatient] = useState(null);
   const [notice, setNotice] = useState("");
 
+  // The user's saved language. Before login (and before they choose), the last language
+  // used on this browser, else English.
+  const lang = user?.language || load("last_language") || "en";
+  const t = (key, vars) => translate(lang, key, vars);
+
+  useEffect(() => {
+    document.documentElement.lang = lang;
+  }, [lang]);
+
   function handleLogin(u) {
     save("user", u);
+    if (u.language) save("last_language", u.language);
     setDummyUser(u);
     setUser(u);
     setPage(shareToken && u.role === "doctor" ? "open-share" : "patients");
+  }
+
+  // from the first-login popup and the header switch; saved on the account (users.language)
+  async function changeLanguage(language) {
+    await setLanguage(language);
+    const updated = { ...user, language };
+    save("user", updated);
+    save("last_language", language);
+    setUser(updated);
   }
 
   function handleLogout() {
@@ -115,7 +136,7 @@ export default function App() {
   const sharedAccessEnded = useCallback(() => {
     setPatient(null);
     setPage("patients");
-    setNotice("Shared access has ended. Ask the patient for a new code to see their records again.");
+    setNotice("share.ended");
   }, []);
 
   const shared = Boolean(patient?.shared_until);
@@ -140,14 +161,14 @@ export default function App() {
   else content = <TimelinePage patient={patient} user={user} />;
 
   return (
-    <>
-      <Header user={user} onLogout={handleLogout} />
+    <LanguageContext.Provider value={lang}>
+      <Header user={user} onLogout={handleLogout} onChangeLanguage={changeLanguage} />
       <Disclaimer />
       <main>
         {user && (
           <nav className="nav">
             <button onClick={goToPatients} disabled={page === "patients"}>
-              {user.role === "doctor" ? "Patients" : "My records"}
+              {user.role === "doctor" ? t("nav.patients") : t("nav.myRecords")}
             </button>
             {user.role === "doctor" && (
               <button
@@ -158,36 +179,38 @@ export default function App() {
                 }}
                 disabled={page === "open-share"}
               >
-                Open shared record
+                {t("nav.openShared")}
               </button>
             )}
             {patient &&
               page !== "consent" &&
               tabsFor(user.role)
-                .filter(([key]) => !(shared && SHARED_HIDDEN_TABS.includes(key)))
-                .map(([key, label]) => (
+                .filter((key) => !(shared && SHARED_HIDDEN_TABS.includes(key)))
+                .map((key) => (
                 <button
                   key={key}
                   onClick={() => openPatient(patient, key)}
                   disabled={page === key}
                 >
-                  {label}
+                  {t(`tab.${key}`)}
                 </button>
               ))}
             <button onClick={() => setPage("metrics")} disabled={page === "metrics"}>
-              Accuracy
+              {t("nav.accuracy")}
             </button>
           </nav>
         )}
         {user && shared && (
           <p className="share-banner" role="status">
-            Shared by the patient · read-only · ends in{" "}
+            {t("share.banner")}{" "}
             <Countdown expiresAt={patient.shared_until} onEnd={sharedAccessEnded} />
           </p>
         )}
-        {user && notice && !patient && <p className="warn">{notice}</p>}
+        {user && notice && !patient && <p className="warn">{t(notice)}</p>}
         {content}
       </main>
-    </>
+      {/* first login: the account has no language yet */}
+      {user && !user.language && <LanguagePopup onChoose={changeLanguage} />}
+    </LanguageContext.Provider>
   );
 }
