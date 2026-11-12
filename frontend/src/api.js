@@ -9,7 +9,7 @@ import dummyMetrics from "./dummy/metrics_results.json";
 import dummyQuestionsSeed from "./dummy/questions.json";
 import sampleFacts from "./dummy/sample_facts.json";
 
-export const USE_DUMMY = true;
+export const USE_DUMMY = false;
 const BASE_URL = "http://localhost:8000";
 
 export const NOT_DOCUMENTED_ANSWER = "The records don't mention this.";
@@ -33,6 +33,11 @@ function writeStorage(key, value) {
 
 let token = readStorage("token");
 
+// App.jsx only restores a saved login if there is a token to go with it
+export function hasSession() {
+  return USE_DUMMY || Boolean(token);
+}
+
 async function request(method, path, body) {
   const isForm = body instanceof FormData;
   const res = await fetch(BASE_URL + path, {
@@ -43,6 +48,13 @@ async function request(method, path, body) {
     },
     body: isForm ? body : body ? JSON.stringify(body) : undefined,
   });
+  // expired or missing token (not the login call itself): back to the login page
+  if (res.status === 401 && path !== "/login") {
+    logout();
+    writeStorage("user", null);
+    window.location.reload();
+    throw new Error("Your session has expired. Please log in again.");
+  }
   if (!res.ok) {
     let detail = "";
     try {

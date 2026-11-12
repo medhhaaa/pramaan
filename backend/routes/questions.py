@@ -24,6 +24,8 @@ from pydantic import BaseModel, Field
 
 from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn
+from backend.logic.flags import find_gaps
+from backend.recompute import recompute_patient
 from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import (
     describe, load_documents, load_facts, medication_summaries, source_label,
@@ -81,22 +83,20 @@ def echo_medicine_questions(facts, docs):
     return questions
 
 
-def gap_questions(facts):
-    """Gaps the backend marked as not_documented, plus 'no allergy information at all'."""
-    questions = []
-    for f in facts:
-        if f["status"] != "not_documented":
-            continue
-        what = f["name"].replace("_", " ").lower()
-        if f["type"] == "demographic":
-            text = f"Your records don't mention your {what}. Do you know it?"
-        else:
-            text = f"Your records never say whether you have any {what}. Do you have any?"
-        questions.append(([f["fact_id"]], text))
+GAP_TEXT = {
+    "allergy": "Your records never say whether you have any allergies. Do you have any allergies to medicines?",
+    "demographic": "Your records don't mention your {what}. Do you know it?",
+}
 
-    has_allergy_info = any(f["type"] == "allergy" for f in facts)
-    if not has_allergy_info:
-        questions.append(([], "Your records never say whether you have any allergies to medicines. Do you have any?"))
+
+def gap_questions(facts):
+    """Gaps from Deeksha's find_gaps() (not stored; computed from the trusted facts).
+    Gap facts have stable ids like p1_gap_allergy, so each gap is asked only once."""
+    questions = []
+    for gap in find_gaps(facts):
+        what = gap["name"].replace("_", " ").lower()
+        template = GAP_TEXT.get(gap["type"], "Your records never mention {what}. Can you tell us?")
+        questions.append(([gap["fact_id"]], template.format(what=what)))
     return questions
 
 
@@ -140,10 +140,18 @@ def question_out(row, facts_by_id):
     }
 
 
+def facts_with_gaps(conn, patient_id):
+    """{fact_id: fact} for all of a patient's facts plus today's gap facts (never stored)."""
+    by_id = {f["fact_id"]: f for f in load_facts(conn, patient_id, include_held_back=True)}
+    for gap in find_gaps(load_facts(conn, patient_id)):
+        by_id[gap["fact_id"]] = gap
+    return by_id
+
+
 def list_questions_for(conn, patient_id):
     """All questions for a patient (after syncing), with their facts attached."""
     sync_questions(conn, patient_id)
-    facts_by_id = {f["fact_id"]: f for f in load_facts(conn, patient_id, include_held_back=True)}
+    facts_by_id = facts_with_gaps(conn, patient_id)
     rows = conn.execute("SELECT * FROM questions WHERE patient_id = ? ORDER BY id", (patient_id,)).fetchall()
     return [question_out(r, facts_by_id) for r in rows]
 
@@ -203,8 +211,11 @@ def answer_question(question_id: int, body: AnswerBody, user=Depends(get_current
             "UPDATE questions SET status = ?, answer = ? WHERE id = ?",
             (new_status, json.dumps(stored), question_id),
         )
+    # badges.py counts facts in "answered" questions as patient_reported: rerun the checks now
+    recompute_patient(patient_id)
+    with get_conn() as conn:
         updated = conn.execute("SELECT * FROM questions WHERE id = ?", (question_id,)).fetchone()
-        facts_by_id = {f["fact_id"]: f for f in load_facts(conn, patient_id, include_held_back=True)}
+        facts_by_id = facts_with_gaps(conn, patient_id)
 
     log_action(user, "answer_question", patient_id, f"question {question_id}: {answer}" + (f" ({value})" if value else ""))
     return question_out(updated, facts_by_id)

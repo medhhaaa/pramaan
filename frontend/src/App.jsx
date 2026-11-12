@@ -1,6 +1,6 @@
 // Simple page state instead of a router: login -> patients -> one patient's pages.
 import { useState } from "react";
-import { logout, setDummyUser } from "./api";
+import { hasSession, logout, setDummyUser } from "./api";
 import Disclaimer from "./components/Disclaimer";
 import Header from "./components/Header";
 import AskPage from "./pages/AskPage";
@@ -48,7 +48,7 @@ const tabsFor = (role) => [
 
 export default function App() {
   const [user, setUser] = useState(() => {
-    const saved = load("user");
+    const saved = hasSession() ? load("user") : null;
     setDummyUser(saved);
     return saved;
   });
