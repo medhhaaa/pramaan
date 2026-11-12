@@ -436,3 +436,34 @@ export async function checkMedicine(patientId, drug) {
   }
   return request("POST", `/patients/${patientId}/check-medicine`, { drug });
 }
+
+// ---------- QR / code sharing (core backend: backend/routes/share.py) ----------
+// Sharing needs the real backend: there is no dummy version.
+
+const needsBackend = () => {
+  throw new Error("Sharing works with the real backend only (USE_DUMMY = false).");
+};
+
+// patient: body {minutes} -> {share_id, code, token, url, qr_svg, expires_at, seconds_left}
+export async function createShare(patientId, minutes) {
+  if (USE_DUMMY) needsBackend();
+  return request("POST", `/patients/${patientId}/share`, { minutes });
+}
+
+// doctor: {code} or {token} -> {share_id, patient, expires_at, seconds_left}
+export async function openShare({ code, token }) {
+  if (USE_DUMMY) needsBackend();
+  return request("POST", "/share/open", code ? { code } : { token });
+}
+
+// patient: -> [{share_id, created_at, expires_at, seconds_left, opened_by, opened_at}]
+export async function getShares(patientId) {
+  if (USE_DUMMY) return [];
+  return request("GET", `/patients/${patientId}/shares`);
+}
+
+// patient stops a share early -> {stopped: true}
+export async function stopShare(shareId) {
+  if (USE_DUMMY) needsBackend();
+  return request("DELETE", `/share/${shareId}`);
+}

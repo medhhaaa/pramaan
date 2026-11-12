@@ -33,6 +33,10 @@ const en = {
   "tab.upload": "Upload",
   "tab.audit": "Audit log",
   "tab.delete": "Delete data",
+  "tab.share": "Share by QR",
+  "nav.openShared": "Open shared record",
+  "share.banner": "Shared by the patient · read-only · ends in",
+  "share.ended": "Shared access has ended. Ask the patient for a new code to see their records again.",
   loading: "Loading...",
   noneInRecords: "None in the records.",
 
@@ -343,6 +347,10 @@ const kn = {
   "tab.upload": "ಅಪ್‌ಲೋಡ್",
   "tab.audit": "ಚಟುವಟಿಕೆ ದಾಖಲೆ",
   "tab.delete": "ಡೇಟಾ ಅಳಿಸಿ",
+  "tab.share": "QR ಮೂಲಕ ಹಂಚಿಕೊಳ್ಳಿ",
+  "nav.openShared": "ಹಂಚಿಕೊಂಡ ದಾಖಲೆ ತೆರೆಯಿರಿ",
+  "share.banner": "ರೋಗಿ ಹಂಚಿಕೊಂಡಿದ್ದಾರೆ · ಓದಲು ಮಾತ್ರ · ಮುಕ್ತಾಯಕ್ಕೆ ಉಳಿದಿರುವ ಸಮಯ",
+  "share.ended": "ಹಂಚಿಕೆಯ ಅವಧಿ ಮುಗಿದಿದೆ. ದಾಖಲೆಗಳನ್ನು ಮತ್ತೆ ನೋಡಲು ರೋಗಿಯಿಂದ ಹೊಸ ಕೋಡ್ ಕೇಳಿ.",
   loading: "ಲೋಡ್ ಆಗುತ್ತಿದೆ...",
   noneInRecords: "ದಾಖಲೆಗಳಲ್ಲಿ ಯಾವುದೂ ಇಲ್ಲ.",
 

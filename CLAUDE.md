@@ -162,6 +162,10 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `GET /metrics` | Precision / recall results | Medha |
 | `GET /patients/{id}/audit` | Audit log | Medha |
 | `DELETE /patients/{id}` | Delete all patient data | Medha |
+| `POST /patients/{id}/share` | Patient makes a time-limited QR + code (P3) | Core backend |
+| `POST /share/open` | Doctor opens a share by QR token or code: read-only until it expires | Core backend |
+| `GET /patients/{id}/shares` | Patient's active shares (who opened, time left) | Core backend |
+| `DELETE /share/{id}` | Patient stops a share early | Core backend |
 
 ## 7. Database tables (owned by core backend)
 
@@ -173,8 +177,9 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 - `corrections` (id, fact_id, field, old_value, new_value, corrected_by, role, created_at)
 - `audit_log` (id, user_id, action, patient_id, detail, created_at)
 - `questions` (id, patient_id, fact_ids, text, status `open`|`answered`|`sent_to_doctor`|`resolved`, answer, created_at)
+- `share_links` (id, patient_id, created_by, token_hash, code_hash, expires_at, opened_by, opened_at, created_at): QR / code sharing; only hashes stored; expired rows deleted
 
-Seed users: `doctor` / `doctor123` (role doctor), `sunita` / `sunita123` (role patient, access to p1).
+Seed users: `doctor` / `doctor123` (role doctor), `sunita` / `sunita123` (role patient, access to p1), `guestdoctor` / `guest123` (role doctor, no patients: sees a patient only after opening their QR / code).
 
 ## 8. Folder structure
 

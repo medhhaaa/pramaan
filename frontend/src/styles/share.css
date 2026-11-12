@@ -1,0 +1,46 @@
+/* QR / code sharing: patient's Share by QR page, doctor's Open shared record page,
+   and the read-only banner shown while a doctor views shared records. */
+
+.share-page { max-width: 720px; }
+.share-page .hint { color: var(--muted); max-width: 60ch; }
+
+.share-create, .share-code-form {
+  display: flex; flex-wrap: wrap; align-items: end; gap: var(--s3);
+  margin: var(--s4) 0;
+}
+.share-code-form label { display: flex; flex-direction: column; gap: var(--s1); font-weight: 500; }
+.share-code-form input {
+  font-family: var(--font-mono); font-size: 20px; letter-spacing: .1em;
+  text-transform: uppercase; width: 12ch;
+}
+
+.share-card {
+  display: flex; flex-wrap: wrap; gap: var(--s6); align-items: center;
+  background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow-raised); padding: var(--s6); margin: var(--s4) 0;
+}
+.share-qr { width: 240px; height: 240px; image-rendering: pixelated; background: #fff; }
+.share-details { display: flex; flex-direction: column; gap: var(--s2); align-items: flex-start; }
+.share-details p { margin: 0; }
+.share-code {
+  font-family: var(--font-mono); font-size: 32px; font-weight: 700; letter-spacing: .12em;
+  color: var(--primary);
+}
+.countdown { font-family: var(--font-mono); font-weight: 700; }
+
+.qr-scanner { display: flex; flex-direction: column; gap: var(--s3); align-items: flex-start; margin: var(--s4) 0; }
+.qr-scanner video {
+  width: 100%; max-width: 420px; border-radius: var(--radius); border: 2px solid var(--primary);
+  background: #000;
+}
+.file-button { display: inline-flex; align-items: center; min-height: var(--tap); cursor: pointer; }
+
+.share-banner {
+  background: var(--primary-soft); color: var(--primary-hover); font-weight: 600;
+  border-radius: var(--radius-sm); padding: var(--s2) var(--s4); margin: 0 0 var(--s4);
+}
+
+@media (max-width: 600px) {
+  .share-card { padding: var(--s4); justify-content: center; }
+  .share-qr { width: 200px; height: 200px; }
+}

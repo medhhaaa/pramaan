@@ -1,6 +1,7 @@
 // Simple page state instead of a router: login -> patients -> one patient's pages.
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { hasSession, logout, setDummyUser, setLanguage } from "./api";
+import Countdown from "./components/Countdown";
 import Disclaimer from "./components/Disclaimer";
 import Header from "./components/Header";
 import LanguagePopup from "./components/LanguagePopup";
@@ -14,7 +15,9 @@ import FlagsPage from "./pages/FlagsPage";
 import LoginPage from "./pages/LoginPage";
 import MedicationsPage from "./pages/MedicationsPage";
 import MetricsPage from "./pages/MetricsPage";
+import OpenSharePage from "./pages/OpenSharePage";
 import PatientsPage from "./pages/PatientsPage";
+import SharePage from "./pages/SharePage";
 import ThingsToCheckPage from "./pages/ThingsToCheckPage";
 import TimelinePage from "./pages/TimelinePage";
 import UploadPage from "./pages/UploadPage";
@@ -46,7 +49,19 @@ const tabsFor = (role) => [
   "upload",
   "audit",
   "delete",
+  ...(role === "patient" ? ["share"] : []),
 ];
+
+// a doctor viewing records shared by QR / code can only read: hide the tabs that change data
+const SHARED_HIDDEN_TABS = ["upload", "delete"];
+
+// a scanned QR opens the app as http://localhost:5173/?share=<token>: read the token once,
+// then remove it from the address bar
+function takeShareToken() {
+  const token = new URLSearchParams(window.location.search).get("share");
+  if (token) window.history.replaceState(null, "", window.location.pathname);
+  return token;
+}
 
 export default function App() {
   const [user, setUser] = useState(() => {
@@ -54,8 +69,10 @@ export default function App() {
     setDummyUser(saved);
     return saved;
   });
-  const [page, setPage] = useState("patients");
+  const [shareToken, setShareToken] = useState(takeShareToken);
+  const [page, setPage] = useState(() => (shareToken ? "open-share" : "patients"));
   const [patient, setPatient] = useState(null);
+  const [notice, setNotice] = useState("");
 
   // The user's saved language. Before login (and before they choose), the last language
   // used on this browser, else English.
@@ -71,7 +88,7 @@ export default function App() {
     if (u.language) save("last_language", u.language);
     setDummyUser(u);
     setUser(u);
-    setPage("patients");
+    setPage(shareToken && u.role === "doctor" ? "open-share" : "patients");
   }
 
   // from the first-login popup and the header switch; saved on the account (users.language)
@@ -107,9 +124,29 @@ export default function App() {
     setPage("patients");
   }
 
+  // a doctor opened a patient's QR / code: show that patient, read-only
+  const openShared = useCallback((p) => {
+    setShareToken(null);
+    setNotice("");
+    setPatient(p);
+    setPage("brief");
+  }, []);
+
+  // the patient's chosen time ran out: leave their records
+  const sharedAccessEnded = useCallback(() => {
+    setPatient(null);
+    setPage("patients");
+    setNotice("share.ended");
+  }, []);
+
+  const shared = Boolean(patient?.shared_until);
+
   let content;
   if (!user) content = <LoginPage onLogin={handleLogin} />;
   else if (page === "metrics") content = <MetricsPage />;
+  else if (page === "open-share" && user.role === "doctor")
+    content = <OpenSharePage initialToken={shareToken} onOpened={openShared} />;
+  else if (page === "share" && patient && user.role === "patient") content = <SharePage patient={patient} />;
   else if (page === "consent")
     content = <ConsentPage onAccept={acceptConsent} onCancel={goToPatients} />;
   else if (!patient) content = <PatientsPage user={user} onOpen={openPatient} />;
@@ -133,9 +170,23 @@ export default function App() {
             <button onClick={goToPatients} disabled={page === "patients"}>
               {user.role === "doctor" ? t("nav.patients") : t("nav.myRecords")}
             </button>
+            {user.role === "doctor" && (
+              <button
+                onClick={() => {
+                  setPatient(null);
+                  setNotice("");
+                  setPage("open-share");
+                }}
+                disabled={page === "open-share"}
+              >
+                {t("nav.openShared")}
+              </button>
+            )}
             {patient &&
               page !== "consent" &&
-              tabsFor(user.role).map((key) => (
+              tabsFor(user.role)
+                .filter((key) => !(shared && SHARED_HIDDEN_TABS.includes(key)))
+                .map((key) => (
                 <button
                   key={key}
                   onClick={() => openPatient(patient, key)}
@@ -149,6 +200,13 @@ export default function App() {
             </button>
           </nav>
         )}
+        {user && shared && (
+          <p className="share-banner" role="status">
+            {t("share.banner")}{" "}
+            <Countdown expiresAt={patient.shared_until} onEnd={sharedAccessEnded} />
+          </p>
+        )}
+        {user && notice && !patient && <p className="warn">{t(notice)}</p>}
         {content}
       </main>
       {/* first login: the account has no language yet */}

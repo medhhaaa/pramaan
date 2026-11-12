@@ -65,6 +65,19 @@ CREATE TABLE IF NOT EXISTS questions (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     text_kn TEXT  -- the same question in Kannada
 );
+-- time-limited QR / code sharing (backend/routes/share.py). Only hashes of the token and
+-- code are stored. Times are UTC "YYYY-MM-DD HH:MM:SS" so SQLite's datetime('now') compares.
+CREATE TABLE IF NOT EXISTS share_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    created_by INTEGER NOT NULL,
+    token_hash TEXT UNIQUE NOT NULL,
+    code_hash TEXT UNIQUE NOT NULL,
+    expires_at TEXT NOT NULL,
+    opened_by INTEGER,
+    opened_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 """
 
 FACT_FIELDS = [
