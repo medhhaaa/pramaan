@@ -48,6 +48,7 @@ export default function UploadPage({ patient, onDone }) {
                 <span className="warn">
                   Held back: this document may belong to a different patient. A reviewer must
                   confirm it before its {r.facts_added} facts appear.
+                  {r.reasons?.length > 0 && <> Why: {r.reasons.join("; ")}.</>}
                 </span>
               ) : (
                 <span className="ok">{r.facts_added} facts added</span>

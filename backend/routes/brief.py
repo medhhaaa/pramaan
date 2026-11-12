@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn
+from backend.logic.flags import find_gaps
 from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import (
     describe, load_documents, load_facts, medication_summaries, source_info,
@@ -114,8 +115,8 @@ def events(facts, docs):
     ]
 
 
-def red_flags(all_facts, docs, meds):
-    """Plain-language warnings. all_facts includes held-back documents."""
+def red_flags(all_facts, docs, meds, gaps):
+    """Plain-language warnings. all_facts includes held-back documents; gaps from find_gaps()."""
     flags = []
 
     contradictions = [f for f in all_facts if "contradiction" in f["flags"]]
@@ -163,6 +164,12 @@ def red_flags(all_facts, docs, meds):
                           "text": f"{describe(f)} looks implausible (possible unit or typing error). Original kept.",
                           "fact_ids": [f["fact_id"]]})
 
+    for gap in gaps:
+        what = gap["name"].replace("_", " ").lower()
+        flags.append({"flag": "gap",
+                      "text": f"No record mentions {what}. Not documented does not mean absent.",
+                      "fact_ids": [gap["fact_id"]]})
+
     for med in meds:
         if med["only_copies_since"]:
             flags.append({"flag": "echo",
@@ -193,7 +200,7 @@ def brief_route(patient_id: str, user=Depends(get_current_user)):
         "conditions": conditions(facts, docs),
         "latest_results": latest_results(facts, docs),
         "events": events(facts, docs),
-        "red_flags": red_flags(all_facts, docs, meds),
+        "red_flags": red_flags(all_facts, docs, meds, find_gaps(facts)),
         "open_questions": [
             {"id": q["id"], "text": q["text"], "status": q["status"]}
             for q in questions
