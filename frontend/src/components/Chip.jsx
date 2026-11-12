@@ -1,24 +1,42 @@
-// Small coloured label for flags, badges and status. Colour comes from the CSS class.
-const LABELS = {
-  // flags
-  contradiction: "contradiction",
-  duplicate: "duplicate",
-  unit_mismatch: "unit mismatch",
-  ambiguous_date: "ambiguous date",
-  wrong_patient: "wrong patient?",
-  implausible_value: "implausible value",
-  // badges
-  doctor_verified: "doctor verified",
-  independent_2plus: "2+ documents",
-  single_document: "single document",
-  patient_reported: "patient reported",
-  conflicting: "conflicting",
-  // status
-  documented: "documented",
-  negated: "explicitly negative",
-  not_documented: "not documented",
-};
+import { useTranslation } from 'react-i18next';
+import { AlertTriangle, BadgeCheck, Layers, User, Ban, HelpCircle, Copy } from 'lucide-react';
 
-export default function Chip({ kind, value }) {
-  return <span className={`chip chip-${kind} chip-${value}`}>{LABELS[value] || value}</span>;
+// Evidence state chip: text + icon, never colour alone.
+export function StatusChip({ status }) {
+  const { t } = useTranslation();
+  if (status === 'not_documented') {
+    return <span className="chip chip-gap" title={t('status.not_documented')}><HelpCircle size={14} />{t('status.not_documented')}</span>;
+  }
+  if (status === 'negated') {
+    return <span className="chip chip-outline" title={t('status.negated')}><Ban size={14} />{t('status.negated')}</span>;
+  }
+  return <span className="chip chip-doc" title={t('status.documented')}>{t('status.documented')}</span>;
+}
+
+const BADGE_ICON = { doctor_verified: BadgeCheck, independent_2plus: Layers, single_document: null, patient_reported: User, conflicting: AlertTriangle };
+const BADGE_CLASS = { doctor_verified: 'chip-verified', independent_2plus: 'chip-info', single_document: 'chip-neutral', patient_reported: 'chip-patient', conflicting: 'chip-danger' };
+
+export function BadgeChip({ badge }) {
+  const { t } = useTranslation();
+  if (!badge) return null;
+  const Icon = BADGE_ICON[badge];
+  return (
+    <span className={`chip ${BADGE_CLASS[badge]}`} title={t(`badgeTips.${badge}`)}>
+      {Icon && <Icon size={14} />}{t(`badges.${badge}`)}
+    </span>
+  );
+}
+
+export function FlagChip({ flag }) {
+  const { t } = useTranslation();
+  return (
+    <span className={`chip ${flag === 'ambiguous_date' || flag === 'unit_mismatch' || flag === 'implausible_value' ? 'chip-warn' : 'chip-danger'}`} title={t(`flagTips.${flag}`)}>
+      <AlertTriangle size={14} />{t(`flagNames.${flag}`)}
+    </span>
+  );
+}
+
+export function CopyChip({ docName }) {
+  const { t } = useTranslation();
+  return <span className="chip chip-neutral"><Copy size={14} />{t('timeline.copyOf', { doc: docName })}</span>;
 }

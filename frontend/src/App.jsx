@@ -1,135 +1,93 @@
-// Simple page state instead of a router: login -> patients -> one patient's pages.
-import { useState } from "react";
-import { logout, setDummyUser } from "./api";
-import Disclaimer from "./components/Disclaimer";
-import Header from "./components/Header";
-import AskPage from "./pages/AskPage";
-import AuditPage from "./pages/AuditPage";
-import BriefPage from "./pages/BriefPage";
-import ConsentPage from "./pages/ConsentPage";
-import DeletePage from "./pages/DeletePage";
-import FlagsPage from "./pages/FlagsPage";
-import LoginPage from "./pages/LoginPage";
-import MedicationsPage from "./pages/MedicationsPage";
-import MetricsPage from "./pages/MetricsPage";
-import PatientsPage from "./pages/PatientsPage";
-import ThingsToCheckPage from "./pages/ThingsToCheckPage";
-import TimelinePage from "./pages/TimelinePage";
-import UploadPage from "./pages/UploadPage";
+import { useState } from 'react';
+import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
+import { AppProvider, useApp } from './context/AppContext.jsx';
+import Layout from './components/Layout.jsx';
+import LanguagePopup from './components/LanguagePopup.jsx';
+import ScanModal from './components/ScanModal.jsx';
+import Login from './pages/Login.jsx';
+import Patients from './pages/Patients.jsx';
+import Brief from './pages/Brief.jsx';
+import Timeline from './pages/Timeline.jsx';
+import Medication from './pages/Medication.jsx';
+import Flags from './pages/Flags.jsx';
+import Ask from './pages/Ask.jsx';
+import Upload from './pages/Upload.jsx';
+import Accuracy from './pages/Accuracy.jsx';
+import Audit from './pages/Audit.jsx';
+import Delete from './pages/Delete.jsx';
+import MyRecords from './pages/MyRecords.jsx';
+import Things from './pages/Things.jsx';
+import GenerateQR from './pages/GenerateQR.jsx';
+import Claim from './pages/Claim.jsx';
+import PatientGate from './components/PatientGate.jsx';
 
-function load(key) {
-  try {
-    return JSON.parse(localStorage.getItem(key));
-  } catch {
-    return null;
-  }
+const CLAIM_ON = import.meta.env.VITE_ENABLE_CLAIM_READY === 'true';
+
+function RequireLogin({ children }) {
+  const { user } = useApp();
+  const location = useLocation();
+  if (!user) return <Navigate to="/login" replace state={{ from: location }} />;
+  return children;
 }
 
-function save(key, value) {
-  try {
-    if (value === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, JSON.stringify(value));
-  } catch {
-    // storage blocked: state just won't survive a refresh
-  }
+// Doctor-only and patient-only routes. Other roles go to their home.
+function RoleRoute({ roles, children }) {
+  const { user } = useApp();
+  if (!roles.includes(user.role)) return <Navigate to={user.role === 'doctor' ? '/patients' : '/my-records'} replace />;
+  return children;
 }
 
-// tabs shown for an open patient; the first tab differs by role
-const tabsFor = (role) => [
-  role === "doctor" ? ["brief", "Brief"] : ["questions", "Things to check"],
-  ["timeline", "Timeline"],
-  ["medications", "Medications"],
-  ["flags", "Flags"],
-  ["ask", "Ask my records"],
-  ["upload", "Upload"],
-  ["audit", "Audit log"],
-  ["delete", "Delete data"],
-];
-
-export default function App() {
-  const [user, setUser] = useState(() => {
-    const saved = load("user");
-    setDummyUser(saved);
-    return saved;
-  });
-  const [page, setPage] = useState("patients");
-  const [patient, setPatient] = useState(null);
-
-  function handleLogin(u) {
-    save("user", u);
-    setDummyUser(u);
-    setUser(u);
-    setPage("patients");
-  }
-
-  function handleLogout() {
-    logout();
-    save("user", null);
-    setUser(null);
-    setPatient(null);
-  }
-
-  function openPatient(p, target) {
-    setPatient(p);
-    // consent is asked once per user, before their first upload
-    if (target === "upload" && !load(`consent_${user.username}`)) setPage("consent");
-    else setPage(target);
-  }
-
-  function acceptConsent() {
-    save(`consent_${user.username}`, { accepted_at: new Date().toISOString() });
-    setPage("upload");
-  }
-
-  function goToPatients() {
-    setPatient(null);
-    setPage("patients");
-  }
-
-  let content;
-  if (!user) content = <LoginPage onLogin={handleLogin} />;
-  else if (page === "metrics") content = <MetricsPage />;
-  else if (page === "consent")
-    content = <ConsentPage onAccept={acceptConsent} onCancel={goToPatients} />;
-  else if (!patient) content = <PatientsPage user={user} onOpen={openPatient} />;
-  else if (page === "upload") content = <UploadPage patient={patient} onDone={() => setPage("timeline")} />;
-  else if (page === "medications") content = <MedicationsPage patient={patient} />;
-  else if (page === "flags") content = <FlagsPage patient={patient} />;
-  else if (page === "ask") content = <AskPage patient={patient} />;
-  else if (page === "audit") content = <AuditPage patient={patient} />;
-  else if (page === "delete") content = <DeletePage patient={patient} onDeleted={goToPatients} />;
-  else if (page === "brief" && user.role === "doctor") content = <BriefPage patient={patient} user={user} />;
-  else if (page === "questions") content = <ThingsToCheckPage patient={patient} />;
-  else content = <TimelinePage patient={patient} user={user} />;
-
+function Shell() {
+  const { scanOpen, user } = useApp();
   return (
     <>
-      <Header user={user} onLogout={handleLogout} />
-      <Disclaimer />
-      <main>
-        {user && (
-          <nav className="nav">
-            <button onClick={goToPatients} disabled={page === "patients"}>
-              {user.role === "doctor" ? "Patients" : "My records"}
-            </button>
-            {patient &&
-              page !== "consent" &&
-              tabsFor(user.role).map(([key, label]) => (
-                <button
-                  key={key}
-                  onClick={() => openPatient(patient, key)}
-                  disabled={page === key}
-                >
-                  {label}
-                </button>
-              ))}
-            <button onClick={() => setPage("metrics")} disabled={page === "metrics"}>
-              Accuracy
-            </button>
-          </nav>
-        )}
-        {content}
-      </main>
+      <Routes>
+        <Route element={<RequireLogin><Layout /></RequireLogin>}>
+          <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/patients' : '/my-records'} replace />} />
+          <Route path="/patients" element={<RoleRoute roles={['doctor']}><Patients /></RoleRoute>} />
+          <Route path="/accuracy" element={<RoleRoute roles={['doctor']}><Accuracy /></RoleRoute>} />
+          <Route path="/brief" element={<RoleRoute roles={['doctor']}><PatientGate><Brief /></PatientGate></RoleRoute>} />
+          <Route path="/my-records" element={<RoleRoute roles={['patient']}><MyRecords /></RoleRoute>} />
+          <Route path="/things" element={<RoleRoute roles={['patient']}><Things /></RoleRoute>} />
+          <Route path="/qr" element={<RoleRoute roles={['patient']}><GenerateQR /></RoleRoute>} />
+          <Route path="/timeline" element={<Timeline />} />
+          <Route path="/medication" element={<Medication />} />
+          <Route path="/flags" element={<Flags />} />
+          <Route path="/ask" element={<Ask />} />
+          <Route path="/upload" element={<Upload />} />
+          <Route path="/audit" element={<Audit />} />
+          <Route path="/delete" element={<Delete />} />
+          {CLAIM_ON && <Route path="/claim" element={<Claim />} />}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+      {scanOpen && <ScanModal />}
     </>
+  );
+}
+
+function Root() {
+  const [langDone, setLangDone] = useState(() => !!localStorage.getItem('pramaan_lang'));
+  const { user } = useApp();
+  return (
+    <>
+      {!langDone && <LanguagePopup onDone={() => setLangDone(true)} />}
+      {!user ? (
+        <Routes>
+          <Route path="/login" element={<Login />} />
+          <Route path="*" element={<Navigate to="/login" replace />} />
+        </Routes>
+      ) : (
+        <Shell />
+      )}
+    </>
+  );
+}
+
+export default function App() {
+  return (
+    <AppProvider>
+      <Root />
+    </AppProvider>
   );
 }

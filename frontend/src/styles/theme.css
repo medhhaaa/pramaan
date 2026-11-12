@@ -1,0 +1,73 @@
+/* Pramaan themes. Dark is the default. Light is set by data-theme="light" on <html>.
+   Change colours here only. */
+
+/* ---------- DARK (default) ---------- */
+:root,
+:root[data-theme='dark'] {
+  color-scheme: dark;
+  --bg: #0F1424;
+  --surface: #171E33;
+  --surface-2: #1F2842;
+  --surface-3: #283354;
+  --border: #2D3757;
+  --text: #E9EEFF;
+  --text-muted: #9AA7C7;
+
+  --brand: #7B8CFF;
+  --brand-strong: #5A6BF0;
+  --brand-soft: rgba(123, 140, 255, 0.14);
+  --header-grad: linear-gradient(135deg, #1B2350 0%, #2A2F6B 60%, #3A2E6E 100%);
+  --header-text: #EEF2FF;
+  --login-glow-1: #2A2F6B;
+  --login-glow-2: #3A2E6E;
+
+  --verified: #37D3B0;
+  --info: #5CB8FF;
+  --patient: #B08CFF;
+  --warn: #F5B94A;
+  --danger: #FF6B88;
+  --neutral: #8C97B5;
+
+  --radius: 14px;
+  --radius-pill: 999px;
+  --shadow: 0 8px 24px rgba(5, 8, 20, 0.45);
+  --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
+  --font: 'Inter', system-ui, -apple-system, 'Noto Sans Devanagari', 'Noto Sans Kannada', sans-serif;
+}
+
+/* ---------- LIGHT ---------- */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --bg: #F3F6FC;
+  --surface: #FFFFFF;
+  --surface-2: #EEF2FA;
+  --surface-3: #E2E8F4;
+  --border: #D6DEEE;
+  --text: #0F1A33;
+  --text-muted: #5A6684;
+
+  --brand: #3446C8;
+  --brand-strong: #2A3BB5;
+  --brand-soft: rgba(52, 70, 200, 0.10);
+  --header-grad: linear-gradient(135deg, #14204A 0%, #1E2D6B 100%);
+  --header-text: #FFFFFF;
+  --login-glow-1: #C9D3F5;
+  --login-glow-2: #E4D9F7;
+
+  --verified: #0E8F72;
+  --info: #1670C9;
+  --patient: #6B3FD6;
+  --warn: #A66A0B;
+  --danger: #C2255C;
+  --neutral: #5A6684;
+
+  --shadow: 0 8px 24px rgba(20, 32, 74, 0.10);
+  --focus: 0 0 0 2px var(--surface), 0 0 0 4px var(--brand);
+}
+
+/* Patient side uses a violet accent instead of indigo (both themes). */
+.role-patient {
+  --brand: var(--patient);
+  --brand-strong: var(--patient);
+  --brand-soft: color-mix(in srgb, var(--patient) 14%, transparent);
+}
