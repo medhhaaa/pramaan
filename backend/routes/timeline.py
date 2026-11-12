@@ -6,7 +6,7 @@ until a reviewer releases the document.
 from fastapi import APIRouter, Depends
 
 from backend.auth import get_current_user, require_patient_access
-from backend.db import fact_from_row, get_conn
+from backend.db import fact_from_row, get_conn, log_action
 
 router = APIRouter()
 
@@ -22,4 +22,5 @@ def timeline(patient_id: str, user=Depends(get_current_user)):
                ORDER BY f.event_date, f.document_date, f.fact_id""",
             (patient_id,),
         ).fetchall()
+    log_action(user, "view_timeline", patient_id)
     return [fact_from_row(r) for r in rows]
