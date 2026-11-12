@@ -49,7 +49,7 @@ function QuestionCard({ question, onAnswered }) {
           placeholder="or type an answer"
           maxLength={500}
         />
-        <button onClick={() => send("value")} disabled={busy || !value.trim()}>Send</button>
+        <button className="btn-primary" onClick={() => send("value")} disabled={busy || !value.trim()}>Send</button>
         <button onClick={() => send("dont_know")} disabled={busy}>I don't know</button>
         <button onClick={() => send("skip")} disabled={busy}>Skip</button>
       </div>

@@ -1,0 +1,126 @@
+/* Header, disclaimer bar and the patient tabs. */
+
+.header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s3);
+  min-height: 60px;
+  padding: var(--s2) max(var(--s4), calc((100% - var(--content)) / 2 + var(--s4)));
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  color: var(--text);
+}
+
+/* app name with a simple mark: a teal rounded square with a check */
+.header > strong {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s2);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.01em;
+  color: var(--text);
+}
+.header > strong::before {
+  content: "";
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  background: var(--primary);
+}
+.header > strong::after {
+  content: "";
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  width: 7px;
+  height: 13px;
+  border: solid #FFFFFF;
+  border-width: 0 3px 3px 0;
+  transform: translate(0, -62%) rotate(45deg);
+}
+
+.header-user {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--s3);
+  font-size: 14px;
+  color: var(--muted);
+  text-align: right;
+}
+.header-user button { min-height: var(--tap); padding: var(--s1) var(--s3); font-size: 14px; }
+
+/* slim info bar, not a warning */
+.disclaimer {
+  margin: 0;
+  padding: var(--s2) var(--s4);
+  background: var(--info-bg);
+  border-bottom: 1px solid #99F6E4;
+  color: var(--info-fg);
+  font-size: 14px;
+  text-align: center;
+}
+.disclaimer::before {
+  content: "";
+  display: inline-block;
+  width: 8px;
+  height: 8px;
+  margin-right: var(--s2);
+  border-radius: 50%;
+  background: var(--primary);
+  vertical-align: 1px;
+}
+
+/* ---------- tabs ---------- */
+.nav {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--s1);
+  margin: var(--s4) 0 var(--s2);
+  padding: var(--s1);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 24px; /* a pill on one row, a soft card when it wraps to two */
+  box-shadow: var(--shadow);
+}
+.nav button {
+  flex-shrink: 0;
+  border-radius: 999px;
+  border-color: transparent;
+  background: transparent;
+  color: var(--muted);
+  padding: var(--s2) var(--s4);
+  white-space: nowrap;
+}
+.nav button:hover { background: var(--negated-bg); color: var(--text); border-color: transparent; }
+
+/* the open tab is the disabled button (App.jsx): show it as active, not as unavailable */
+.nav button:disabled,
+.nav button:disabled:hover {
+  background: var(--primary-soft);
+  border-color: var(--primary);
+  color: #134E4A;
+  font-weight: 650;
+  cursor: default;
+}
+
+/* phones: one row that scrolls sideways instead of a wrapped grid */
+@media (max-width: 767px) {
+  .header { min-height: 56px; }
+  .header > strong { font-size: 18px; }
+  .header-user { gap: var(--s2); font-size: 13px; }
+  .disclaimer { font-size: 13px; padding: 6px var(--s3); }
+
+  .nav {
+    flex-wrap: nowrap;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: thin;
+    border-radius: var(--radius);
+    margin-left: calc(-1 * var(--s1));
+    margin-right: calc(-1 * var(--s1));
+  }
+}

@@ -33,13 +33,13 @@ export default function DeletePage({ patient, onDeleted }) {
             </li>
           ))}
         </ul>
-        <button onClick={onDeleted}>Back to patients</button>
+        <button className="btn-secondary" onClick={onDeleted}>Back to patients</button>
       </section>
     );
   }
 
   return (
-    <section>
+    <section className="danger-zone">
       <h1>Delete all data for {patient.name}</h1>
       <p>This permanently deletes:</p>
       <ul>
@@ -55,7 +55,7 @@ export default function DeletePage({ patient, onDeleted }) {
         Type DELETE to confirm
         <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />
       </label>
-      <p>
+      <p className="actions">
         <button className="danger" onClick={handleDelete} disabled={busy || confirmText !== "DELETE"}>
           {busy ? "Deleting..." : "Delete everything"}
         </button>

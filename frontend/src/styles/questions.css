@@ -1,0 +1,71 @@
+/* Things to check (patient) and the doctor's Open Questions sidebar. */
+
+.with-sidebar {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 380px);
+  gap: var(--s5);
+  align-items: start;
+}
+
+.sidebar {
+  position: sticky;
+  top: var(--s4);
+  max-height: calc(100vh - 2 * var(--s4));
+  overflow: auto;
+  margin-top: var(--s6);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--ambiguous-fg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+}
+.sidebar h2 { margin: 0 0 var(--s3); font-size: 18px; }
+.sidebar > .hint:last-child { margin-bottom: 0; }
+
+.questions { list-style: none; padding: 0; margin: var(--s3) 0; display: grid; gap: var(--s3); }
+.question {
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.question > p { margin: 0 0 var(--s2); }
+.question > p:not(.hint):not(.error) { font-size: 16px; font-weight: 500; }
+.sidebar .question { padding: var(--s3); box-shadow: none; background: var(--surface-sunken); }
+.sidebar .question > .hint:first-child { font-weight: 600; color: var(--ambiguous-fg); }
+
+/* handled questions: grey and dashed instead of see-through, so they stay readable */
+.question-done { background: var(--surface-sunken); border-style: dashed; border-color: var(--border-input); box-shadow: none; }
+.question-done > p:not(.hint) { color: var(--muted); font-weight: 400; }
+
+/* patient answers: big buttons (48px), value input grows */
+.answer-buttons { display: flex; flex-wrap: wrap; gap: var(--s2); align-items: stretch; margin-top: var(--s3); }
+.answer-buttons button { min-height: 48px; min-width: 72px; }
+.answer-buttons input { flex: 1 1 180px; min-height: 48px; }
+
+/* doctor: facts with Confirm (primary) / Correct (secondary), Mark unclear (ghost) */
+.oq-facts { list-style: none; padding: 0; margin: var(--s2) 0; }
+.oq-facts li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s2);
+  flex-wrap: wrap;
+  padding: var(--s2) 0;
+  border-top: 1px dashed var(--border-strong);
+}
+.oq-facts li small { color: var(--muted); }
+.oq-actions { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.oq-actions button { padding: var(--s2) var(--s3); }
+.question > .btn-ghost { margin-top: var(--s1); padding-left: 0; }
+
+@media (max-width: 900px) {
+  .with-sidebar { grid-template-columns: minmax(0, 1fr); }
+  .sidebar { position: static; max-height: none; overflow: visible; }
+}
+@media (max-width: 767px) {
+  .answer-buttons button { flex: 1 1 calc(50% - var(--s2)); }
+  .answer-buttons input { flex-basis: 100%; }
+}

@@ -6,10 +6,10 @@ export default function ConsentPage({ onAccept, onCancel }) {
   const [checked, setChecked] = useState(false);
 
   return (
-    <section>
+    <section className="consent">
       <h1>Before you upload</h1>
       <p>Pramaan reads your medical documents to build a dated timeline. Before you continue:</p>
-      <ul>
+      <ul className="checklist">
         <li>Your files are stored encrypted, and only people you give access to can see them.</li>
         <li>
           Names, phone numbers, ID numbers, addresses, doctor and hospital names are replaced with
@@ -25,11 +25,11 @@ export default function ConsentPage({ onAccept, onCancel }) {
         <input type="checkbox" checked={checked} onChange={(e) => setChecked(e.target.checked)} />I
         agree to Pramaan processing these documents as described above.
       </label>
-      <p>
-        <button onClick={onAccept} disabled={!checked}>
+      <p className="actions">
+        <button className="btn-primary" onClick={onAccept} disabled={!checked}>
           Continue
         </button>{" "}
-        <button onClick={onCancel}>Cancel</button>
+        <button className="btn-ghost" onClick={onCancel}>Cancel</button>
       </p>
     </section>
   );

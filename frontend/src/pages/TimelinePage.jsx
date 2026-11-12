@@ -47,8 +47,8 @@ export default function TimelinePage({ patient, user }) {
         </p>
         {facts.length === 0 && <p>No facts yet. Upload documents to build the timeline.</p>}
         {groupByYear(facts).map(([year, yearFacts]) => (
-          <div key={year}>
-            <h2>{year}</h2>
+          <div key={year} className="year-group">
+            <h2 className="year-heading">{year}</h2>
             <ul className="facts">
               {yearFacts.map((fact) => (
                 <FactCard

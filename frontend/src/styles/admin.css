@@ -1,0 +1,101 @@
+/* Audit log table, delete-my-data, accuracy metrics. */
+
+/* ---------- audit table ---------- */
+.table {
+  width: 100%;
+  margin-top: var(--s3);
+  border-collapse: separate;
+  border-spacing: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  overflow: hidden;
+  font-size: 14px;
+}
+.table th, .table td { padding: var(--s2) var(--s3); text-align: left; vertical-align: top; border-bottom: 1px solid var(--border); }
+.table th { background: var(--surface-sunken); font-size: 13px; color: var(--muted); font-weight: 700; }
+.table tbody tr:nth-child(even) td { background: #FBFCFD; }
+.table tbody tr:last-child td { border-bottom: none; }
+.table td:first-child { white-space: nowrap; color: var(--muted); font-variant-numeric: tabular-nums; }
+.table td:last-child { font-family: var(--font-mono); font-size: 12.5px; overflow-wrap: anywhere; }
+
+/* phones: each row becomes a stacked card (When / Who / Action / Detail) */
+@media (max-width: 767px) {
+  .table { border: none; box-shadow: none; background: transparent; overflow: visible; }
+  .table, .table tbody, .table tr, .table td { display: block; width: 100%; }
+  .table thead { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+  .table tr {
+    margin-bottom: var(--s2);
+    padding: var(--s3);
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius-sm);
+  }
+  .table td, .table tbody tr:nth-child(even) td { padding: 2px 0; border: none; background: transparent; }
+  .table td:first-child { font-size: 13px; white-space: normal; }
+  .table td:nth-child(3) { font-weight: 700; }
+}
+
+/* ---------- delete my data ---------- */
+.danger-zone {
+  max-width: 680px;
+  margin-top: var(--s6);
+  padding: var(--s5) var(--s6);
+  background: var(--surface);
+  border: 1px solid #FCA5A5;
+  border-top: 5px solid var(--contradiction-fg);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.danger-zone h1 { margin-top: 0; font-size: 24px; }
+.danger-zone ul { padding-left: var(--s5); }
+.danger-zone li { margin-bottom: var(--s1); }
+.danger-zone .form { margin-top: var(--s4); }
+
+.danger {
+  background: var(--contradiction-fg);
+  border: 1px solid var(--contradiction-fg);
+  color: #FFFFFF;
+  font-weight: 600;
+  padding: var(--s2) var(--s5);
+}
+.danger:hover { background: #991B1B; border-color: #991B1B; }
+.danger:active { background: #7F1D1D; }
+.danger:disabled,
+.danger:disabled:hover { background: #F1F5F9; border: 1px dashed #F87171; color: #64748B; }
+
+/* ---------- metrics ---------- */
+.stats { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: var(--s3); margin: var(--s4) 0; }
+.stats div {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: var(--s1);
+  padding: var(--s4) var(--s2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.stats strong { font-size: 34px; line-height: 1.1; color: var(--primary); font-variant-numeric: tabular-nums; }
+.stats span { color: var(--muted); font-size: 14px; font-weight: 600; }
+
+.chart {
+  margin-bottom: var(--s4);
+  padding: var(--s4) var(--s4) var(--s2);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  min-width: 0;
+}
+.chart h2 { margin: 0 0 var(--s3); font-size: 18px; }
+
+@media (max-width: 767px) {
+  .danger-zone { padding: var(--s4); }
+  .danger-zone .actions .danger { width: 100%; }
+  .stats strong { font-size: 26px; }
+  .chart { padding: var(--s3) var(--s2) var(--s1); }
+}

@@ -1,0 +1,93 @@
+/* Login card, consent screen, generic forms and action rows. */
+
+.form { display: flex; flex-direction: column; gap: var(--s4); max-width: 360px; }
+.form label { display: flex; flex-direction: column; gap: 6px; font-size: 14px; font-weight: 600; color: var(--text); }
+.form label input { font-weight: 400; }
+
+.actions { display: flex; flex-wrap: wrap; gap: var(--s3); align-items: center; margin-top: var(--s4); }
+
+/* ---------- login ---------- */
+.auth-card {
+  max-width: 420px;
+  margin: var(--s8) auto 0;
+  padding: var(--s8) var(--s6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+}
+.auth-card h1 { margin-top: 0; margin-bottom: var(--s5); text-align: center; }
+.auth-card .form { max-width: none; }
+.auth-card .form button[type="submit"] { width: 100%; margin-top: var(--s1); }
+.auth-card .form .error { margin: 0; }
+.auth-card > .hint {
+  margin: var(--s5) 0 0;
+  padding-top: var(--s4);
+  border-top: 1px solid var(--border);
+  text-align: center;
+}
+
+/* ---------- consent ---------- */
+.consent {
+  max-width: 680px;
+  margin: var(--s6) auto 0;
+  padding: var(--s6);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.consent h1 { margin-top: 0; }
+
+.checklist { list-style: none; padding: 0; margin: var(--s4) 0; display: grid; gap: var(--s3); }
+.checklist li {
+  position: relative;
+  padding: var(--s3) var(--s3) var(--s3) 44px;
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+/* a teal tick in a circle, drawn in CSS (decoration only) */
+.checklist li::before {
+  content: "";
+  position: absolute;
+  left: 12px;
+  top: 14px;
+  width: 20px;
+  height: 20px;
+  border-radius: 50%;
+  background: var(--primary-soft);
+  border: 1px solid var(--primary);
+}
+.checklist li::after {
+  content: "";
+  position: absolute;
+  left: 19px;
+  top: 18px;
+  width: 5px;
+  height: 9px;
+  border: solid var(--primary);
+  border-width: 0 2px 2px 0;
+  transform: rotate(45deg);
+}
+
+.checkbox {
+  display: flex;
+  gap: var(--s3);
+  align-items: flex-start;
+  padding: var(--s3) var(--s4);
+  margin-top: var(--s4);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--info-bg);
+  font-weight: 500;
+  cursor: pointer;
+}
+.checkbox:has(input:checked) { background: var(--primary-soft); }
+.consent .actions .btn-primary { min-width: 160px; }
+
+@media (max-width: 767px) {
+  .auth-card { margin-top: var(--s5); padding: var(--s6) var(--s4); }
+  .consent { margin-top: var(--s4); padding: var(--s4); }
+  .consent .actions .btn-primary { flex: 1 1 100%; }
+}

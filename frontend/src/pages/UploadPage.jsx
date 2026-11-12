@@ -22,7 +22,7 @@ export default function UploadPage({ patient, onDone }) {
   }
 
   return (
-    <section>
+    <section className="upload">
       <h1>Upload documents for {patient.name}</h1>
       <p>Prescriptions, lab reports or discharge summaries, as PDF.</p>
       <input
@@ -31,14 +31,14 @@ export default function UploadPage({ patient, onDone }) {
         multiple
         onChange={(e) => setFiles([...e.target.files])}
       />
-      <p>
-        <button onClick={handleUpload} disabled={busy || files.length === 0}>
+      <p className="actions">
+        <button className="btn-primary" onClick={handleUpload} disabled={busy || files.length === 0}>
           {busy ? "Reading documents..." : `Upload ${files.length || ""} file${files.length === 1 ? "" : "s"}`}
         </button>
       </p>
 
       {results.length > 0 && (
-        <ul className="list">
+        <ul className="list upload-results">
           {results.map((r, i) => (
             <li key={i}>
               <span>{r.name}</span>
@@ -57,7 +57,7 @@ export default function UploadPage({ patient, onDone }) {
         </ul>
       )}
 
-      {!busy && results.length > 0 && <button onClick={onDone}>View timeline</button>}
+      {!busy && results.length > 0 && <button className="btn-secondary" onClick={onDone}>View timeline</button>}
     </section>
   );
 }

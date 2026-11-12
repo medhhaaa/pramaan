@@ -1,0 +1,108 @@
+/* Click-to-proof panel, PDF preview, source lines and the correction form. */
+
+.with-panel {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 480px);
+  gap: var(--s5);
+  align-items: start;
+}
+
+.proof {
+  position: sticky;
+  top: var(--s4);
+  max-height: calc(100vh - 2 * var(--s4));
+  overflow: auto;
+  margin-top: var(--s6);
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-top: 4px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow-raised);
+}
+.proof-head { display: flex; justify-content: space-between; align-items: center; gap: var(--s3); }
+.proof-head strong { font-size: 15px; color: var(--primary); }
+.proof-head button { min-height: var(--tap); padding: var(--s1) var(--s3); }
+.proof h3 { font-size: 14px; color: var(--muted); }
+
+/* the exact quote */
+.proof blockquote {
+  margin: var(--s3) 0 var(--s2);
+  padding: var(--s3) var(--s4);
+  background: #FEFCE8;
+  border-left: 4px solid #A16207;
+  border-radius: 0 var(--radius-sm) var(--radius-sm) 0;
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text);
+}
+
+/* ---------- PDF preview ----------
+   react-pdf draws the page 440px wide. On narrow screens the whole page (canvas AND text
+   layer) is scaled with zoom, so the highlight stays exactly on top of the quoted words. */
+.pdf {
+  max-width: 100%;
+  margin: var(--s3) 0;
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  overflow: hidden;
+}
+.pdf canvas { display: block; }
+.pdf mark {
+  color: transparent;
+  background: rgba(250, 204, 21, .45);
+  outline: 2px solid #A16207;
+  outline-offset: 1px;
+  border-radius: 2px;
+}
+@media (max-width: 520px) { .pdf { zoom: .8; } }
+@media (max-width: 430px) { .pdf { zoom: .68; } }
+@media (max-width: 370px) { .pdf { zoom: .6; } }
+
+/* ---------- text lines of the page (always shown) ---------- */
+.lines {
+  list-style: none;
+  margin: var(--s2) 0 0;
+  padding: var(--s2);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 13px;
+  line-height: 1.5;
+}
+.lines li { display: flex; gap: var(--s2); padding: 3px var(--s2); border-radius: 4px; }
+.line-no { flex: 0 0 28px; text-align: right; color: #64748B; user-select: none; }
+.line-hit {
+  background: var(--highlight);
+  color: var(--highlight-fg);
+  font-weight: 700;
+  outline: 2px solid #A16207;
+}
+.line-hit .line-no { color: var(--highlight-fg); }
+
+/* ---------- correction form ---------- */
+.correction {
+  margin-top: var(--s3);
+  padding: var(--s3);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-sm);
+}
+.correction h3 { margin: 0 0 var(--s2); font-size: 14px; color: var(--text); }
+.correction-form { display: flex; gap: var(--s2); flex-wrap: wrap; }
+.correction-form input, .correction-form select { flex: 1 1 140px; min-width: 0; }
+
+.side-by-side { width: 100%; margin-top: var(--s3); border-collapse: collapse; background: var(--surface); font-size: 14px; }
+.side-by-side th, .side-by-side td { padding: var(--s2); border: 1px solid var(--border); text-align: left; vertical-align: top; }
+.side-by-side th { background: var(--negated-bg); font-size: 13px; }
+
+/* ---------- tablets and phones: panel goes full width below the list ---------- */
+@media (max-width: 900px) {
+  .with-panel { grid-template-columns: minmax(0, 1fr); }
+  .proof { position: static; max-height: none; overflow: visible; margin-top: var(--s2); }
+}
+@media (max-width: 767px) {
+  .proof { padding: var(--s3); }
+}

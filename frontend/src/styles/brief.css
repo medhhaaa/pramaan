@@ -1,0 +1,66 @@
+/* 60-second doctor brief + Check-a-medicine. */
+
+.check-medicine,
+.brief-block {
+  margin: var(--s3) 0;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.check-medicine h2,
+.brief-block h2 { margin: 0 0 var(--s2); font-size: 18px; }
+.brief-block > .hint { margin-top: 0; font-size: 13px; }
+
+.brief-block ul { margin: 0; padding: 0; list-style: none; display: grid; gap: var(--s2); }
+.brief-block li {
+  margin: 0;
+  padding: var(--s2) var(--s3);
+  border-radius: var(--radius-sm);
+  background: var(--surface-sunken);
+  border: 1px solid var(--border);
+}
+.brief-block li small { color: var(--muted); }
+/* a medicine whose later mentions are only copies, or a conflicting allergy */
+.brief-block li.warn { background: var(--warn-bg); border-color: #FDE68A; border-left: 4px solid var(--notdoc-stripe); color: var(--warn-fg); }
+.brief-block li.warn strong { color: var(--warn-fg); }
+.brief-block li.warn small, .brief-block li small.warn { color: var(--warn-fg); }
+
+/* red flags: the strongest card */
+.brief-red {
+  border-color: #FCA5A5;
+  border-top: 5px solid var(--contradiction-fg);
+  background: var(--surface);
+  box-shadow: var(--shadow-raised);
+}
+.brief-red h2 { color: var(--contradiction-fg); }
+.brief-red li { background: var(--contradiction-bg); border-color: #FCA5A5; }
+.brief-red li strong { color: var(--contradiction-fg); }
+
+.brief-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 0 var(--s4); align-items: start; }
+
+.source { color: var(--muted); cursor: help; text-decoration: underline dotted; text-underline-offset: 3px; }
+
+/* ---------- check a medicine ---------- */
+.check-medicine { border-top: 4px solid var(--primary); }
+.check-result { margin-top: var(--s3); }
+.warnings { list-style: none; padding: 0; margin: var(--s2) 0; display: grid; gap: var(--s2); }
+.warning {
+  padding: var(--s3);
+  border-radius: var(--radius-sm);
+  border: 1px solid #FDE68A;
+  border-left: 5px solid var(--notdoc-stripe);
+  background: var(--warn-bg);
+  color: var(--text);
+}
+.warning strong { color: var(--warn-fg); }
+.warning-allergy { border-color: #FCA5A5; border-left-color: var(--contradiction-fg); background: var(--contradiction-bg); }
+.warning-allergy strong { color: var(--contradiction-fg); }
+.warning-same_class { border-color: #A5B4FC; border-left-color: var(--duplicate-fg); background: var(--duplicate-bg); }
+.warning-same_class strong { color: var(--duplicate-fg); }
+.warning small { color: var(--muted); }
+
+@media (max-width: 767px) {
+  .brief-grid { grid-template-columns: minmax(0, 1fr); }
+}

@@ -22,7 +22,7 @@ export default function LoginPage({ onLogin }) {
   }
 
   return (
-    <section>
+    <section className="auth-card">
       <h1>Log in</h1>
       <form onSubmit={handleSubmit} className="form">
         <label>
