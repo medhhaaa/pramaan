@@ -206,8 +206,8 @@ P1 = {
                 text("Diagnosis: Type 2 diabetes mellitus", condition("Type 2 diabetes mellitus")),
                 GAP,
                 heading("Rx"),
-                text("Tab. Metformin 500mg BD", med("Metformin", "500mg", "BD", "started")),
-                text("Tab. Atenolol 50mg OD", med("Atenolol", "50mg", "OD", "started")),
+                text("Tab. Metformin 500mg BD", med("Metformin", "500mg", "BD", "mentioned")),
+                text("Tab. Atenolol 50mg OD", med("Atenolol", "50mg", "OD", "mentioned")),
                 GAP,
                 # TRAP contradiction with d3
                 text("No known drug allergies",
@@ -275,9 +275,9 @@ P1 = {
                 heading("Discharge medications"),
                 # TRAP echo: these two lines are copied word-for-word from d1
                 text("Tab. Metformin 500mg BD",
-                     med("Metformin", "500mg", "BD", "continued", echo_of="d1")),
+                     med("Metformin", "500mg", "BD", "mentioned", echo_of="d1")),
                 text("Tab. Atenolol 50mg OD",
-                     med("Atenolol", "50mg", "OD", "continued", echo_of="d1")),
+                     med("Atenolol", "50mg", "OD", "mentioned", echo_of="d1")),
                 GAP,
                 text("Advice on discharge: Follow up in Cardiology OPD after 2 weeks."),
             ],
@@ -302,7 +302,7 @@ P1 = {
                      med("Metformin", "1000mg", "BD", "changed")),
                 # TRAP echo: copied word-for-word from d1
                 text("Tab. Atenolol 50mg OD",
-                     med("Atenolol", "50mg", "OD", "continued", echo_of="d1")),
+                     med("Atenolol", "50mg", "OD", "mentioned", echo_of="d1")),
                 text("Tab. Amlodipine 5mg OD - start", med("Amlodipine", "5mg", "OD", "started")),
                 GAP,
                 text("Advice: Low salt diet. Review after 1 month with lab reports."),
