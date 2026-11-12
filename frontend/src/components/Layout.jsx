@@ -4,7 +4,7 @@ import { useTranslation } from 'react-i18next';
 import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck } from 'lucide-react';
 import Logo from './Logo.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { isDummy } from '../api.js';
+import { isDummy, saveLanguage } from '../api.js';
 import { getTheme, toggleTheme } from '../lib/theme.js';
 
 const DOCTOR_NAV = [
@@ -47,7 +47,7 @@ export function ThemeToggle() {
 
 export default function Layout() {
   const { t, i18n } = useTranslation();
-  const { user, session, setSession, logout, setScanOpen, setPendingPath } = useApp();
+  const { user, setUser, session, setSession, logout, setScanOpen, setPendingPath } = useApp();
   const [open, setOpen] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const navigate = useNavigate();
@@ -55,8 +55,11 @@ export default function Layout() {
   const sessionActive = session && session.expiresAt > Date.now();
 
   const onLang = (e) => {
-    localStorage.setItem('pramaan_lang', e.target.value);
-    i18n.changeLanguage(e.target.value);
+    const language = e.target.value;
+    localStorage.setItem('pramaan_lang', language);
+    i18n.changeLanguage(language);
+    setUser({ ...user, language });
+    saveLanguage(user.username, language).catch(() => {}); // the screen still switches if saving fails
   };
 
   const handleLogout = () => { logout(); navigate('/login'); };

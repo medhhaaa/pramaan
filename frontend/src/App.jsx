@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import Layout from './components/Layout.jsx';
@@ -39,9 +38,10 @@ function RoleRoute({ roles, children }) {
 }
 
 function Shell() {
-  const { scanOpen, user } = useApp();
+  const { scanOpen, user, setUser } = useApp();
   return (
     <>
+      {!user.language && <LanguagePopup username={user.username} onDone={(language) => setUser({ ...user, language })} />}
       <Routes>
         <Route element={<RequireLogin><Layout /></RequireLogin>}>
           <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/patients' : '/my-records'} replace />} />
@@ -69,20 +69,13 @@ function Shell() {
 }
 
 function Root() {
-  const [langDone, setLangDone] = useState(() => !!localStorage.getItem('pramaan_lang'));
   const { user } = useApp();
+  if (user) return <Shell />;
   return (
-    <>
-      {!langDone && <LanguagePopup onDone={() => setLangDone(true)} />}
-      {!user ? (
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      ) : (
-        <Shell />
-      )}
-    </>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 
