@@ -25,6 +25,7 @@ de-identification check is run on OCR output too.
 Needs Tesseract installed (Windows: winget install UB-Mannheim.TesseractOCR).
 """
 import io
+import json
 
 import pymupdf
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -32,6 +33,7 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from pipeline import handwriting
 
 HANDWRITING_MARK = "pramaan:handwriting-pages="
+CONFIDENCE_MARK = "pramaan:handwriting-confidence="
 OCR_DPI = 300      # Tesseract reads small print best at about 300 dpi
 LANGUAGE = "eng"   # add "+kan" for Kannada once its language pack is installed
 PAGE_WIDTH = 595   # A4 width in points; a photo's page gets its own height
@@ -62,6 +64,7 @@ def make_searchable(pdf_bytes):
 
     out = pymupdf.open()
     handwritten = []
+    confidences = {}  # page -> [[line text, 0-100], ...] for handwritten pages
     for page in src:
         if page_has_text(page):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
@@ -78,6 +81,7 @@ def make_searchable(pdf_bytes):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
             for line in handwriting.place_lines(texts, lines):
                 _add_invisible_line(out[-1], line["text"], line["rect"])
+                confidences.setdefault(str(page.number + 1), []).append([line["text"], line["confidence"]])
             handwritten.append(page.number + 1)
             continue
 
@@ -89,7 +93,8 @@ def make_searchable(pdf_bytes):
         out.insert_pdf(ocr_pdf)
 
     if handwritten:  # remembered inside the PDF, so process_document can flag those facts
-        out.set_metadata({"keywords": f"{HANDWRITING_MARK}{','.join(map(str, handwritten))}"})
+        out.set_metadata({"keywords": f"{HANDWRITING_MARK}{','.join(map(str, handwritten))}",
+                          "subject": CONFIDENCE_MARK + json.dumps(confidences)})
     return out.tobytes(garbage=3, deflate=True)
 
 
@@ -99,6 +104,15 @@ def _add_invisible_line(page, text, rect):
     size = max(4, min(rect.height * 0.9, rect.width / width_at_1pt if width_at_1pt else rect.height))
     page.insert_text((rect.x0, rect.y1 - rect.height * 0.2), text, fontsize=size, fontname="helv",
                      render_mode=3)
+
+
+def handwriting_confidences(pdf_path):
+    """{page: [(line text, 0-100 confidence), ...]} for pages read from handwriting."""
+    with pymupdf.open(pdf_path) as doc:
+        subject = doc.metadata.get("subject") or ""
+    if not subject.startswith(CONFIDENCE_MARK):
+        return {}
+    return {int(p): [tuple(x) for x in rows] for p, rows in json.loads(subject[len(CONFIDENCE_MARK):]).items()}
 
 
 def handwritten_pages(pdf_path):

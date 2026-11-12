@@ -26,7 +26,9 @@ from pipeline.coverage import coverage
 from pipeline.deidentify import deidentify, reidentify
 from pipeline.doc_type import UNKNOWN, classify_document, date_written_in, stay_dates
 from pipeline.extract import extract_document
-from pipeline.ocr import handwritten_pages
+from rapidfuzz import fuzz
+
+from pipeline.ocr import handwriting_confidences, handwritten_pages
 from pipeline.plausibility import check_plausibility
 from pipeline.read_pdf import read_pdf
 from pipeline.verify import verify_facts
@@ -68,6 +70,7 @@ def _contract_fact(fact, number, patient_id, document_id, document_date, documen
         "badge": None,     # set later by backend/logic/badges.py
         "flags": [],       # set later by backend/logic/flags.py (plus our plausibility guard)
         "corrected": False,
+        "confidence": None,  # 0-100, only for facts read from handwriting
     }
 
 
@@ -98,9 +101,15 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
     ]
     # a page read from handwriting by the vision model: a person must check these facts
     from_handwriting = handwritten_pages(pdf_path)
+    confidences = handwriting_confidences(pdf_path)
     for fact in facts:
         if fact["page"] in from_handwriting:
             fact["flags"].append("handwriting")
+            # the line the quote was found in: how sure we are it was read right
+            rows = confidences.get(fact["page"], [])
+            if rows:
+                best = max(rows, key=lambda r: fuzz.partial_ratio(fact["quote"].lower(), r[0].lower()))
+                fact["confidence"] = best[1]
     facts = check_plausibility(facts)
     # medical lines no verified fact quotes: shown on the upload screen as "not captured"
     not_captured = [{"page": c["page"], "line": c["line"], "text": c["text"]}

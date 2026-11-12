@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getTimeline, getFlags } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
-import { StatusChip, BadgeChip, FlagChip, CopyChip } from '../components/Chip.jsx';
+import { StatusChip, BadgeChip, FlagChip, CopyChip, ConfidenceChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
 import PatientGate from '../components/PatientGate.jsx';
 import { fmtDate, yearOf } from '../lib/format.js';
@@ -88,7 +88,7 @@ function TimelineInner() {
                     <td className="mono">{[f.dose, f.frequency].filter(Boolean).join(' ') || `${f.value ?? ''} ${f.unit ?? ''}`.trim()}</td>
                     <td><StatusChip status={f.status} /></td>
                     <td><BadgeChip badge={f.badge} /></td>
-                    <td className="chip-stack">{f.flags.map((fl) => <FlagChip key={fl} flag={fl} />)}</td>
+                    <td className="chip-stack">{f.flags.map((fl) => <FlagChip key={fl} flag={fl} />)}<ConfidenceChip value={f.confidence} /></td>
                     <td>
                       <button className="link-btn" onClick={() => { setHl(f.line); setSrc(f.document_id); }}>
                         p{f.page} · l{f.line}

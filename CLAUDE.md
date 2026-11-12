@@ -137,8 +137,9 @@ Every part of the system passes facts in exactly this shape:
 | `page`, `line` | 1-based position of the quote, set by quote verification |
 | `echo_of` | `fact_id` of the original if this fact is a copy-paste |
 | `badge` | `doctor_verified`, `independent_2plus`, `single_document`, `patient_reported`, `conflicting` |
-| `flags` | any of `contradiction`, `duplicate`, `unit_mismatch`, `ambiguous_date`, `wrong_patient`, `implausible_value` |
+| `flags` | any of `contradiction`, `duplicate`, `unit_mismatch`, `ambiguous_date`, `wrong_patient`, `implausible_value`, `handwriting` |
 | `corrected` | `true` if a reviewer corrected it (original kept in `corrections` table) |
+| `confidence` | 0–100, only for facts read from handwriting: how closely the vision model and Tesseract agree on that line (low = check against the image); otherwise `null` |
 
 ## 6. API list
 

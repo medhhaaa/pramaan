@@ -29,7 +29,12 @@ vision_available() -> bool                                 is the model installe
 mask_personal(page, lines) -> png bytes | None             page with personal details blacked out
 transcribe(page, lines) -> [str] | None                    the model's line-by-line copy (None: no
                                                            model can safely read it)
-place_lines(texts, lines) -> [{"text", "rect"}]            each copied line with a position
+place_lines(texts, lines) -> [{"text", "rect", "confidence"}]  each copied line with a position
+                                                           and a 0-100 confidence (below)
+
+Confidence of a handwritten line: two independent readers, the vision model and Tesseract,
+read the same line. How closely they agree (rapidfuzz, 0-100) is the confidence. A line
+Tesseract couldn't match at all scores 0; a word the model marked [?] caps it at 40.
 
 Settings (.env): VISION_MODEL (cloud, optional), HANDWRITING_MODEL (local, default
 qwen2.5vl:7b), OLLAMA_URL, HANDWRITING=off
@@ -232,6 +237,14 @@ def _similarity(a, b):
     return max(fuzz.ratio(a, b), fuzz.partial_ratio(a, b) if min(len(a), len(b)) >= 6 else 0)
 
 
+UNREADABLE_CAP = 40  # the model itself said a word was unreadable
+
+
+def _confidence(text, agreement):
+    score = round(agreement)
+    return min(score, UNREADABLE_CAP) if "[?]" in text else score
+
+
 def place_lines(texts, lines):
     """Give each transcribed line a position: match the two lists in order (like lining
     up two versions of a text), so the k-th copied line lands on a Tesseract line that
@@ -248,12 +261,14 @@ def place_lines(texts, lines):
     while i < n:
         score = _similarity(texts[i], lines[j]["text"]) if j < m else 0
         if j < m and score >= MIN_MATCH and best[i][j] == best[i + 1][j + 1] + score:
-            placed.append({"text": texts[i], "rect": pymupdf.Rect(lines[j]["rect"])})
+            placed.append({"text": texts[i], "rect": pymupdf.Rect(lines[j]["rect"]),
+                           "confidence": _confidence(texts[i], score)})
             i, j = i + 1, j + 1
         elif j < m and best[i][j] == best[i][j + 1]:
             j += 1
         else:  # no matching Tesseract line: put it under the previous one
             prev = placed[-1]["rect"] if placed else pymupdf.Rect(40, 40, 400, 52)
-            placed.append({"text": texts[i], "rect": pymupdf.Rect(prev.x0, prev.y1 + 2, prev.x1, prev.y1 + 2 + prev.height)})
+            placed.append({"text": texts[i], "rect": pymupdf.Rect(prev.x0, prev.y1 + 2, prev.x1, prev.y1 + 2 + prev.height),
+                           "confidence": 0})
             i += 1
     return placed

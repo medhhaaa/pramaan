@@ -40,3 +40,20 @@ export function CopyChip({ docName }) {
   const { t } = useTranslation();
   return <span className="chip chip-neutral"><Copy size={14} />{t('timeline.copyOf', { doc: docName })}</span>;
 }
+
+// Facts read from handwriting: how sure we are the line was read right (0-100).
+// Two independent readers (the vision model and Tesseract) read the same line; the score is how
+// well they agree. Low = check the fact against the original image.
+export function ConfidenceChip({ value }) {
+  const { t } = useTranslation();
+  if (value == null) return null;
+  const cls = value >= 85 ? 'chip-verified' : value >= 60 ? 'chip-warn' : 'chip-danger';
+  return (
+    <span
+      className={`chip ${cls}`}
+      title={t('confidence.tip', { defaultValue: 'How closely two independent readers agree on this handwritten line. Check low scores against the original image.' })}
+    >
+      {t('confidence.label', { defaultValue: 'Read confidence' })} {value}%
+    </span>
+  );
+}

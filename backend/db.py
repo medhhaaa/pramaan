@@ -46,7 +46,8 @@ CREATE TABLE IF NOT EXISTS facts (
     quote_verified INTEGER DEFAULT 0,
     echo_of TEXT, badge TEXT,
     flags TEXT DEFAULT '[]',
-    corrected INTEGER DEFAULT 0
+    corrected INTEGER DEFAULT 0,
+    confidence INTEGER  -- 0-100, only for facts read from handwriting
 );
 CREATE TABLE IF NOT EXISTS corrections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -100,6 +101,7 @@ FACT_FIELDS = [
     "fact_id", "patient_id", "document_id", "type", "name", "dose", "frequency",
     "value", "unit", "action", "status", "event_date", "document_date", "date_raw",
     "quote", "page", "line", "quote_verified", "echo_of", "badge", "flags", "corrected",
+    "confidence",
 ]
 
 
@@ -111,6 +113,7 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("facts", "confidence", "INTEGER"),
     ("users", "language", "TEXT"),
     ("questions", "text_kn", "TEXT"),
     ("questions", "stay_id", "INTEGER"),
