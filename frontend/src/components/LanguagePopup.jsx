@@ -1,43 +1,38 @@
-// Asked once, right after a user's first login (their account has no language yet).
-// Written in both languages because we don't know which one they read yet.
-// The choice is saved on the account; the header lets them switch later.
-import { useState } from "react";
-import { LANGUAGES } from "../i18n";
+import { useState } from 'react';
+import { useTranslation } from 'react-i18next';
+import Logo from './Logo.jsx';
 
-export default function LanguagePopup({ onChoose }) {
-  const [busy, setBusy] = useState(false);
-  const [error, setError] = useState("");
+export default function LanguagePopup({ onDone }) {
+  const { i18n } = useTranslation();
+  const [choice, setChoice] = useState(i18n.language || 'en');
 
-  async function choose(lang) {
-    setBusy(true);
-    setError("");
-    try {
-      await onChoose(lang);
-    } catch (err) {
-      setError(err.message);
-      setBusy(false);
-    }
-  }
+  const confirm = () => {
+    localStorage.setItem('pramaan_lang', choice);
+    i18n.changeLanguage(choice);
+    onDone();
+  };
+
+  const opts = [
+    { code: 'en', label: 'English', hint: 'default' },
+    { code: 'hi', label: 'हिंदी', hint: '' },
+    { code: 'kn', label: 'ಕನ್ನಡ', hint: '' },
+  ];
 
   return (
-    <div className="modal-backdrop">
-      <div className="modal" role="dialog" aria-modal="true" aria-labelledby="language-title">
-        <h2 id="language-title">Choose your language · ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆರಿಸಿ</h2>
-        <p>Which language do you prefer? You can change it later from the top bar.</p>
-        <p>ನೀವು ಯಾವ ಭಾಷೆಯನ್ನು ಇಷ್ಟಪಡುತ್ತೀರಿ? ಇದನ್ನು ನಂತರ ಮೇಲಿನ ಪಟ್ಟಿಯಿಂದ ಬದಲಾಯಿಸಬಹುದು.</p>
-        <p className="actions">
-          {LANGUAGES.map(([code, label]) => (
-            <button key={code} className="btn-primary" onClick={() => choose(code)} disabled={busy} lang={code}>
-              {label}
-            </button>
+    <div className="modal-backdrop" role="dialog" aria-modal="true" aria-labelledby="lang-title">
+      <div className="modal card-lift">
+        <Logo />
+        <h2 id="lang-title" className="lang-title">Choose your language / भाषा चुनें / ಭಾಷೆ ಆಯ್ಕೆಮಾಡಿ</h2>
+        <div className="radio-list">
+          {opts.map((o) => (
+            <label key={o.code} className={`radio-row ${choice === o.code ? 'selected' : ''}`}>
+              <input type="radio" name="lang" value={o.code} checked={choice === o.code} onChange={() => setChoice(o.code)} />
+              <span className="radio-label">{o.label}</span>
+              {o.hint && <span className="muted small">{o.hint}</span>}
+            </label>
           ))}
-        </p>
-        <p className="hint">
-          Medicine names, doses, units and dates always stay exactly as written in your documents.
-          <br />
-          ಔಷಧದ ಹೆಸರುಗಳು, ಡೋಸ್, ಘಟಕಗಳು ಮತ್ತು ದಿನಾಂಕಗಳು ಯಾವಾಗಲೂ ನಿಮ್ಮ ದಾಖಲೆಗಳಲ್ಲಿ ಬರೆದಂತೆಯೇ ಇರುತ್ತವೆ.
-        </p>
-        {error && <p className="error">{error}</p>}
+        </div>
+        <button className="btn btn-primary btn-block" onClick={confirm}>OK</button>
       </div>
     </div>
   );

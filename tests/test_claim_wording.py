@@ -20,13 +20,20 @@ def forbidden_in(text):
     return [w for w in FORBIDDEN if re.search(rf"\b{re.escape(w)}", low)]
 
 
+def flatten(obj, prefix=""):
+    if isinstance(obj, dict):
+        out = {}
+        for key, value in obj.items():
+            out.update(flatten(value, f"{prefix}{key}."))
+        return out
+    return {prefix[:-1]: obj}
+
+
 def english_ui_strings():
-    """'claims.*' and 'tab.claims' values from the English block of frontend/src/i18n.jsx."""
-    with open(os.path.join(ROOT, "frontend", "src", "i18n.jsx"), encoding="utf-8") as f:
-        source = f.read()
-    english = source.split("const kn = {")[0]
-    pattern = r'"((?:claims\.|tab\.claims)[^"]*)":\s*(["\'])(.*?)\2,'
-    return {key: value for key, _q, value in re.findall(pattern, english, flags=re.S)}
+    """Every English string of the Claim documents screen (frontend/src/i18n/en.json)."""
+    with open(os.path.join(ROOT, "frontend", "src", "i18n", "en.json"), encoding="utf-8") as f:
+        en = json.load(f)
+    return {**flatten(en["claimDocs"], "claimDocs."), "nav.claimDocuments": en["nav"]["claimDocuments"]}
 
 
 def code_strings(module):

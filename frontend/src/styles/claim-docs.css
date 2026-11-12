@@ -1,0 +1,7 @@
+/* Claim documents page. Uses the theme tokens; restyle freely. */
+.claim-banner { border-left: 4px solid var(--warn); background: rgba(245, 185, 74, 0.12); }
+.claim-reminder { border-left: 4px solid var(--info); font-weight: 600; }
+.claim-list { list-style: none; padding: 0; display: grid; gap: 10px; }
+.claim-item .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
+.claim-item .link-btn { display: block; margin-top: 6px; }
+.claim-not_needed { opacity: 0.6; }
