@@ -1,4 +1,4 @@
-// Upload one or more PDFs for a patient. Files go up one at a time so each gets its own result.
+// Upload documents for a patient: PDFs, scans or phone photos. Files go up one at a time so each gets its own result.
 import { useState } from "react";
 import { uploadDocument } from "../api";
 
@@ -24,10 +24,10 @@ export default function UploadPage({ patient, onDone }) {
   return (
     <section className="upload">
       <h1>Upload documents for {patient.name}</h1>
-      <p>Prescriptions, lab reports or discharge summaries, as PDF.</p>
+      <p>Prescriptions, lab reports or discharge summaries: a PDF, a scan, or a photo taken with your phone.</p>
       <input
         type="file"
-        accept="application/pdf"
+        accept="application/pdf,image/jpeg,image/png,image/webp"
         multiple
         onChange={(e) => setFiles([...e.target.files])}
       />

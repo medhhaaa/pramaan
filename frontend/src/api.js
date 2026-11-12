@@ -9,7 +9,7 @@ import dummyMetrics from "./dummy/metrics_results.json";
 import dummyQuestionsSeed from "./dummy/questions.json";
 import sampleFacts from "./dummy/sample_facts.json";
 
-export const USE_DUMMY = true;
+export const USE_DUMMY = false;
 const BASE_URL = "http://localhost:8000";
 
 export const NOT_DOCUMENTED_ANSWER = "The records don't mention this.";
