@@ -87,15 +87,25 @@ def parse_json_reply(text):
 # added to the rules when the user chose Kannada; the not-documented reply stays the English
 # sentence above so the code can recognise it
 KANNADA_RULE = """
-- Write the answer in Kannada (Kannada script). Keep medicine names, doses, values, units,
-  dates and fact_ids exactly as written in the facts, in English letters. If the facts do not
-  answer the question, still reply with the exact English sentence given above."""
+- Write the "answer" text in Kannada (Kannada script).
+- Never write medicine, allergy, test or condition names in Kannada script. Copy names, doses,
+  values, units, dates and fact_ids exactly as written in the facts, in English letters
+  (for example "Penicillin", not "ಪೆನಿಸಿಲಿನ್").
+- Always return the JSON object. If the facts do not answer the question, the JSON "answer"
+  is the exact English sentence given above."""
+
+
+def is_not_documented_reply(reply):
+    """Some models answer 'not documented' with the bare sentence instead of JSON."""
+    return reply.strip().strip('"').strip() in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN)
 
 
 def ask_llm(prompt):
     """Call the AI and parse its JSON, retrying once on bad JSON."""
     for attempt in range(2):
         reply = call_llm(prompt)
+        if is_not_documented_reply(reply):
+            return {"answer": NOT_DOCUMENTED, "fact_ids": []}
         try:
             return parse_json_reply(reply)
         except (ValueError, json.JSONDecodeError):
