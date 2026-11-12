@@ -34,7 +34,15 @@ These are how the parts connect. Don't change one without telling the person on 
 - `GET /patients/{id}/flags` → `{"contradiction": [fact], "duplicate": [...], "unit_mismatch": [...], "ambiguous_date": [...], "wrong_patient": [...], "implausible_value": [...], "gap": [...]}` (includes facts from held-back documents, so the wrong-patient report can be reviewed)
 - `GET /documents/{id}` → `{"id", "patient_id", "filename", "doc_type", "document_date", "held_back", "pdf_base64", "lines": [{"page", "line", "text", "covered"}]}`
 - `POST /facts/{id}/correct` with body `{"field", "new_value"}` → the updated fact (`corrected: true`)
-- `POST /patients/{id}/upload` (multipart form with field `file`) → `{"document_id", "facts_added", "held_back"}`
+- `POST /patients/{id}/upload` (multipart form with field `file`) → `{"document_id", "facts_added", "held_back", "reasons"}` (`reasons`: why it was held back, plain sentences)
+- `GET /patients` → `[{"id", "name", "dob", "sex", "blood_group", "shared_until"}]`. `shared_until` is null for your own patients; for a patient opened by QR / code it is when read-only access ends (`"2026-11-12T18:30:00Z"`)
+
+**B → C: QR / code sharing (P3)** (details in `backend/routes/share.py`)
+- `POST /patients/{id}/share` `{"minutes": 15}` (patient only, 1–60) → `{"share_id", "code", "token", "url", "qr_svg", "expires_at", "seconds_left"}`. Show `qr_svg` as `<img src>`, `code` (like `K7P3-QXM9`) as large text, and a countdown from `seconds_left`. The QR holds `url` = `http://localhost:5173/?share=<token>`
+- `POST /share/open` `{"code": "k7p3 qxm9"}` or `{"token": "<from ?share= in the URL>"}` (doctor only; case, spaces and dashes in the code don't matter) → `{"share_id", "patient": {id, name, dob, sex, blood_group}, "expires_at", "seconds_left"}`. Then open that patient as usual. Errors: 404 wrong / expired / already used by another doctor, 429 after 5 wrong codes in 10 minutes
+- `GET /patients/{id}/shares` (patient) → `[{"share_id", "created_at", "expires_at", "seconds_left", "opened_by", "opened_at"}]`
+- `DELETE /share/{share_id}` (patient) → `{"stopped": true}`
+- Shared access is **read-only**: correct, upload, answer and delete return 403 `"Shared access is read-only"` (hide those buttons when `shared_until` is set). When time runs out every call returns 403 `"No access to this patient"`: go back to the patient list with "Shared access has ended".
 
 **B → everyone: audit** (B adds this first and pushes it within the first 30 minutes, because C and D need it)
 - `backend.db.log_action(user, action, patient_id, detail)` writes one row to `audit_log`. Every route that reads or changes patient data calls it.

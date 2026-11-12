@@ -45,7 +45,7 @@ cd frontend && npm run dev
 python -m pipeline.llm
 ```
 
-Demo logins: `doctor` / `doctor123`, `sunita` / `sunita123`.
+Demo logins: `doctor` / `doctor123`, `sunita` / `sunita123`, `guestdoctor` / `guest123` (a doctor at another clinic: sees nobody until a patient shares by QR / code).
 
 ## What works right now
 
