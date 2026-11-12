@@ -9,9 +9,21 @@ import DUMMY_CLAIM_CHECKLIST from './dummy/claim_checklist.json';
 const USE_DUMMY = import.meta.env.VITE_USE_DUMMY !== 'false';
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-// Token lives in memory only (not localStorage), per the prompt.
-let token = null;
-export const setToken = (t) => { token = t; };
+// Token lives in sessionStorage (not localStorage): it survives a page refresh but is gone
+// when the tab is closed.
+const TOKEN_KEY = 'pramaan_token';
+function readSession(key) {
+  try { return sessionStorage.getItem(key); } catch { return null; }
+}
+let token = readSession(TOKEN_KEY);
+export const setToken = (t) => {
+  token = t;
+  try {
+    if (t) sessionStorage.setItem(TOKEN_KEY, t);
+    else sessionStorage.removeItem(TOKEN_KEY);
+  } catch { /* storage blocked: keep it in memory only */ }
+};
+export const hasToken = () => Boolean(token);
 
 async function http(method, path, body, isForm = false) {
   const headers = {};
@@ -73,8 +85,15 @@ export async function login(username, password) {
     return { token, role: u.role, name: u.name, username, patientId: u.patientId || null };
   }
   const data = await http('POST', '/login', { username, password });
-  token = data.token;
-  return data;
+  setToken(data.token);
+  // /login has no patientId or name: a patient's own record is the one patient they can see
+  let patientId = null;
+  let name = data.username;
+  if (data.role === 'patient') {
+    const [own] = await http('GET', '/patients');
+    if (own) { patientId = own.id; name = own.name; }
+  }
+  return { ...data, name, patientId };
 }
 
 export async function listPatients() {
@@ -206,7 +225,9 @@ export async function createQR(pid) {
     await wait(200);
     return { token: `demo-${pid}-${Date.now()}`, expires_at: Date.now() + 10 * 60 * 1000 };
   }
-  return http('POST', `/patients/${pid}/share-token`);
+  const res = await http('POST', `/patients/${pid}/share`, { minutes: 15 });
+  // the screens use expires_at as a millisecond timestamp
+  return { ...res, expires_at: Date.parse(res.expires_at) };
 }
 
 export async function scanQR(code) {
@@ -215,7 +236,11 @@ export async function scanQR(code) {
     if (!code || !code.startsWith('demo-')) throw new Error('expired');
     return { session_id: 'demo-session', patient_id: code.split('-')[1], expires_at: Date.now() + 30 * 60 * 1000 };
   }
-  return http('POST', '/scan', { token: code });
+  // a scanned QR holds the long token; a typed code is 8 letters/digits, e.g. K7P3-QXM9
+  const value = (code || '').trim();
+  const isCode = value.replace(/[^a-z0-9]/gi, '').length === 8;
+  const res = await http('POST', '/share/open', isCode ? { code: value } : { token: value });
+  return { ...res, patient_id: res.patient.id, expires_at: Date.parse(res.expires_at) };
 }
 
 // ---- Claim Documents (backend/routes/claims.py) ----
