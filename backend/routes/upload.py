@@ -8,7 +8,10 @@ PDF viewer and click-to-proof highlighting work the same for scans and photos.
 All the steps (encrypt, pipeline, wrong-patient check, save, recompute) are in
 backend/ingest.py, shared with the demo loader.
 """
+import threading
+
 from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
+from starlette.concurrency import run_in_threadpool
 
 from backend.auth import get_current_user, require_patient_access
 from backend.db import log_action
@@ -17,6 +20,15 @@ from pipeline.ocr import prepare_document
 
 router = APIRouter()
 MAX_UPLOAD_MB = 20
+# OCR and the AI call take ~20 s. They run in a worker thread so the rest of the app
+# (timeline, login, other tabs) keeps answering meanwhile. One ingest at a time, so two
+# uploads never pick the same new document id.
+_ingest_lock = threading.Lock()
+
+
+def _ingest_one(patient_id, filename, data, doc_type):
+    with _ingest_lock:
+        return ingest_document(patient_id, filename, data, doc_type)
 
 
 @router.post("/patients/{patient_id}/upload")
@@ -27,12 +39,12 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
     if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail=f"File is larger than {MAX_UPLOAD_MB} MB")
     try:
-        data = prepare_document(data)  # PDF, scanned PDF or photo -> searchable PDF
+        data = await run_in_threadpool(prepare_document, data)  # PDF, scan or photo -> searchable PDF
     except ValueError as e:  # not a PDF or image, or a damaged PDF
         raise HTTPException(status_code=400, detail=str(e))
 
     try:
-        result = ingest_document(patient_id, file.filename, data, doc_type or None)
+        result = await run_in_threadpool(_ingest_one, patient_id, file.filename, data, doc_type or None)
     except NotImplementedError:
         raise HTTPException(status_code=503, detail="The extraction pipeline is not built yet")
     except Exception as e:

@@ -91,8 +91,13 @@ def needs_vision(lines):
     return mean < MIN_MEAN_CONFIDENCE or unsure > MAX_UNSURE_SHARE
 
 
+def enabled():
+    """HANDWRITING=off in .env: scanned pages go straight to plain Tesseract OCR."""
+    return os.getenv("HANDWRITING", "on").lower() != "off"
+
+
 def vision_available():
-    if os.getenv("HANDWRITING", "on").lower() == "off":
+    if not enabled():
         return False
     try:
         models = requests.get(_ollama_url() + "/api/tags", timeout=3).json()["models"]

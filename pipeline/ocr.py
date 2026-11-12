@@ -67,8 +67,8 @@ def make_searchable(pdf_bytes):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
             continue
 
-        lines = handwriting.tesseract_lines(page)
-        if handwriting.needs_vision(lines) and handwriting.vision_available():
+        lines = handwriting.tesseract_lines(page) if handwriting.enabled() else None
+        if lines is not None and handwriting.needs_vision(lines) and handwriting.vision_available():
             # handwriting: the local vision model reads it, Tesseract says where the lines are
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
             for line in handwriting.place_lines(handwriting.transcribe(page), lines):
