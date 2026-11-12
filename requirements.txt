@@ -1,0 +1,12 @@
+fastapi
+uvicorn[standard]
+python-multipart
+python-dotenv
+PyJWT
+cryptography
+pymupdf
+rapidfuzz
+reportlab
+anthropic
+openai
+requests
