@@ -77,10 +77,13 @@ def deidentify(text, known_names=()):
         )
 
     # 1. Contact details and government IDs (fixed formats)
+    # OCR sometimes adds a space around a hyphen ("91-4471 -2286-0053"), so a separator
+    # is: optional space, optional hyphen, optional space
+    gap = r" ?-? ?"
     replace_all(r"\b[\w.+-]+@[\w-]+\.[\w.]+\b", "EMAIL")
-    replace_all(r"\b\d{2}-\d{4}-\d{4}-\d{4}\b", "ABHA")             # ABHA number
+    replace_all(rf"\b\d{{2}}{gap}\d{{4}}{gap}\d{{4}}{gap}\d{{4}}\b", "ABHA")   # ABHA number
     replace_all(r"\b[\w.]+@(?:abdm|sbx)\b", "ABHA")                  # ABHA address
-    replace_all(r"\b\d{4}[ -]\d{4}[ -]\d{4}\b|\b\d{12}\b", "AADHAAR")
+    replace_all(rf"\b\d{{4}}{gap}\d{{4}}{gap}\d{{4}}\b|\b\d{{12}}\b", "AADHAAR")
 
     # 2. Hospital / lab record numbers, doctor registration numbers
     replace_value(
@@ -93,14 +96,14 @@ def deidentify(text, known_names=()):
 
     # 2b. Labelled numbers, whatever their shape. OCR can turn a 0 into an O
     #     ("98765 4321O"), which the digit patterns below would miss.
-    #     A digit (or a letter OCR confuses with one) may be followed by ONE space or hyphen.
+    #     Between two digits (or letters OCR confuses with digits) there may be a small gap.
     ocr_digit = r"[\dOoIl]"
     replace_value(r"\b(?:Mobile|Mob\.?|Phone|Ph\.?|Tel\.?|Contact(?: no\.?)?|Emergency)",
-                  rf"\+?{ocr_digit}(?:[ -]?{ocr_digit}){{6,}}", "PHONE", sep=r"\s*[:.]?\s*")
-    replace_value(r"\bAadhaar(?: No\.?)?", rf"{ocr_digit}(?:[ -]?{ocr_digit}){{11,}}", "AADHAAR",
-                  sep=r"\s*[:.]?\s*")
-    replace_value(r"\bABHA(?: No\.?| Number| ID)?", rf"{ocr_digit}(?:[ -]?{ocr_digit}){{13,}}", "ABHA",
-                  sep=r"\s*[:.]?\s*")
+                  rf"\+?{ocr_digit}(?:{gap}{ocr_digit}){{6,}}", "PHONE", sep=r"\s*[:.;,]?\s*")
+    replace_value(r"\bAadhaar(?: No\.?)?", rf"{ocr_digit}(?:{gap}{ocr_digit}){{11,}}", "AADHAAR",
+                  sep=r"\s*[:.;,]?\s*")
+    replace_value(r"\bABHA(?: No\.?| Number| ID)?", rf"{ocr_digit}(?:{gap}{ocr_digit}){{13,}}", "ABHA",
+                  sep=r"\s*[:.;,]?\s*")
 
     # 3. Phone numbers: mobiles (+91 98765 43210) and landlines (0824 2441122)
     replace_all(r"(?:\+91[ -]?)?\b[6-9]\d{4}[ -]?\d{5}\b", "PHONE")
