@@ -22,7 +22,8 @@ What to extract (one fact per item):
 - allergy: name = the allergen (e.g. "Penicillin"), value = the reaction if written (e.g. "rash"). "No known drug allergies" = name "Drug allergy" with status "negated".
 - condition: each diagnosis or known disease as its own fact. "ruled out" or "no evidence of" = status "negated".
 - lab_test: tests and measurements, including vital signs such as blood pressure. name = the test name; value and unit copied exactly ("8.1" and "%"). For a text result such as "Negative", put it in value and set unit to null.
-- event: admissions, surgeries, procedures and past events such as "History of MI in 2015".
+- event: admissions, surgeries, procedures and past events such as "History of MI in 2015" (a past event with its own date is an event, not a condition).
+  For a hospital stay create ONE event named for its reason (e.g. "Admission for chest pain"), dated with the admission date, quoting the line that gives the reason. Do not create an event for the discharge date.
 - demographic: name is exactly one of patient_name, sex, dob, blood_group; value copied exactly.
 
 Rules:
