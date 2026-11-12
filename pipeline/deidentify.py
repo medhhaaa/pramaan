@@ -91,6 +91,17 @@ def deidentify(text, known_names=()):
         sep=r"\s*[:.]?\s*",  # "Reg. No. 48213" has no colon
     )
 
+    # 2b. Labelled numbers, whatever their shape. OCR can turn a 0 into an O
+    #     ("98765 4321O"), which the digit patterns below would miss.
+    #     A digit (or a letter OCR confuses with one) may be followed by ONE space or hyphen.
+    ocr_digit = r"[\dOoIl]"
+    replace_value(r"\b(?:Mobile|Mob\.?|Phone|Ph\.?|Tel\.?|Contact(?: no\.?)?|Emergency)",
+                  rf"\+?{ocr_digit}(?:[ -]?{ocr_digit}){{6,}}", "PHONE", sep=r"\s*[:.]?\s*")
+    replace_value(r"\bAadhaar(?: No\.?)?", rf"{ocr_digit}(?:[ -]?{ocr_digit}){{11,}}", "AADHAAR",
+                  sep=r"\s*[:.]?\s*")
+    replace_value(r"\bABHA(?: No\.?| Number| ID)?", rf"{ocr_digit}(?:[ -]?{ocr_digit}){{13,}}", "ABHA",
+                  sep=r"\s*[:.]?\s*")
+
     # 3. Phone numbers: mobiles (+91 98765 43210) and landlines (0824 2441122)
     replace_all(r"(?:\+91[ -]?)?\b[6-9]\d{4}[ -]?\d{5}\b", "PHONE")
     replace_all(r"\b0\d{2,4}[ -]?\d{6,8}\b", "PHONE")

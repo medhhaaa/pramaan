@@ -26,12 +26,16 @@ def _norm(text):
 
 
 def _compact(text):
-    """lower case, no spaces at all: '500 mg' and '500mg' compare equal"""
-    return re.sub(r"\s+", "", text or "").lower()
+    """lower case, no spaces at all: '500 mg' and '500mg' compare equal.
+    OCR can't tell I, l and | apart ('uIU/mL' is read as 'ulU/mL'), so those letters are
+    treated as one. Digits are never changed."""
+    return re.sub(r"\s+", "", text or "").lower().replace("|", "i").replace("l", "i")
 
 
 def _numbers(text):
-    return set(re.findall(r"\d+(?:\.\d+)?", text or ""))
+    """The values in a text. A digit glued to the end of a word belongs to a test name
+    (HbA1c, FEV1, SpO2, T4), not a value, so it is skipped: OCR often misreads it."""
+    return set(re.findall(r"(?<![A-Za-z])\d+(?:\.\d+)?", text or ""))
 
 
 def _candidates(lines):
