@@ -22,7 +22,7 @@ SEP = r"\s*[:\-]\s*"  # "Patient: ", "Ref. by - "
 INSTITUTION_WORD = r"(?:[A-Z][A-Za-z'.-]*|&)"
 INSTITUTION_KEYWORD = (
     r"(?i:hospitals?|clinic|diagnostics|laborator(?:y|ies)|labs?|nursing home|polyclinic|"
-    r"medical (?:centre|center|college)|health ?care|institute)"
+    r"cent(?:re|er)|medical college|health ?care|institute)"
 )
 
 
@@ -115,7 +115,8 @@ def deidentify(text, known_names=()):
     # 8. Other names: "Patient: S. Rao", relatives ("W/o Mr. Ramesh Rao"), "Mrs. Rekha Pai"
     replace_value(r"^\s*(?:Patient(?:'s)?(?: name)?|Pt\.? name|Name)",
                   rf"(?:{TITLE} )?{NAME}", "PATIENT", flags=re.MULTILINE | re.IGNORECASE)
-    replace_all(rf"\b[SWDC]/[Oo]\.?\s*(?:{TITLE} )?{NAME}", "PERSON")
+    # (?<!/) so the "C/O" inside "K/C/O Bronchial asthma" (known case of) is left alone
+    replace_all(rf"(?<![/\w])[SWDC]/[Oo]\.?\s*(?:{TITLE} )?{NAME}", "PERSON")
     replace_all(rf"\b{TITLE} {NAME}", "PERSON")
 
     # 9. Hospitals, clinics and labs: capitalised words ending in a keyword
