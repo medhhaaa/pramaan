@@ -4,8 +4,8 @@ export default function Header({ user, onLogout }) {
     <header className="header">
       <strong>Pramaan</strong>
       {user && (
-        <span>
-          {user.username} ({user.role}) <button onClick={onLogout}>Log out</button>
+        <span className="header-user">
+          {user.username} ({user.role}) <button className="btn-secondary" onClick={onLogout}>Log out</button>
         </span>
       )}
     </header>

@@ -1,17 +1,10 @@
-/* Minimal working styles. Visual polish is Deeksha's job later. */
-body { margin: 0; font-family: system-ui, sans-serif; background: #fafafa; color: #222; }
-main { max-width: 1100px; margin: 0 auto; padding: 0 16px 32px; }
-button { cursor: pointer; }
-button:disabled { cursor: default; }
+/* Pramaan styles. Tokens first, then one file per area of the app.
+   Plain CSS only: no UI library, no web fonts. */
+@import "./styles/tokens.css";
+@import "./styles/base.css";
+@import "./styles/header.css";
 
-.header { display: flex; justify-content: space-between; align-items: center; padding: 10px 16px; background: #1f3b57; color: #fff; }
-.disclaimer { margin: 0; padding: 6px 16px; background: #fff7d6; border-bottom: 1px solid #e8d98a; font-size: 14px; text-align: center; }
-.nav { display: flex; gap: 8px; margin: 12px 0; }
-.hint { color: #666; font-size: 14px; }
-.error { color: #b00020; }
-.warn { color: #9a5b00; }
-.ok { color: #1b7a3a; }
-
+/* ---- not yet restyled (replaced step by step) ---- */
 .form { display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
 .form label { display: flex; flex-direction: column; gap: 4px; }
 .checkbox { display: flex; gap: 8px; align-items: flex-start; }
@@ -19,7 +12,6 @@ button:disabled { cursor: default; }
 .list { list-style: none; padding: 0; }
 .list li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px; border: 1px solid #ddd; background: #fff; margin-bottom: 6px; }
 
-/* timeline + proof panel side by side */
 .with-panel { display: grid; grid-template-columns: 1fr 480px; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .with-panel { grid-template-columns: 1fr; } }
 
@@ -51,8 +43,6 @@ button:disabled { cursor: default; }
 .line-no { display: inline-block; width: 24px; color: #999; }
 .line-hit { background: #ffe066; }
 
-/* Phase 3 */
-.nav { flex-wrap: wrap; }
 .med { padding: 4px 12px; margin-bottom: 8px; border: 1px solid #ddd; background: #fff; }
 .med h2 { margin: 8px 0 0; font-size: 18px; }
 .med h2 small { font-size: 12px; font-weight: normal; color: #1b7a3a; }
@@ -68,7 +58,6 @@ button:disabled { cursor: default; }
 .side-by-side th, .side-by-side td, .table th, .table td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; font-size: 14px; }
 .ask-form { display: flex; gap: 8px; }
 .ask-form input { flex: 1; padding: 6px; }
-.link { background: none; border: none; color: #1f5fa0; text-decoration: underline; padding: 0 6px 0 0; text-align: left; font: inherit; }
 .answer { border: 1px solid #ddd; background: #fff; padding: 4px 12px; margin-top: 10px; }
 .not-documented { color: #7a5a00; }
 .citations { margin-top: 0; }
@@ -79,7 +68,6 @@ button:disabled { cursor: default; }
 .stats strong { font-size: 28px; }
 .chart { background: #fff; border: 1px solid #ddd; padding: 4px 12px; margin-bottom: 12px; }
 
-/* Phase 4 */
 .with-sidebar { display: grid; grid-template-columns: 1fr 380px; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .with-sidebar { grid-template-columns: 1fr; } }
 .sidebar { position: sticky; top: 8px; max-height: calc(100vh - 16px); overflow: auto; border: 1px solid #ccc; background: #fff; padding: 8px 12px; }

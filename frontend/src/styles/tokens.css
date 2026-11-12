@@ -1,0 +1,86 @@
+/* Design tokens: the only place colours, sizes and radii are defined.
+   Status colours must match everywhere a status appears. */
+:root {
+  /* brand + surfaces */
+  --primary: #0F766E;
+  --primary-hover: #115E59;
+  --primary-soft: #CCFBF1;
+  --bg: #F6F8FA;
+  --surface: #FFFFFF;
+  --surface-sunken: #F8FAFC;
+  --text: #0F172A;
+  --muted: #475569;
+  --border: #E2E8F0;
+  --border-strong: #CBD5E1;
+  --focus: #0F766E;
+
+  /* shape + depth */
+  --radius: 12px;
+  --radius-sm: 8px;
+  --shadow: 0 1px 2px rgba(15, 23, 42, .06);
+  --shadow-raised: 0 2px 8px rgba(15, 23, 42, .08);
+
+  /* type */
+  --font: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans", "Helvetica Neue", Arial, sans-serif;
+  --font-mono: ui-monospace, "Cascadia Mono", "Segoe UI Mono", Consolas, Menlo, monospace;
+  --fs-base: 16px;
+  --fs-h1: 28px;
+  --fs-h2: 20px;
+  --fs-meta: 13px;
+
+  /* layout (4px grid) */
+  --s1: 4px;
+  --s2: 8px;
+  --s3: 12px;
+  --s4: 16px;
+  --s5: 20px;
+  --s6: 24px;
+  --s8: 32px;
+  --content: 1100px;
+  --tap: 44px;
+
+  /* evidence status */
+  --documented-fg: #15803D;
+  --documented-bg: #DCFCE7;
+  --negated-fg: #334155;
+  --negated-bg: #F1F5F9;
+  --notdoc-fg: #854D0E;
+  --notdoc-bg: #FEF9C3;
+  --notdoc-stripe: #A16207;
+
+  /* flags: one hue each, all different from the status colours */
+  --contradiction-fg: #B91C1C;
+  --contradiction-bg: #FEE2E2;
+  --duplicate-fg: #3730A3;
+  --duplicate-bg: #E0E7FF;
+  --unit-fg: #9A3412;
+  --unit-bg: #FFEDD5;
+  --ambiguous-fg: #6B21A8;
+  --ambiguous-bg: #F3E8FF;
+  --wrongpt-fg: #FFFFFF;
+  --wrongpt-bg: #7F1D1D;
+  --implausible-fg: #9D174D;
+  --implausible-bg: #FCE7F3;
+  --gap-fg: #854D0E;
+  --gap-bg: #FEF9C3;
+
+  /* badges: outlined pills (doctor_verified solid) */
+  --badge-verified: #0F766E;
+  --badge-independent: #0F766E;
+  --badge-single: #475569;
+  --badge-patient: #1D4ED8;
+  --badge-corrected: #155E75;
+  --badge-conflicting: #B91C1C;
+
+  /* feedback */
+  --ok-fg: #15803D;
+  --ok-bg: #F0FDF4;
+  --warn-fg: #854D0E;
+  --warn-bg: #FEFCE8;
+  --error-fg: #B91C1C;
+  --error-bg: #FEF2F2;
+  --info-fg: #134E4A;
+  --info-bg: #F0FDFA;
+  --highlight: #FDE047;
+  --highlight-fg: #0F172A;
+}
