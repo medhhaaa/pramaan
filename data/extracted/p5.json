@@ -600,7 +600,9 @@
           "quote_verified": true,
           "echo_of": null,
           "badge": null,
-          "flags": [],
+          "flags": [
+            "implausible_value"
+          ],
           "corrected": false
         },
         {
