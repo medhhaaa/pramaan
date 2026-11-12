@@ -1,8 +1,8 @@
 """Reset the database with demo users and the 5 demo patients. (Core backend)
 
-    python -m backend.seed           users + patients p1-p5 + p1's SAMPLE facts
+    python -m backend.seed           users + patients p1-p6 + p1's SAMPLE facts
                                      (shared/sample_facts.json; no AI calls, for frontend work)
-    python -m backend.seed --empty   users + patients p1-p5, no documents or facts
+    python -m backend.seed --empty   users + patients p1-p6, no documents or facts
                                      (backend/load_demo.py uses this, then uploads the real PDFs)
 
 Patient details come from Ashil's answer keys (data/answer_keys/pN.json), so they always
@@ -19,12 +19,14 @@ from backend.db import DB_PATH, get_conn, init_db, insert_fact
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAMPLE_FACTS = os.path.join(ROOT, "shared", "sample_facts.json")
 ANSWER_KEYS = os.path.join(ROOT, "data", "answer_keys")
-PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5"]
+# p6 (Ravi) has a hospital stay with bills, for the Claim Documents checklist
+PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5", "p6"]
 
 # username, password, role, patients they can see
 USERS = [
     ("doctor", "doctor123", "doctor", PATIENT_IDS),
     ("sunita", "sunita123", "patient", ["p1"]),
+    ("ravi", "ravi123", "patient", ["p6"]),
     # a doctor at another clinic: sees no patients until one shares by QR / code
     ("guestdoctor", "guest123", "doctor", []),
 ]
@@ -65,7 +67,8 @@ def seed(with_sample_facts=True):
             # p1's documents from the answer key, pointing at the real synthetic PDFs
             for d in load_answer_key("p1")["documents"]:
                 conn.execute(
-                    "INSERT INTO documents VALUES (?, 'p1', ?, ?, ?, ?, ?)",
+                    "INSERT INTO documents (id, patient_id, filename, doc_type, document_date, file_path,"
+                    " held_back) VALUES (?, 'p1', ?, ?, ?, ?, ?)",
                     (d["document_id"], d["filename"], d["doc_type"], d["document_date"],
                      f"data/patients/p1/{d['filename']}", int(d["held_back"])),
                 )

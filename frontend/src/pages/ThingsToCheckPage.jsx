@@ -35,6 +35,14 @@ function QuestionCard({ question, onAnswered }) {
           {question.facts.map((f) => `"${f.quote}" (${f.event_date})`).join(" · ")}
         </p>
       )}
+      {question.claim_condition ? (
+        // hospital stay question (Claim documents): Yes / No / I don't know only
+        <div className="answer-buttons">
+          <button onClick={() => send("yes")} disabled={busy}>{t("answer.yes")}</button>
+          <button onClick={() => send("no")} disabled={busy}>{t("answer.no")}</button>
+          <button onClick={() => send("dont_know")} disabled={busy}>{t("answer.dont_know")}</button>
+        </div>
+      ) : (
       <div className="answer-buttons">
         <button onClick={() => send("yes")} disabled={busy}>{t("answer.yes")}</button>
         <button onClick={() => send("no")} disabled={busy}>{t("answer.no")}</button>
@@ -48,6 +56,7 @@ function QuestionCard({ question, onAnswered }) {
         <button onClick={() => send("dont_know")} disabled={busy}>{t("answer.dont_know")}</button>
         <button onClick={() => send("skip")} disabled={busy}>{t("answer.skip")}</button>
       </div>
+      )}
       {error && <p className="error">{error}</p>}
     </li>
   );

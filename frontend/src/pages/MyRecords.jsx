@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { listPatients, getTimeline, getQuestions } from '../api.js';
+import { listPatients, getTimeline, getQuestions, createHospitalStay } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
 import { BadgeChip } from '../components/Chip.jsx';
 import { fmtDate } from '../lib/format.js';
@@ -12,6 +12,13 @@ export default function MyRecords() {
   const [patient, setPatient] = useState(null);
   const [latest, setLatest] = useState([]);
   const [openQ, setOpenQ] = useState(0);
+  const navigate = useNavigate();
+
+  // "I had a hospital stay": open a stay, then its Claim documents checklist
+  const newStay = async () => {
+    const stay = await createHospitalStay(patient.id);
+    navigate('/claim-documents', { state: { stayId: stay.id } });
+  };
 
   useEffect(() => {
     listPatients().then((ps) => setPatient(ps.find((p) => p.id === user.patientId)));
@@ -32,6 +39,8 @@ export default function MyRecords() {
           <Link className="btn btn-primary" to="/things">
             {t('myRecords.thingsButton')} {openQ > 0 && <span className="count-badge">{openQ}</span>}
           </Link>
+          <Link className="btn btn-ghost" to="/claim-documents">{t('nav.claimDocuments')}</Link>
+          <button className="btn btn-ghost" onClick={newStay}>{t('claimDocs.newStay')}</button>
         </div>
       </article>
 

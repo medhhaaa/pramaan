@@ -1,0 +1,14 @@
+/* Claim documents checklist. Bare minimum using the existing tokens;
+   the UI work will restyle it. */
+.claim-banner { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--warn-bg); color: var(--warn-fg); }
+.claim-reminder { padding: 10px 12px; border-radius: var(--radius-sm); background: var(--info-bg); color: var(--info-fg); font-weight: 600; }
+.claim-items { list-style: none; padding: 0; display: grid; gap: 8px; }
+.claim-item { padding: 10px 12px; border: 1px solid var(--border); border-radius: var(--radius-sm); background: var(--surface); }
+.claim-item .link { display: block; }
+.claim-not_needed { opacity: 0.6; }
+.claim-chip-saved { background: var(--ok-bg); color: var(--ok-fg); }
+.claim-chip-not_saved { background: var(--surface-sunken); color: var(--muted); }
+.claim-chip-unsure { background: var(--warn-bg); color: var(--warn-fg); }
+.claim-chip-not_needed { background: var(--surface-sunken); color: var(--muted); }
+.claim-question { margin-top: 6px; display: flex; flex-wrap: wrap; align-items: center; gap: 6px; }
+.claim-dates { margin-top: 16px; }

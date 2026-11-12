@@ -31,7 +31,9 @@ CREATE TABLE IF NOT EXISTS documents (
     id TEXT PRIMARY KEY,
     patient_id TEXT NOT NULL,
     filename TEXT, doc_type TEXT, document_date TEXT, file_path TEXT,
-    held_back INTEGER DEFAULT 0
+    held_back INTEGER DEFAULT 0,
+    -- the line that shows the doc_type, verified like a fact quote (NULL = not verified)
+    doc_type_quote TEXT, doc_type_page INTEGER, doc_type_line INTEGER
 );
 CREATE TABLE IF NOT EXISTS facts (
     fact_id TEXT PRIMARY KEY,
@@ -63,7 +65,21 @@ CREATE TABLE IF NOT EXISTS questions (
     status TEXT DEFAULT 'open' CHECK (status IN ('open', 'answered', 'sent_to_doctor', 'resolved')),
     answer TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
-    text_kn TEXT  -- the same question in Kannada
+    text_kn TEXT,  -- the same question in Kannada
+    -- claim checklist questions ("Did you have surgery during this hospital stay?")
+    stay_id INTEGER, claim_condition TEXT
+);
+-- a hospital stay, for the Claim Documents checklist (backend/routes/claims.py).
+-- surgery / implant_used / accident: 1 yes, 0 no, NULL not answered or "I don't know"
+CREATE TABLE IF NOT EXISTS hospital_stays (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    admitted_on TEXT, discharged_on TEXT,
+    surgery INTEGER, implant_used INTEGER, accident INTEGER,
+    source TEXT,              -- 'patient' (tapped "I had a hospital stay") or 'discharge_summary'
+    source_document_id TEXT,  -- the discharge summary that created it
+    my_reminder_date TEXT,    -- a date the patient typed for their own reminder
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 -- time-limited QR / code sharing (backend/routes/share.py). Only hashes of the token and
 -- code are stored. Times are UTC "YYYY-MM-DD HH:MM:SS" so SQLite's datetime('now') compares.
@@ -94,7 +110,15 @@ def get_conn():
 
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
-ADDED_COLUMNS = [("users", "language", "TEXT"), ("questions", "text_kn", "TEXT")]
+ADDED_COLUMNS = [
+    ("users", "language", "TEXT"),
+    ("questions", "text_kn", "TEXT"),
+    ("questions", "stay_id", "INTEGER"),
+    ("questions", "claim_condition", "TEXT"),
+    ("documents", "doc_type_quote", "TEXT"),
+    ("documents", "doc_type_page", "INTEGER"),
+    ("documents", "doc_type_line", "INTEGER"),
+]
 
 
 def init_db():

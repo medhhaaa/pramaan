@@ -1,13 +1,26 @@
 // The backend returns only the patients this user may see:
 // the doctor gets everyone, a patient gets only themself.
 import { useEffect, useState } from "react";
-import { getPatients } from "../api";
+import { createHospitalStay, getPatients } from "../api";
 import { useT } from "../i18n";
 
 export default function PatientsPage({ user, onOpen }) {
   const t = useT();
   const [patients, setPatients] = useState(null);
   const [error, setError] = useState("");
+  const [busy, setBusy] = useState(false);
+
+  // "I had a hospital stay": open a stay, then its Claim documents checklist
+  async function newStay(p) {
+    setBusy(true);
+    try {
+      const stay = await createHospitalStay(p.id);
+      onOpen(p, "claims", stay.id);
+    } catch (err) {
+      setError(err.message);
+      setBusy(false);
+    }
+  }
 
   useEffect(() => {
     getPatients().then(setPatients).catch((err) => setError(err.message));
@@ -38,6 +51,13 @@ export default function PatientsPage({ user, onOpen }) {
               )}{" "}
               <button className="btn-secondary" onClick={() => onOpen(p, "timeline")}>{t("tab.timeline")}</button>{" "}
               <button onClick={() => onOpen(p, "upload")}>{t("tab.upload")}</button>
+              {user.role === "patient" && (
+                <>
+                  {" "}
+                  <button onClick={() => onOpen(p, "claims")}>{t("tab.claims")}</button>{" "}
+                  <button onClick={() => newStay(p)} disabled={busy}>{t("claims.newStay")}</button>
+                </>
+              )}
             </span>
           </li>
         ))}

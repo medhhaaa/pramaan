@@ -26,6 +26,9 @@ export default function Things() {
   const q = qs[i];
   const done = sent.length;
 
+  // hospital stay questions (Claim documents) take only Yes / No / I don't know
+  const options = q.claim_condition ? OPTIONS.filter((o) => ['yes', 'no', 'dontKnow'].includes(o.key)) : OPTIONS;
+
   const send = async () => {
     if (!choice) return;
     const opt = OPTIONS.find((o) => o.key === choice);
@@ -52,7 +55,7 @@ export default function Things() {
           <p className="muted small">{t('things.why')} <span className="mono">{q.source}</span></p>
 
           <div className="chip-row answer-row" role="radiogroup">
-            {OPTIONS.map((o) => (
+            {options.map((o) => (
               <button key={o.key} role="radio" aria-checked={choice === o.key}
                 className={`answer ${choice === o.key ? 'selected' : ''}`}
                 onClick={() => setChoice(o.key)}>

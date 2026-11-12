@@ -5,8 +5,10 @@ Used by the upload route AND by backend/load_demo.py, so both run exactly the sa
 2. run Ashil's pipeline on a temporary decrypted copy (deleted right after)
 3. wrong-patient check: if the document's blood group / sex disagree with the patient
    record, its facts get the wrong_patient flag and the document is held back
-4. save the document row + verified facts
+4. save the document row (with its doc_type evidence) + verified facts
 5. rerun the checks on ALL the patient's facts (recompute_patient)
+6. a verified discharge summary opens a hospital stay for the Claim Documents checklist
+   if the patient has no open stay (backend/routes/claims.py)
 If the pipeline fails, the stored file is removed, nothing is saved, and the error is raised.
 """
 import os
@@ -66,17 +68,25 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         for fact in facts:
             fact["flags"] = list(fact.get("flags") or []) + ["wrong_patient"]
 
+    # a doc_type typed by the uploader has no quote, so it counts as not verified
+    evidence = {} if doc_type else result
     doc_type = doc_type or result.get("doc_type") or "unknown"
     with get_conn() as conn:
         conn.execute(
-            "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT INTO documents (id, patient_id, filename, doc_type, document_date, file_path,"
+            " held_back, doc_type_quote, doc_type_page, doc_type_line)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
             (document_id, patient_id, filename, doc_type, result.get("document_date"), rel_path,
-             int(bool(conflicts))),
+             int(bool(conflicts)), evidence.get("doc_type_quote"), evidence.get("doc_type_page"),
+             evidence.get("doc_type_line")),
         )
         for fact in facts:
             insert_fact(conn, fact)
 
     recompute_patient(patient_id)
+    if doc_type == "discharge_summary" and evidence.get("doc_type_quote") and not conflicts:
+        from backend.routes.claims import stay_from_discharge_summary  # avoids an import loop
+        stay_from_discharge_summary(patient_id, document_id, result.get("stay_dates") or {})
     return {
         "document_id": document_id,
         "facts_added": len(facts),

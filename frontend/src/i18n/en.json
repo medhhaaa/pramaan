@@ -10,7 +10,8 @@
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
     "medication": "Medication", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
     "audit": "Audit log", "delete": "Delete data", "myRecords": "My Records",
-    "thingsToCheck": "Things to check", "generateQr": "Generate QR"
+    "thingsToCheck": "Things to check", "generateQr": "Generate QR",
+    "claimDocuments": "Claim documents"
   },
   "auth": {
     "signup": "SIGN-UP", "login": "LOG IN", "alreadyUser": "Already a user?", "newHere": "New here?",
@@ -94,5 +95,64 @@
     "pedTitle": "Pre-existing condition check", "policyStart": "Policy start date", "check": "Check",
     "scamTitle": "Scam shield", "scam": "Verify any agent or insurer on the IRDAI website. Never share OTPs or card details with someone who called you first. Genuine policies come with official policy documents. IRDAI helpline 155255 or policyholder.gov.in."
   },
-  "common": { "back": "Back", "close": "Close", "loading": "Loading…", "error": "Something went wrong. Please try again." }
+  "common": { "back": "Back", "close": "Close", "loading": "Loading…", "error": "Something went wrong. Please try again." },
+  "claimDocs": {
+    "title": "Claim documents",
+    "stayDates": "Hospital stay: {{from}} to {{to}}",
+    "dateUnknown": "date not known",
+    "noDates": "Hospital stay (dates not known)",
+    "count": "{{saved}} of {{required}} documents saved",
+    "banner": "Documents commonly requested for reimbursement claims. Your insurer may ask for different or additional documents. Check your policy.",
+    "finalDecision": "Your insurer makes the final decision.",
+    "status": {
+      "saved": "Saved",
+      "not_saved": "Not saved yet",
+      "unsure": "Not sure if needed",
+      "not_needed": "Not needed"
+    },
+    "tipNotSaved": "Ask the hospital billing desk",
+    "question": {
+      "surgery": "Did you have surgery during this hospital stay?",
+      "implant_used": "Was an implant used (e.g. stent, plate, lens, joint)?",
+      "accident": "Was this hospital stay due to an accident?"
+    },
+    "answer": {
+      "yes": "Yes",
+      "no": "No",
+      "dont_know": "I don't know"
+    },
+    "alsoKeep": "Also keep ready",
+    "alsoKeepHint": "These are not stored in Pramaan.",
+    "keep": {
+      "claim_form": "Claim form",
+      "policy_copy": "Policy copy or e-card",
+      "id_proof": "ID proof",
+      "bank_details": "Bank details (cancelled cheque)"
+    },
+    "reminder": "Before you leave the hospital, collect: {{list}}",
+    "download": "Download claim pack",
+    "downloading": "Preparing...",
+    "needsBackend": "The claim pack needs the real backend (set VITE_USE_DUMMY=false).",
+    "newStay": "I had a hospital stay",
+    "noStays": "No hospital stay yet. If you had one, tap \"I had a hospital stay\".",
+    "otherStays": "Other hospital stays:",
+    "datesTitle": "Stay dates and your own reminder (optional)",
+    "admitted": "Admitted on",
+    "discharged": "Discharged on",
+    "myReminder": "My own reminder date",
+    "myReminderHint": "Pramaan does not know your insurer's dates. Type a date only if you want a reminder.",
+    "reminderSet": "Your own reminder date: {{date}}",
+    "save": "Save",
+    "doc": {
+      "discharge_summary": "Discharge summary",
+      "final_bill": "Final hospital bill with itemised breakup",
+      "payment_receipt": "Payment receipts",
+      "pharmacy_bill": "Pharmacy bills with prescriptions",
+      "investigation_report": "Lab and scan reports",
+      "prescription": "Doctor's prescriptions",
+      "operation_notes": "Operation notes",
+      "implant_invoice": "Implant invoice and sticker",
+      "fir_or_mlc": "FIR or MLC copy"
+    }
+  }
 }

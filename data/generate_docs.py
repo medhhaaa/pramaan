@@ -12,7 +12,8 @@ Output:
     data/answer_keys/p1.json     facts in the contract format (CLAUDE.md section 5),
                                  with the flags and echoes we planted
 
-Run:  python data/generate_docs.py
+Run:  python data/generate_docs.py           every patient
+      python data/generate_docs.py p6        only these patients
 
 Every person, hospital, doctor and number in this file is made up.
 """
@@ -179,6 +180,15 @@ HOSPITALS = {
         ],
         "color": "#004f8c",
         "signature": ["Dr. Harish Alva", "MD, DM (Nephrology)", "KMC Reg. No. 52266"],
+    },
+    "netravati_pharmacy": {
+        "name": "NETRAVATI HOSPITAL PHARMACY",
+        "lines": [
+            "Ground Floor, Netravati Multispeciality Hospital, Falnir Road, Mangaluru - 575002",
+            "Ph: 0824 2233460  |  DL No: KA-DK-21B-01177",
+        ],
+        "color": "#2e7d32",
+        "signature": ["Pharmacist", "Netravati Hospital Pharmacy"],
     },
 }
 
@@ -1101,7 +1111,136 @@ P5 = {
     ],
 }
 
-PATIENTS = [P1, P2, P3, P4, P5]
+# ---------------------------------------------------------------------------
+# Patient p6: Ravi Kumar. Knee replacement with implant (Claim Documents checklist)
+# ---------------------------------------------------------------------------
+
+BILLING_SIGNATURE = ["Billing Section", "Netravati Multispeciality Hospital"]
+ORTHO_SIGNATURE = ["Dr. Kiran Pai", "MS (Orthopaedics)", "Consultant Orthopaedic Surgeon"]
+
+P6 = {
+    "patient_id": "p6",
+    "patient": {"name": "Ravi Kumar", "dob": "1968-03-21", "sex": "M", "blood_group": "B+"},
+    "traps": [
+        {"type": "claim_documents", "documents": ["p6_d1", "p6_d2", "p6_d3", "p6_d4", "p6_d5"],
+         "note": "One hospital stay (05/10/2026 to 09/10/2026) with surgery and an implant. "
+                 "Saved: discharge summary, final bill, pharmacy bill, lab report, prescription. "
+                 "Deliberately missing: payment receipt, implant invoice, operation notes. "
+                 "After surgery=yes, implant=yes, accident=no the checklist shows 5 of 8 saved."},
+    ],
+    "documents": [
+        {
+            "key": "d1", "filename": "d1_lab_2026.pdf", "doc_type": "lab_report",
+            "date": "2026-10-05", "date_raw": "05/10/2026", "hospital": "netravati",
+            "title": "LABORATORY REPORT", "signature": ["Dr. Shruti Rao", "MD (Pathology)", "Consultant Pathologist"],
+            "lines": [
+                row("Patient: Mr. Ravi Kumar", "Lab ID: NMH/L/26/8841",
+                    demographic("patient_name", "Mr. Ravi Kumar")),
+                row("Sex: Male", "Age: 58 years", demographic("sex", "Male")),
+                row("Ref. by: Dr. Kiran Pai", "Report date: 05/10/2026"),
+                RULE,
+                row("Test / Result", "Reference range"),
+                row("Haemoglobin 13.6 g/dL", "13.0 - 17.0 g/dL", lab("Haemoglobin", "13.6", "g/dL")),
+                row("Serum creatinine 1.0 mg/dL", "0.7 - 1.3 mg/dL", lab("Serum creatinine", "1.0", "mg/dL")),
+                row("Random blood sugar 118 mg/dL", "70 - 140 mg/dL", lab("Random blood sugar", "118", "mg/dL")),
+                text("Blood group: B+", demographic("blood_group", "B+")),
+                GAP,
+                text("*** End of report ***"),
+            ],
+        },
+        {
+            "key": "d2", "filename": "d2_discharge_2026.pdf", "doc_type": "discharge_summary",
+            "date": "2026-10-09", "date_raw": "09/10/2026", "hospital": "netravati",
+            "title": "DISCHARGE SUMMARY", "signature": ORTHO_SIGNATURE,
+            "lines": [
+                row("Patient: Mr. Ravi Kumar", "IP No: NMH/26/10512",
+                    demographic("patient_name", "Mr. Ravi Kumar")),
+                row("Sex: Male", "Age: 58 years", demographic("sex", "Male")),
+                row("DOB: 21-03-1968", "Blood group: B+", demographic("dob", "21-03-1968"),
+                    demographic("blood_group", "B+", quote="Blood group: B+")),
+                row("Date of admission: 05/10/2026", "Date of discharge: 09/10/2026"),
+                RULE,
+                heading("Reason for admission"),
+                text("Admitted for elective right total knee replacement",
+                     event("Admission for right total knee replacement", event_date="2026-10-05",
+                           date_raw="05/10/2026")),
+                heading("Diagnosis"),
+                text("Osteoarthritis of right knee", condition("Osteoarthritis of right knee")),
+                text("Hypertension", condition("Hypertension")),
+                heading("Procedure"),
+                text("Right total knee replacement done on 06/10/2026",
+                     event("Right total knee replacement", event_date="2026-10-06", date_raw="06/10/2026")),
+                text("Implant: cemented knee prosthesis (see implant invoice)"),
+                text("Allergies: No known drug allergies", allergy("Drug allergy", status="negated")),
+                heading("Discharge medications"),
+                text("Tab. Paracetamol 650mg TDS for 5 days", med("Paracetamol", "650mg", "TDS", "started")),
+                text("Inj. Enoxaparin 40mg OD for 10 days", med("Enoxaparin", "40mg", "OD", "started")),
+                text("Tab. Amlodipine 5mg OD", med("Amlodipine", "5mg", "OD", "continued")),
+                GAP,
+                text("Follow-up: Orthopaedics OPD after 2 weeks."),
+            ],
+        },
+        {
+            "key": "d3", "filename": "d3_final_bill_2026.pdf", "doc_type": "final_bill",
+            "date": "2026-10-09", "date_raw": "09/10/2026", "hospital": "netravati",
+            "title": "FINAL BILL", "signature": BILLING_SIGNATURE,
+            "lines": [
+                row("Patient: Mr. Ravi Kumar", "Bill No: NMH/B/26/20877",
+                    demographic("patient_name", "Mr. Ravi Kumar")),
+                row("IP No: NMH/26/10512", "Bill date: 09/10/2026"),
+                row("Admitted: 05/10/2026", "Discharged: 09/10/2026"),
+                RULE,
+                row("Particulars", "Amount (Rs.)"),
+                row("Room charges (4 days)", "14,000.00"),
+                row("Surgeon and anaesthetist fees", "65,000.00"),
+                row("Operation theatre charges", "30,000.00"),
+                row("Knee implant", "95,000.00"),
+                row("Pharmacy (in-patient)", "12,450.00"),
+                row("Laboratory and imaging", "6,800.00"),
+                RULE,
+                row("Total", "2,23,250.00"),
+                GAP,
+                text("Itemised bill. Payment received separately."),
+            ],
+        },
+        {
+            "key": "d4", "filename": "d4_pharmacy_bill_2026.pdf", "doc_type": "pharmacy_bill",
+            "date": "2026-10-09", "date_raw": "09/10/2026", "hospital": "netravati_pharmacy",
+            "title": "PHARMACY BILL", "lines": [
+                row("Patient: Ravi Kumar", "Bill No: NHP/26/55102",
+                    demographic("patient_name", "Ravi Kumar")),
+                row("Prescribed by: Dr. Kiran Pai", "Date: 09/10/2026"),
+                RULE,
+                row("Item", "Amount (Rs.)"),
+                row("Tab. Paracetamol 650mg x 15", "45.00", med("Paracetamol", "650mg", None, "mentioned")),
+                row("Inj. Enoxaparin 40mg x 10", "3,850.00", med("Enoxaparin", "40mg", None, "mentioned")),
+                row("Tab. Amlodipine 5mg x 30", "60.00", med("Amlodipine", "5mg", None, "mentioned")),
+                RULE,
+                row("Total", "3,955.00"),
+                GAP,
+                text("Prescription copy attached."),
+            ],
+        },
+        {
+            "key": "d5", "filename": "d5_prescription_2026.pdf", "doc_type": "prescription",
+            "date": "2026-10-09", "date_raw": "09/10/2026", "hospital": "netravati",
+            "title": "PRESCRIPTION", "signature": ORTHO_SIGNATURE,
+            "lines": [
+                row("Patient: Ravi Kumar", "Date: 09/10/2026", demographic("patient_name", "Ravi Kumar")),
+                row("Sex: Male", "Age: 58 years", demographic("sex", "Male")),
+                RULE,
+                heading("Rx"),
+                text("Tab. Paracetamol 650mg TDS x 5 days", med("Paracetamol", "650mg", "TDS", "started")),
+                text("Inj. Enoxaparin 40mg OD x 10 days", med("Enoxaparin", "40mg", "OD", "started")),
+                text("Tab. Amlodipine 5mg OD - continue", med("Amlodipine", "5mg", "OD", "continued")),
+                GAP,
+                text("Advice: Physiotherapy daily. Review in Orthopaedics OPD after 2 weeks."),
+            ],
+        },
+    ],
+}
+
+PATIENTS = [P1, P2, P3, P4, P5, P6]
 
 
 # ---------------------------------------------------------------------------
@@ -1269,9 +1408,11 @@ def build_answer_key(patient, pdf_lines_by_doc):
 
 # ---------------------------------------------------------------------------
 
-def main():
+def main(only=()):
     os.makedirs(os.path.join(DATA_DIR, "answer_keys"), exist_ok=True)
     for patient in PATIENTS:
+        if only and patient["patient_id"] not in only:
+            continue
         pid = patient["patient_id"]
         folder = os.path.join(DATA_DIR, "patients", pid)
         os.makedirs(folder, exist_ok=True)
@@ -1297,4 +1438,4 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    main(sys.argv[1:])

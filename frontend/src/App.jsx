@@ -19,6 +19,7 @@ import MyRecords from './pages/MyRecords.jsx';
 import Things from './pages/Things.jsx';
 import GenerateQR from './pages/GenerateQR.jsx';
 import Claim from './pages/Claim.jsx';
+import ClaimDocuments from './pages/ClaimDocuments.jsx';
 import PatientGate from './components/PatientGate.jsx';
 
 const CLAIM_ON = import.meta.env.VITE_ENABLE_CLAIM_READY === 'true';
@@ -50,6 +51,7 @@ function Shell() {
           <Route path="/my-records" element={<RoleRoute roles={['patient']}><MyRecords /></RoleRoute>} />
           <Route path="/things" element={<RoleRoute roles={['patient']}><Things /></RoleRoute>} />
           <Route path="/qr" element={<RoleRoute roles={['patient']}><GenerateQR /></RoleRoute>} />
+          <Route path="/claim-documents" element={<RoleRoute roles={['patient']}><ClaimDocuments /></RoleRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/medication" element={<Medication />} />
           <Route path="/flags" element={<Flags />} />

@@ -1,6 +1,7 @@
 """DELETE /patients/{patient_id} -> delete all of this patient's data. (Medha)
 
-Response: {"deleted": {"facts", "documents", "files", "corrections", "questions", "audit_entries"}}
+Response: {"deleted": {"facts", "documents", "files", "corrections", "questions", "hospital_stays",
+                       "audit_entries"}}
 
 Deletes facts, their corrections, questions, documents (rows + uploaded files), access links,
 the patient row and the old audit entries. One new audit row records that the deletion
@@ -51,6 +52,8 @@ def delete_route(patient_id: str, user=Depends(get_current_user)):
             ).rowcount,
             "facts": conn.execute("DELETE FROM facts WHERE patient_id = ?", (patient_id,)).rowcount,
             "questions": conn.execute("DELETE FROM questions WHERE patient_id = ?", (patient_id,)).rowcount,
+            "hospital_stays": conn.execute(
+                "DELETE FROM hospital_stays WHERE patient_id = ?", (patient_id,)).rowcount,
             "documents": conn.execute("DELETE FROM documents WHERE patient_id = ?", (patient_id,)).rowcount,
             "audit_entries": conn.execute("DELETE FROM audit_log WHERE patient_id = ?", (patient_id,)).rowcount,
         }

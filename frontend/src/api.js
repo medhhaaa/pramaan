@@ -4,6 +4,7 @@
 import {
   USERS, PATIENTS, P1_FACTS, DOCUMENTS, QUESTIONS_P1, METRICS, AUDIT_ROWS,
 } from './dummy/data.js';
+import DUMMY_CLAIM_CHECKLIST from './dummy/claim_checklist.json';
 
 const USE_DUMMY = import.meta.env.VITE_USE_DUMMY !== 'false';
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -215,6 +216,63 @@ export async function scanQR(code) {
     return { session_id: 'demo-session', patient_id: code.split('-')[1], expires_at: Date.now() + 30 * 60 * 1000 };
   }
   return http('POST', '/scan', { token: code });
+}
+
+// ---- Claim Documents (backend/routes/claims.py) ----
+// Documents COMMONLY needed for a reimbursement claim after a hospital stay, and which ones
+// are already saved. No claim decision of any kind. Dummy mode shows Ravi's sample checklist.
+
+async function httpBlob(path) {
+  const headers = token ? { Authorization: `Bearer ${token}` } : {};
+  const res = await fetch(`${BASE}${path}`, { headers });
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  return res.blob();
+}
+
+let dummyStays = [{ ...DUMMY_CLAIM_CHECKLIST.stay }];
+
+// -> [{id, admitted_on, discharged_on, surgery, implant_used, accident, my_reminder_date,
+//      created_at, summary: {saved_count, required_count, unsure_count}}] newest first
+export async function getHospitalStays(pid) {
+  if (USE_DUMMY) { await wait(); return dummyStays.map((s) => ({ ...s, summary: DUMMY_CLAIM_CHECKLIST.summary })); }
+  return http('GET', `/patients/${pid}/hospital-stays`);
+}
+
+// patient: "I had a hospital stay" -> the new stay
+export async function createHospitalStay(pid) {
+  if (USE_DUMMY) {
+    await wait();
+    const stay = { ...DUMMY_CLAIM_CHECKLIST.stay, id: dummyStays.length + 1, admitted_on: null, discharged_on: null };
+    dummyStays = [stay, ...dummyStays];
+    return stay;
+  }
+  return http('POST', `/patients/${pid}/hospital-stays`, {});
+}
+
+// patient: {admitted_on, discharged_on, my_reminder_date} as YYYY-MM-DD or '' -> the stay
+export async function updateHospitalStay(pid, stayId, changes) {
+  if (USE_DUMMY) {
+    await wait();
+    dummyStays = dummyStays.map((s) => (s.id === stayId ? { ...s, ...changes } : s));
+    return dummyStays.find((s) => s.id === stayId);
+  }
+  return http('PATCH', `/patients/${pid}/hospital-stays/${stayId}`, changes);
+}
+
+// -> {stay, items: [{doc, label, when, status, documents}], summary, also_keep_ready,
+//     reminder: {show, docs}, condition_questions: {surgery: {id, status}, ...}, note}
+export async function getClaimChecklist(pid, stayId) {
+  if (USE_DUMMY) {
+    await wait();
+    return { ...DUMMY_CLAIM_CHECKLIST, stay: dummyStays.find((s) => s.id === stayId) || dummyStays[0] };
+  }
+  return http('GET', `/patients/${pid}/hospital-stays/${stayId}/claim-checklist`);
+}
+
+// -> zip Blob: saved documents in checklist order + checklist.txt
+export async function downloadClaimPack(pid, stayId) {
+  if (USE_DUMMY) throw new Error('needs_backend');
+  return httpBlob(`/patients/${pid}/hospital-stays/${stayId}/claim-pack`);
 }
 
 export const isDummy = USE_DUMMY;

@@ -222,6 +222,6 @@ def brief_route(patient_id: str, user=Depends(get_current_user)):
         "open_questions": [
             {"id": q["id"], "text": q["text"], "status": q["status"]}
             for q in questions
-            if q["status"] != "resolved"
+            if q["status"] != "resolved" and not q["claim_condition"]  # claim questions are the patient's
         ],
     }

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck } from 'lucide-react';
 import Logo from './Logo.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy } from '../api.js';
@@ -26,6 +26,7 @@ const PATIENT_NAV = [
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
   { to: '/things', key: 'nav.thingsToCheck', icon: ListChecks },
+  { to: '/claim-documents', key: 'nav.claimDocuments', icon: ClipboardCheck },
   { to: '/medication', key: 'nav.medication', icon: Pill },
   { to: '/flags', key: 'nav.flags', icon: Flag },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare },
