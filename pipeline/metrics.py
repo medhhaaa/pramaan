@@ -7,7 +7,7 @@ Run:
     python -m pipeline.metrics --cached   score the saved data/extracted/pN.json again (no AI)
 
 Saves:  data/extracted/pN.json   what the pipeline found (verified + dropped facts)
-        data/metrics.json        the scores (for GET /metrics)
+        data/metrics_results.json  the scores, shape agreed in KICKOFF.md (for GET /metrics)
 
 How a match is decided: an extracted fact matches an answer-key fact from the same
 document when the type is the same, the name is similar (rapidfuzz >= 80, plus a few
@@ -30,7 +30,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 DATA_DIR = os.path.join(ROOT, "data")
 KEY_DIR = os.path.join(DATA_DIR, "answer_keys")
 EXTRACTED_DIR = os.path.join(DATA_DIR, "extracted")
-METRICS_PATH = os.path.join(DATA_DIR, "metrics.json")
+METRICS_PATH = os.path.join(DATA_DIR, "metrics_results.json")
 
 NAME_THRESHOLD = 80
 ALIASES = {  # abbreviation -> full name, used only for matching
@@ -204,17 +204,17 @@ def main(argv):
     report = {
         "generated_at": datetime.now(timezone.utc).isoformat(timespec="seconds"),
         "overall": {k: overall[k] for k in ("precision", "recall", "f1", "matched", "extracted", "expected")},
-        "by_type": overall["by_type"],
+        "per_type": overall["by_type"],
         "field_accuracy": overall["field_accuracy"],
         "dropped_by_verification": dropped,
-        "patients": patients,
+        "per_patient": patients,
     }
     with open(METRICS_PATH, "w", encoding="utf-8") as f:
         json.dump(report, f, indent=2, ensure_ascii=False)
 
     o = report["overall"]
     print(f"\nOVERALL  precision {o['precision']}  recall {o['recall']}  f1 {o['f1']}")
-    for fact_type, s in report["by_type"].items():
+    for fact_type, s in report["per_type"].items():
         print(f"  {fact_type:12} precision {s['precision']}  recall {s['recall']}")
     print(f"  field accuracy on matched facts: {report['field_accuracy']}")
     print(f"  facts dropped by quote verification: {dropped}")
