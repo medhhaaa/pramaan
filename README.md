@@ -28,8 +28,12 @@ cd ..
 ## Run
 
 ```bash
-# 1. reset the database with demo users + patient p1 sample facts
+# 1. reset the database: demo users + patients p1-p5, plus p1's sample facts (no AI calls)
 python -m backend.seed
+#    OR build the REAL demo from every synthetic PDF, through the same steps as upload:
+python -m backend.load_demo --saved    # uses Ashil's saved AI results: no AI calls, takes seconds
+python -m backend.load_demo            # calls the AI for every PDF (~8 min, ~100k Groq tokens)
+#    Groq's free tier gives the WHOLE TEAM 200,000 tokens per day: use --saved for normal work.
 
 # 2. backend on http://localhost:8000  (try routes at http://localhost:8000/docs)
 uvicorn backend.main:app --reload --port 8000
