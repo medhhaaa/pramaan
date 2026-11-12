@@ -91,6 +91,21 @@ def fact_from_row(row):
     return fact
 
 
+def log_action(user, action, patient_id=None, detail=None):
+    """Write one row to audit_log. Call it from every route that reads or changes patient data.
+
+    user: the dict from get_current_user  action: short verb like "view_timeline"
+    detail: optional string or dict (dicts are saved as JSON)
+    """
+    if isinstance(detail, (dict, list)):
+        detail = json.dumps(detail)
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO audit_log (user_id, action, patient_id, detail) VALUES (?, ?, ?, ?)",
+            (user["id"] if user else None, action, patient_id, detail),
+        )
+
+
 def insert_fact(conn, fact):
     """Save one contract-format fact (replaces an existing one with the same fact_id)."""
     row = dict(fact)
