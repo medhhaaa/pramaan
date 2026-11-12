@@ -74,5 +74,7 @@ git push -u origin ashil/extraction
 # open a Pull Request into main on GitHub, merge it, then start the next branch from fresh main
 ```
 
+- **Never push directly to `main`.** Every change goes through a branch + pull request.
+- **No AI co-authors:** don't add Claude as a collaborator, and remove any `Co-Authored-By: Claude` line from commits or PRs.
 - Never commit `.env`, API keys, `backend/pramaan.db` or files in `storage/`.
 - Pull `main` into your branch every few hours (`git pull origin main`) to catch conflicts early.

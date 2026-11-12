@@ -87,6 +87,9 @@ E-prescription writer, medicine reminders, adherence tracking, caregiver alerts,
 - Each person writes in their own files to avoid merge conflicts.
 - Never change the fact format or API list alone. Tell the team first.
 - Commit small and often. Check in every 3 hours.
+- **Never push directly to `main`.** Work on a branch (`name/what-you-are-doing`), push the branch, open a pull request into `main`, then merge.
+- **No AI co-authors.** Never add Claude (or any AI) as a GitHub collaborator, and never add `Co-Authored-By: Claude` (or similar) lines to commits or PR descriptions.
+- Never commit `.env` or API keys.
 - Frontend works in dummy mode first (`USE_DUMMY` in `src/api.js`) so it never waits for the backend.
 
 ## 5. Fact format (the contract)
