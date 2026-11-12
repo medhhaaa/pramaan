@@ -11,6 +11,9 @@ make_searchable(pdf_bytes) -> bytes  scanned pages get an invisible OCR text lay
                                      scanner app's "searchable PDF"), so click-to-proof can
                                      highlight lines exactly as in a digital PDF. Pages that
                                      already have text are copied unchanged.
+                                     Handwritten pages (Tesseract unsure) are read by a local
+                                     vision model instead (pipeline/handwriting.py).
+handwritten_pages(pdf_path) -> set   which pages were read from handwriting that way
 image_to_pdf(image_bytes) -> bytes   a photo of a document (JPG/PNG/WEBP...) as a one-page PDF
 prepare_document(data) -> bytes      what upload calls: PDF, scanned PDF or photo in, a
                                      searchable PDF out. Anything else raises ValueError.
@@ -26,6 +29,9 @@ import io
 import pymupdf
 from PIL import Image, ImageOps, UnidentifiedImageError
 
+from pipeline import handwriting
+
+HANDWRITING_MARK = "pramaan:handwriting-pages="
 OCR_DPI = 300      # Tesseract reads small print best at about 300 dpi
 LANGUAGE = "eng"   # add "+kan" for Kannada once its language pack is installed
 PAGE_WIDTH = 595   # A4 width in points; a photo's page gets its own height
@@ -55,17 +61,48 @@ def make_searchable(pdf_bytes):
         return pdf_bytes
 
     out = pymupdf.open()
+    handwritten = []
     for page in src:
         if page_has_text(page):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
             continue
-        # picture of the page + Tesseract's invisible text on top, at the same page size
+
+        lines = handwriting.tesseract_lines(page)
+        if handwriting.needs_vision(lines) and handwriting.vision_available():
+            # handwriting: the local vision model reads it, Tesseract says where the lines are
+            out.insert_pdf(src, from_page=page.number, to_page=page.number)
+            for line in handwriting.place_lines(handwriting.transcribe(page), lines):
+                _add_invisible_line(out[-1], line["text"], line["rect"])
+            handwritten.append(page.number + 1)
+            continue
+
+        # print: picture of the page + Tesseract's invisible text on top, at the same size.
         # must be RGB: from a greyscale image Tesseract's PDF output silently has no text
         pix = page.get_pixmap(dpi=OCR_DPI, colorspace=pymupdf.csRGB)
         pix.set_dpi(OCR_DPI, OCR_DPI)  # so the new page gets the original size in points
         ocr_pdf = pymupdf.open("pdf", pix.pdfocr_tobytes(language=LANGUAGE, tessdata=pymupdf.get_tessdata()))
         out.insert_pdf(ocr_pdf)
+
+    if handwritten:  # remembered inside the PDF, so process_document can flag those facts
+        out.set_metadata({"keywords": f"{HANDWRITING_MARK}{','.join(map(str, handwritten))}"})
     return out.tobytes(garbage=3, deflate=True)
+
+
+def _add_invisible_line(page, text, rect):
+    """Invisible text (render mode 3) sized to fit the line's box, like OCR text layers."""
+    width_at_1pt = pymupdf.get_text_length(text, fontname="helv", fontsize=1)
+    size = max(4, min(rect.height * 0.9, rect.width / width_at_1pt if width_at_1pt else rect.height))
+    page.insert_text((rect.x0, rect.y1 - rect.height * 0.2), text, fontsize=size, fontname="helv",
+                     render_mode=3)
+
+
+def handwritten_pages(pdf_path):
+    """Page numbers (1-based) whose text was transcribed from handwriting by the vision model."""
+    with pymupdf.open(pdf_path) as doc:
+        keywords = doc.metadata.get("keywords") or ""
+    if not keywords.startswith(HANDWRITING_MARK):
+        return set()
+    return {int(n) for n in keywords[len(HANDWRITING_MARK):].split(",") if n.isdigit()}
 
 
 def image_to_pdf(image_bytes):
