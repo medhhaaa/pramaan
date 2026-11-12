@@ -2,13 +2,17 @@
 import { useEffect, useState } from "react";
 import { Bar, BarChart, CartesianGrid, Legend, ResponsiveContainer, Tooltip, XAxis, YAxis } from "recharts";
 import { getMetrics } from "../api";
+import { typeLabel } from "../format";
+import { useT } from "../i18n";
 
 const pct = (x) => (typeof x === "number" ? `${Math.round(x * 100)}%` : "-");
 
 // {p1: {precision, recall, f1}, ...} -> [{name: "p1", precision, recall, f1}, ...]
-const toRows = (obj) => Object.entries(obj || {}).map(([name, m]) => ({ name: name.replace("_", " "), ...m }));
+const toRows = (obj, label = (name) => name.replace("_", " ")) =>
+  Object.entries(obj || {}).map(([name, m]) => ({ name: label(name), ...m }));
 
 function ScoreChart({ title, rows }) {
+  const t = useT();
   if (rows.length === 0) return null;
   return (
     <div className="chart">
@@ -20,9 +24,9 @@ function ScoreChart({ title, rows }) {
           <YAxis domain={[0, 1]} tickFormatter={pct} />
           <Tooltip formatter={(v) => pct(v)} />
           <Legend />
-          <Bar dataKey="precision" fill="#1f3b57" />
-          <Bar dataKey="recall" fill="#4f8fc0" />
-          <Bar dataKey="f1" fill="#9cc3e0" />
+          <Bar dataKey="precision" name={t("metrics.precision")} fill="#1f3b57" />
+          <Bar dataKey="recall" name={t("metrics.recall")} fill="#4f8fc0" />
+          <Bar dataKey="f1" name={t("metrics.f1")} fill="#9cc3e0" />
         </BarChart>
       </ResponsiveContainer>
     </div>
@@ -30,6 +34,7 @@ function ScoreChart({ title, rows }) {
 }
 
 export default function MetricsPage() {
+  const t = useT();
   const [metrics, setMetrics] = useState(null);
   const [error, setError] = useState("");
 
@@ -38,34 +43,31 @@ export default function MetricsPage() {
   }, []);
 
   if (error) return <p className="error">{error}</p>;
-  if (!metrics) return <p>Loading...</p>;
+  if (!metrics) return <p>{t("loading")}</p>;
 
   const { overall = {} } = metrics;
 
   return (
     <section>
-      <h1>Extraction accuracy</h1>
-      <p className="hint">
-        Facts Pramaan extracted, compared with hand-written answer keys for the synthetic patients.
-        Precision: how many extracted facts are correct. Recall: how many real facts were found.
-      </p>
+      <h1>{t("metrics.title")}</h1>
+      <p className="hint">{t("metrics.hint")}</p>
       {metrics.note && <p className="warn">{metrics.note}</p>}
       <div className="stats">
         <div>
           <strong>{pct(overall.precision)}</strong>
-          <span>precision</span>
+          <span>{t("metrics.precision")}</span>
         </div>
         <div>
           <strong>{pct(overall.recall)}</strong>
-          <span>recall</span>
+          <span>{t("metrics.recall")}</span>
         </div>
         <div>
           <strong>{pct(overall.f1)}</strong>
-          <span>F1</span>
+          <span>{t("metrics.f1")}</span>
         </div>
       </div>
-      <ScoreChart title="By fact type" rows={toRows(metrics.per_type)} />
-      <ScoreChart title="By patient" rows={toRows(metrics.per_patient)} />
+      <ScoreChart title={t("metrics.byType")} rows={toRows(metrics.per_type, (type) => typeLabel(type, t))} />
+      <ScoreChart title={t("metrics.byPatient")} rows={toRows(metrics.per_patient)} />
     </section>
   );
 }

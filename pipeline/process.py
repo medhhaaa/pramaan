@@ -4,8 +4,9 @@ process_document(pdf_path, patient_id, document_id, known_names=(), document_dat
     -> list of verified facts in the contract format (CLAUDE.md section 5)
 
     read_pdf -> deidentify -> extract (AI) -> reidentify -> verify -> fill contract fields
-    -> plausibility guard (adds "implausible_value" to impossible lab values; the only
-       flag the pipeline sets, the backend checks keep it)
+    -> plausibility guard (adds "implausible_value" to impossible lab values)
+    -> facts from a page read from handwriting get "handwriting" (check against the image)
+    These are the only flags the pipeline sets; the backend checks keep them.
 
     known_names    the patient's name(s) from the patients table, so they are surely redacted
     document_date  ISO date if the uploader already knows it; otherwise the AI reads it
@@ -19,6 +20,7 @@ Try it:  python -m pipeline.process data/patients/p1/d1_prescription_2019.pdf p1
 """
 from pipeline.deidentify import deidentify, reidentify
 from pipeline.extract import extract_document
+from pipeline.ocr import handwritten_pages
 from pipeline.plausibility import check_plausibility
 from pipeline.read_pdf import read_pdf
 from pipeline.verify import verify_facts
@@ -84,6 +86,11 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
         _contract_fact(f, n, patient_id, document_id, document_date, document_date_raw)
         for n, f in enumerate(verified, start=1)
     ]
+    # a page read from handwriting by the vision model: a person must check these facts
+    from_handwriting = handwritten_pages(pdf_path)
+    for fact in facts:
+        if fact["page"] in from_handwriting:
+            fact["flags"].append("handwriting")
     return {
         "facts": check_plausibility(facts),
         "dropped": dropped,

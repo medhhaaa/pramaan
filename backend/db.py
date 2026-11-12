@@ -1,7 +1,7 @@
 """SQLite database: one file, plain sqlite3, no ORM. (Core backend)
 
 get_conn()          open a connection; rows behave like dicts (row["name"])
-init_db()           create all tables if they don't exist
+init_db()           create all tables if they don't exist (and add newer columns to an old file)
 fact_from_row(row)  turn a facts-table row into the contract dict (CLAUDE.md section 5)
 """
 import json
@@ -15,7 +15,8 @@ CREATE TABLE IF NOT EXISTS users (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
-    role TEXT NOT NULL CHECK (role IN ('doctor', 'patient'))
+    role TEXT NOT NULL CHECK (role IN ('doctor', 'patient')),
+    language TEXT  -- 'en' or 'kn'; NULL until the user picks one at first login
 );
 CREATE TABLE IF NOT EXISTS patients (
     id TEXT PRIMARY KEY,
@@ -61,6 +62,20 @@ CREATE TABLE IF NOT EXISTS questions (
     patient_id TEXT, fact_ids TEXT, text TEXT,
     status TEXT DEFAULT 'open' CHECK (status IN ('open', 'answered', 'sent_to_doctor', 'resolved')),
     answer TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    text_kn TEXT  -- the same question in Kannada
+);
+-- time-limited QR / code sharing (backend/routes/share.py). Only hashes of the token and
+-- code are stored. Times are UTC "YYYY-MM-DD HH:MM:SS" so SQLite's datetime('now') compares.
+CREATE TABLE IF NOT EXISTS share_links (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    created_by INTEGER NOT NULL,
+    token_hash TEXT UNIQUE NOT NULL,
+    code_hash TEXT UNIQUE NOT NULL,
+    expires_at TEXT NOT NULL,
+    opened_by INTEGER,
+    opened_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
 """
@@ -78,9 +93,17 @@ def get_conn():
     return conn
 
 
+# columns added after the first version: init_db adds them to an existing pramaan.db
+ADDED_COLUMNS = [("users", "language", "TEXT"), ("questions", "text_kn", "TEXT")]
+
+
 def init_db():
     with get_conn() as conn:
         conn.executescript(SCHEMA)
+        for table, column, kind in ADDED_COLUMNS:
+            have = {r["name"] for r in conn.execute(f"PRAGMA table_info({table})")}
+            if column not in have:
+                conn.execute(f"ALTER TABLE {table} ADD COLUMN {column} {kind}")
 
 
 def fact_from_row(row):

@@ -2,20 +2,15 @@
 // Yes / No / a value -> answered (patient reported). I don't know / Skip -> sent to the doctor.
 import { useEffect, useState } from "react";
 import { answerQuestion, getQuestions } from "../api";
+import { useT } from "../i18n";
 
-const STATUS_TEXT = {
-  answered: "You answered",
-  sent_to_doctor: "Sent to your doctor",
-  resolved: "Resolved by your doctor",
-};
-
-function answerText(a) {
+function answerText(a, t) {
   if (!a) return "";
-  const labels = { yes: "Yes", no: "No", dont_know: "I don't know", skip: "Skipped", confirm: "Confirmed", correct: "Corrected", unclear: "Marked unclear" };
-  return a.answer === "value" ? `"${a.value}"` : labels[a.answer] || a.answer;
+  return a.answer === "value" ? `"${a.value}"` : t(`answered.${a.answer}`, null, a.answer);
 }
 
 function QuestionCard({ question, onAnswered }) {
+  const t = useT();
   const [value, setValue] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -36,22 +31,22 @@ function QuestionCard({ question, onAnswered }) {
       <p>{question.text}</p>
       {question.facts.length > 0 && (
         <p className="hint">
-          From your records:{" "}
+          {t("check.fromRecords")}{" "}
           {question.facts.map((f) => `"${f.quote}" (${f.event_date})`).join(" · ")}
         </p>
       )}
       <div className="answer-buttons">
-        <button onClick={() => send("yes")} disabled={busy}>Yes</button>
-        <button onClick={() => send("no")} disabled={busy}>No</button>
+        <button onClick={() => send("yes")} disabled={busy}>{t("answer.yes")}</button>
+        <button onClick={() => send("no")} disabled={busy}>{t("answer.no")}</button>
         <input
           value={value}
           onChange={(e) => setValue(e.target.value)}
-          placeholder="or type an answer"
+          placeholder={t("check.placeholder")}
           maxLength={500}
         />
-        <button className="btn-primary" onClick={() => send("value")} disabled={busy || !value.trim()}>Send</button>
-        <button onClick={() => send("dont_know")} disabled={busy}>I don't know</button>
-        <button onClick={() => send("skip")} disabled={busy}>Skip</button>
+        <button className="btn-primary" onClick={() => send("value")} disabled={busy || !value.trim()}>{t("check.send")}</button>
+        <button onClick={() => send("dont_know")} disabled={busy}>{t("answer.dont_know")}</button>
+        <button onClick={() => send("skip")} disabled={busy}>{t("answer.skip")}</button>
       </div>
       {error && <p className="error">{error}</p>}
     </li>
@@ -59,32 +54,30 @@ function QuestionCard({ question, onAnswered }) {
 }
 
 export default function ThingsToCheckPage({ patient }) {
+  const t = useT();
   const [questions, setQuestions] = useState(null);
   const [error, setError] = useState("");
 
   useEffect(() => {
     getQuestions(patient.id).then(setQuestions).catch((err) => setError(err.message));
-  }, [patient.id]);
+  }, [patient.id, t.lang]); // question text comes from the backend in the user's language
 
   function handleAnswered(updated) {
     setQuestions((prev) => prev.map((q) => (q.id === updated.id ? updated : q)));
   }
 
   if (error) return <p className="error">{error}</p>;
-  if (!questions) return <p>Loading...</p>;
+  if (!questions) return <p>{t("loading")}</p>;
 
   const open = questions.filter((q) => q.status === "open");
   const done = questions.filter((q) => q.status !== "open");
 
   return (
     <section>
-      <h1>Things to check</h1>
-      <p className="hint">
-        Pramaan found places where your records are unclear. Your answers help your doctor. If you
-        are not sure, choose "I don't know" and your doctor will look at it.
-      </p>
+      <h1>{t("tab.questions")}</h1>
+      <p className="hint">{t("check.hint")}</p>
       {open.length === 0 ? (
-        <p className="ok">Nothing to check right now.</p>
+        <p className="ok">{t("check.nothing")}</p>
       ) : (
         <ul className="questions">
           {open.map((q) => (
@@ -95,13 +88,13 @@ export default function ThingsToCheckPage({ patient }) {
 
       {done.length > 0 && (
         <>
-          <h2>Already handled</h2>
+          <h2>{t("check.handled")}</h2>
           <ul className="questions">
             {done.map((q) => (
               <li key={q.id} className="question question-done">
                 <p>{q.text}</p>
                 <p className="hint">
-                  {STATUS_TEXT[q.status]}: {answerText(q.answer)}
+                  {t(`check.status.${q.status}`)}: {answerText(q.answer, t)}
                 </p>
               </li>
             ))}

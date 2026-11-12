@@ -3,6 +3,7 @@
 No AI here. Values are always copied exactly as written, never converted.
 """
 from backend.db import fact_from_row
+from backend.routes.language import doc_type_label
 
 
 def load_facts(conn, patient_id, include_held_back=False):
@@ -31,13 +32,17 @@ def load_documents(conn, patient_id):
     return {r["id"]: dict(r) for r in rows}
 
 
-def source_label(fact, docs):
-    """'discharge summary from 2022-08-05' for the document a fact came from."""
+def source_label(fact, docs, lang="en"):
+    """'discharge summary from 2022-08-05' (or the Kannada form) for the document a fact came from."""
     doc = docs.get(fact.get("document_id"))
+    date = (doc or {}).get("document_date") or fact.get("document_date")
+    if lang == "kn":
+        if not doc:
+            return "ದಾಖಲೆಗಳು"
+        return f"{date or 'ದಿನಾಂಕ ತಿಳಿದಿಲ್ಲ'} ರ {doc_type_label(doc['doc_type'], lang)}"
     if not doc:
         return "records"
-    kind = (doc["doc_type"] or "document").replace("_", " ")
-    return f"{kind} from {doc['document_date'] or fact.get('document_date') or 'an unknown date'}"
+    return f"{doc_type_label(doc['doc_type'], lang)} from {date or 'an unknown date'}"
 
 
 def source_info(fact, docs):

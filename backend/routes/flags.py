@@ -17,7 +17,7 @@ router = APIRouter()
 
 FLAG_TYPES = [
     "contradiction", "duplicate", "unit_mismatch", "ambiguous_date",
-    "wrong_patient", "implausible_value",
+    "wrong_patient", "implausible_value", "handwriting",
 ]
 
 

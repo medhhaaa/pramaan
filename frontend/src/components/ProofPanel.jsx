@@ -6,6 +6,8 @@ import { Document, Page, pdfjs } from "react-pdf";
 import "react-pdf/dist/Page/TextLayer.css";
 import "react-pdf/dist/Page/AnnotationLayer.css";
 import { getDocument } from "../api";
+import { docTypeLabel } from "../format";
+import { useT } from "../i18n";
 import CorrectionForm from "./CorrectionForm";
 
 pdfjs.GlobalWorkerOptions.workerSrc = new URL(
@@ -28,6 +30,7 @@ function base64ToBytes(b64) {
 
 // user + onCorrected are optional: without them the correction form is hidden
 export default function ProofPanel({ fact, onClose, user, onCorrected }) {
+  const t = useT();
   const [doc, setDoc] = useState(null);
   const [error, setError] = useState("");
   const panelRef = useRef(null);
@@ -71,14 +74,14 @@ export default function ProofPanel({ fact, onClose, user, onCorrected }) {
   return (
     <aside className="proof" ref={panelRef}>
       <div className="proof-head">
-        <strong>Source</strong>
-        <button onClick={onClose}>Close</button>
+        <strong>{t("proof.source")}</strong>
+        <button onClick={onClose}>{t("close")}</button>
       </div>
 
       <blockquote>"{fact.quote}"</blockquote>
       <p className="hint">
-        {fact.document_id} · page {fact.page}, line {fact.line} ·{" "}
-        {fact.quote_verified ? "quote found in document" : "quote NOT verified"}
+        {t("proof.where", { doc: fact.document_id, page: fact.page, line: fact.line })} ·{" "}
+        {fact.quote_verified ? t("proof.verified") : t("proof.notVerified")}
       </p>
 
       {user && onCorrected && (
@@ -86,12 +89,12 @@ export default function ProofPanel({ fact, onClose, user, onCorrected }) {
       )}
 
       {error && <p className="error">{error}</p>}
-      {!doc && !error && <p>Loading document...</p>}
+      {!doc && !error && <p>{t("proof.loadingDoc")}</p>}
 
       {doc && (
         <>
           <p>
-            <strong>{doc.filename}</strong> ({doc.doc_type.replace("_", " ")}, {doc.document_date})
+            <strong>{doc.filename}</strong> ({docTypeLabel(doc.doc_type, t)}, {doc.document_date})
           </p>
 
           {file ? (
@@ -101,8 +104,8 @@ export default function ProofPanel({ fact, onClose, user, onCorrected }) {
               <Document
                 file={file}
                 suspense={false}
-                loading="Loading PDF..."
-                error="Could not open the PDF."
+                loading={t("proof.loadingPdf")}
+                error={t("proof.pdfError")}
               >
                 <Page
                   pageNumber={fact.page}
@@ -116,10 +119,10 @@ export default function ProofPanel({ fact, onClose, user, onCorrected }) {
               </Document>
             </div>
           ) : (
-            <p className="hint">PDF preview not available here; showing the document's text lines.</p>
+            <p className="hint">{t("proof.noPdf")}</p>
           )}
 
-          <h3>Page {fact.page} text</h3>
+          <h3>{t("proof.pageText", { page: fact.page })}</h3>
           <ol className="lines">
             {pageLines.map((l) => {
               const isQuote = l.line === fact.line;
