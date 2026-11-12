@@ -5,22 +5,18 @@
 import { useEffect, useState } from "react";
 import { answerQuestion, correctFact, getQuestions } from "../api";
 import { describeWithStatus } from "../format";
+import { useT } from "../i18n";
 import CorrectionForm from "./CorrectionForm";
 
 const ORDER = { sent_to_doctor: 0, answered: 1, open: 2 };
-const STATUS_TEXT = {
-  sent_to_doctor: "Patient didn't know / skipped",
-  answered: "Patient answered",
-  open: "Not answered by the patient yet",
-};
 
-function patientAnswer(a) {
+function patientAnswer(a, t) {
   if (!a || a.role !== "patient") return null;
-  const labels = { yes: "Yes", no: "No", dont_know: "I don't know", skip: "Skipped" };
-  return a.answer === "value" ? `"${a.value}"` : labels[a.answer] || a.answer;
+  return a.answer === "value" ? `"${a.value}"` : t(`answered.${a.answer}`, null, a.answer);
 }
 
 function OpenQuestion({ question, user, onResolved }) {
+  const t = useT();
   const [correcting, setCorrecting] = useState(null); // fact being corrected
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -46,12 +42,12 @@ function OpenQuestion({ question, user, onResolved }) {
 
   const markUnclear = () => run(() => answerQuestion(question.id, "unclear"));
 
-  const answer = patientAnswer(question.answer);
+  const answer = patientAnswer(question.answer, t);
 
   return (
     <li className="question">
       <p className="hint">
-        {STATUS_TEXT[question.status]}
+        {t(`oq.status.${question.status}`)}
         {answer && `: ${answer}`}
       </p>
       <p>{question.text}</p>
@@ -59,12 +55,12 @@ function OpenQuestion({ question, user, onResolved }) {
         {question.facts.map((f) => (
           <li key={f.fact_id}>
             <span>
-              {describeWithStatus(f)} <small>({f.document_id}, {f.event_date})</small>
+              {describeWithStatus(f, t)} <small>({f.document_id}, {f.event_date})</small>
             </span>
             <span className="oq-actions">
-              <button className="btn-primary" onClick={() => confirm(f)} disabled={busy}>Confirm</button>{" "}
+              <button className="btn-primary" onClick={() => confirm(f)} disabled={busy}>{t("oq.confirm")}</button>{" "}
               <button className="btn-secondary" onClick={() => setCorrecting(correcting?.fact_id === f.fact_id ? null : f)} disabled={busy}>
-                Correct
+                {t("oq.correct")}
               </button>
             </span>
           </li>
@@ -77,20 +73,21 @@ function OpenQuestion({ question, user, onResolved }) {
           onCorrected={(updated) => run(() => answerQuestion(question.id, "correct", updated.fact_id))}
         />
       )}
-      <button className="btn-ghost" onClick={markUnclear} disabled={busy}>Mark unclear</button>
+      <button className="btn-ghost" onClick={markUnclear} disabled={busy}>{t("oq.unclear")}</button>
       {error && <p className="error">{error}</p>}
     </li>
   );
 }
 
 export default function OpenQuestionsSidebar({ patient, user, onChange }) {
+  const t = useT();
   const [questions, setQuestions] = useState(null);
   const [error, setError] = useState("");
   const [reload, setReload] = useState(0);
 
   useEffect(() => {
     getQuestions(patient.id).then(setQuestions).catch((err) => setError(err.message));
-  }, [patient.id, reload]);
+  }, [patient.id, reload, t.lang]); // question text comes from the backend in the user's language
 
   function handleResolved() {
     setReload((n) => n + 1);
@@ -104,10 +101,10 @@ export default function OpenQuestionsSidebar({ patient, user, onChange }) {
 
   return (
     <aside className="sidebar">
-      <h2>Open questions ({open.length})</h2>
+      <h2>{t("oq.title", { n: open.length })}</h2>
       {error && <p className="error">{error}</p>}
-      {!questions && !error && <p>Loading...</p>}
-      {questions && open.length === 0 && <p className="ok">No open questions.</p>}
+      {!questions && !error && <p>{t("loading")}</p>}
+      {questions && open.length === 0 && <p className="ok">{t("oq.none")}</p>}
       <ul className="questions">
         {open.map((q) => (
           <OpenQuestion key={q.id} question={q} user={user} onResolved={handleResolved} />
@@ -115,8 +112,16 @@ export default function OpenQuestionsSidebar({ patient, user, onChange }) {
       </ul>
       {resolved.length > 0 && (
         <p className="hint">
-          {resolved.length} resolved:{" "}
-          {resolved.map((q) => `#${q.id} ${q.answer?.answer} by ${q.answer?.by}`).join(", ")}
+          {t("oq.resolved", { n: resolved.length })}{" "}
+          {resolved
+            .map((q) =>
+              t("oq.resolvedItem", {
+                id: q.id,
+                answer: t(`answered.${q.answer?.answer}`, null, q.answer?.answer),
+                by: q.answer?.by,
+              }),
+            )
+            .join(", ")}
         </p>
       )}
     </aside>

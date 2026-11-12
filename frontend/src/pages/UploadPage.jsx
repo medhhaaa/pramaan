@@ -1,8 +1,10 @@
 // Upload documents for a patient: PDFs, scans or phone photos. Files go up one at a time so each gets its own result.
 import { useState } from "react";
 import { uploadDocument } from "../api";
+import { useT } from "../i18n";
 
 export default function UploadPage({ patient, onDone }) {
+  const t = useT();
   const [files, setFiles] = useState([]);
   const [results, setResults] = useState([]);
   const [busy, setBusy] = useState(false);
@@ -23,8 +25,8 @@ export default function UploadPage({ patient, onDone }) {
 
   return (
     <section className="upload">
-      <h1>Upload documents for {patient.name}</h1>
-      <p>Prescriptions, lab reports or discharge summaries: a PDF, a scan, or a photo taken with your phone.</p>
+      <h1>{t("upload.title", { name: patient.name })}</h1>
+      <p>{t("upload.intro")}</p>
       <input
         type="file"
         accept="application/pdf,image/jpeg,image/png,image/webp"
@@ -33,7 +35,13 @@ export default function UploadPage({ patient, onDone }) {
       />
       <p className="actions">
         <button className="btn-primary" onClick={handleUpload} disabled={busy || files.length === 0}>
-          {busy ? "Reading documents..." : `Upload ${files.length || ""} file${files.length === 1 ? "" : "s"}`}
+          {busy
+            ? t("upload.busy")
+            : files.length === 0
+              ? t("upload.buttonNone")
+              : files.length === 1
+                ? t("upload.buttonOne")
+                : t("upload.buttonMany", { n: files.length })}
         </button>
       </p>
 
@@ -43,22 +51,21 @@ export default function UploadPage({ patient, onDone }) {
             <li key={i}>
               <span>{r.name}</span>
               {r.error ? (
-                <span className="error">Failed: {r.error}</span>
+                <span className="error">{t("upload.failed", { error: r.error })}</span>
               ) : r.held_back ? (
                 <span className="warn">
-                  Held back: this document may belong to a different patient. A reviewer must
-                  confirm it before its {r.facts_added} facts appear.
-                  {r.reasons?.length > 0 && <> Why: {r.reasons.join("; ")}.</>}
+                  {t("upload.heldBack", { n: r.facts_added })}
+                  {r.reasons?.length > 0 && <> {t("upload.why", { reasons: r.reasons.join("; ") })}</>}
                 </span>
               ) : (
-                <span className="ok">{r.facts_added} facts added</span>
+                <span className="ok">{t("upload.added", { n: r.facts_added })}</span>
               )}
             </li>
           ))}
         </ul>
       )}
 
-      {!busy && results.length > 0 && <button className="btn-secondary" onClick={onDone}>View timeline</button>}
+      {!busy && results.length > 0 && <button className="btn-secondary" onClick={onDone}>{t("upload.viewTimeline")}</button>}
     </section>
   );
 }

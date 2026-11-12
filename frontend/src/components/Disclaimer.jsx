@@ -1,4 +1,7 @@
 // Shown on every page (CLAUDE.md section 11).
+import { useT } from "../i18n";
+
 export default function Disclaimer() {
-  return <p className="disclaimer">Information from your records only. Not medical advice.</p>;
+  const t = useT();
+  return <p className="disclaimer">{t("disclaimer")}</p>;
 }

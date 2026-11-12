@@ -13,6 +13,8 @@ Response:
   "red_flags":         [{"flag", "text", "fact_ids"}],
   "open_questions":    [{"id", "text", "status"}]
 }
+red_flags and open_questions text follow the user's language (English or Kannada);
+names, values, units, dates and quotes inside them stay exactly as written.
 """
 from fastapi import APIRouter, Depends, HTTPException
 
@@ -23,6 +25,7 @@ from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import (
     describe, load_documents, load_facts, medication_summaries, source_info,
 )
+from backend.routes.language import FACT_TYPE_KN, gap_name, user_language
 from backend.routes.questions import list_questions_for
 
 router = APIRouter()
@@ -115,16 +118,21 @@ def events(facts, docs):
     ]
 
 
-def red_flags(all_facts, docs, meds, gaps):
+def red_flags(all_facts, docs, meds, gaps, lang="en"):
     """Plain-language warnings. all_facts includes held-back documents; gaps from find_gaps()."""
     flags = []
+
+    def add(flag, en, kn, fact_ids):
+        flags.append({"flag": flag, "text": kn if lang == "kn" else en, "fact_ids": fact_ids})
 
     contradictions = [f for f in all_facts if "contradiction" in f["flags"]]
     for fact_type in sorted({f["type"] for f in contradictions}):
         group = [f for f in contradictions if f["type"] == fact_type]
         said = "; ".join(f'"{f["quote"]}" ({f["event_date"]})' for f in group)
-        flags.append({"flag": "contradiction", "text": f"{fact_type.capitalize()} records disagree: {said}.",
-                      "fact_ids": [f["fact_id"] for f in group]})
+        add("contradiction",
+            f"{fact_type.capitalize()} records disagree: {said}.",
+            f"{FACT_TYPE_KN.get(fact_type, fact_type)} ದಾಖಲೆಗಳು ಹೊಂದುತ್ತಿಲ್ಲ: {said}.",
+            [f["fact_id"] for f in group])
 
     by_test = {}
     for f in all_facts:
@@ -132,22 +140,26 @@ def red_flags(all_facts, docs, meds, gaps):
             by_test.setdefault(f["name"].strip().lower(), []).append(f)
     for group in by_test.values():
         seen = sorted({f"{f['value']} {f['unit']} ({f['event_date']})" for f in group})
-        flags.append({"flag": "unit_mismatch",
-                      "text": f"{group[0]['name']} recorded in different units: {', '.join(seen)}. Not converted.",
-                      "fact_ids": [f["fact_id"] for f in group]})
+        add("unit_mismatch",
+            f"{group[0]['name']} recorded in different units: {', '.join(seen)}. Not converted.",
+            f"{group[0]['name']} ಬೇರೆ ಬೇರೆ ಘಟಕಗಳಲ್ಲಿ ದಾಖಲಾಗಿದೆ: {', '.join(seen)}. ಪರಿವರ್ತಿಸಿಲ್ಲ.",
+            [f["fact_id"] for f in group])
 
     for doc_id in sorted({f["document_id"] for f in all_facts if "duplicate" in f["flags"]}):
         ids = [f["fact_id"] for f in all_facts if f["document_id"] == doc_id and "duplicate" in f["flags"]]
         name = docs.get(doc_id, {}).get("filename", doc_id)
-        flags.append({"flag": "duplicate", "text": f"{name} repeats results already in another document.",
-                      "fact_ids": ids})
+        add("duplicate",
+            f"{name} repeats results already in another document.",
+            f"{name}: ಬೇರೆ ದಾಖಲೆಯಲ್ಲಿ ಈಗಾಗಲೇ ಇರುವ ಫಲಿತಾಂಶಗಳನ್ನೇ ಮತ್ತೆ ಹೊಂದಿದೆ.",
+            ids)
 
     for doc in docs.values():
         if doc["held_back"]:
             ids = [f["fact_id"] for f in all_facts if f["document_id"] == doc["id"]]
-            flags.append({"flag": "wrong_patient",
-                          "text": f"{doc['filename']} is held back: it may belong to another patient.",
-                          "fact_ids": ids})
+            add("wrong_patient",
+                f"{doc['filename']} is held back: it may belong to another patient.",
+                f"{doc['filename']} ತಡೆಹಿಡಿಯಲಾಗಿದೆ: ಇದು ಬೇರೆ ರೋಗಿಯದ್ದಾಗಿರಬಹುದು.",
+                ids)
 
     ambiguous = {}
     for f in all_facts:
@@ -155,33 +167,39 @@ def red_flags(all_facts, docs, meds, gaps):
             ambiguous.setdefault((f["document_id"], f["date_raw"]), []).append(f["fact_id"])
     for (doc_id, raw), ids in ambiguous.items():
         name = docs.get(doc_id, {}).get("filename", doc_id)
-        flags.append({"flag": "ambiguous_date",
-                      "text": f'Date "{raw}" in {name} could be read two ways.', "fact_ids": ids})
+        add("ambiguous_date",
+            f'Date "{raw}" in {name} could be read two ways.',
+            f'ದಿನಾಂಕ "{raw}" ({name}) ಅನ್ನು ಎರಡು ರೀತಿಯಲ್ಲಿ ಓದಬಹುದು.',
+            ids)
 
     for f in all_facts:
         if "implausible_value" in f["flags"]:
-            flags.append({"flag": "implausible_value",
-                          "text": f"{describe(f)} looks implausible (possible unit or typing error). Original kept.",
-                          "fact_ids": [f["fact_id"]]})
+            add("implausible_value",
+                f"{describe(f)} looks implausible (possible unit or typing error). Original kept.",
+                f"{describe(f)} ಅಸಂಭವವಾಗಿ ಕಾಣುತ್ತದೆ (ಘಟಕ ಅಥವಾ ಟೈಪಿಂಗ್ ದೋಷ ಇರಬಹುದು). ಮೂಲ ಮೌಲ್ಯವನ್ನು ಹಾಗೆಯೇ ಇಡಲಾಗಿದೆ.",
+                [f["fact_id"]])
 
     for gap in gaps:
-        what = gap["name"].replace("_", " ").lower()
-        flags.append({"flag": "gap",
-                      "text": f"No record mentions {what}. Not documented does not mean absent.",
-                      "fact_ids": [gap["fact_id"]]})
+        add("gap",
+            f"No record mentions {gap_name(gap['name'], 'en')}. Not documented does not mean absent.",
+            f"ಯಾವುದೇ ದಾಖಲೆಯಲ್ಲಿ {gap_name(gap['name'], 'kn')} ಉಲ್ಲೇಖವಿಲ್ಲ. ದಾಖಲಾಗಿಲ್ಲ ಎಂದರೆ ಇಲ್ಲ ಎಂದಲ್ಲ.",
+            [gap["fact_id"]])
 
     for med in meds:
         if med["only_copies_since"]:
-            flags.append({"flag": "echo",
-                          "text": f"{med['name']}: last real evidence {med['only_copies_since']}; "
-                                  f"{med['echo_count']} later mention(s) are copies.",
-                          "fact_ids": [med["source"]["fact_id"]]})
+            add("echo",
+                f"{med['name']}: last real evidence {med['only_copies_since']}; "
+                f"{med['echo_count']} later mention(s) are copies.",
+                f"{med['name']}: ಕೊನೆಯ ನಿಜವಾದ ಪುರಾವೆ {med['only_copies_since']}; "
+                f"ನಂತರದ {med['echo_count']} ಉಲ್ಲೇಖ(ಗಳು) ನಕಲು.",
+                [med["source"]["fact_id"]])
     return flags
 
 
 @router.get("/patients/{patient_id}/brief")
 def brief_route(patient_id: str, user=Depends(get_current_user)):
     require_patient_access(user, patient_id)
+    lang = user_language(user)
     with get_conn() as conn:
         patient = conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone()
         if not patient:
@@ -189,7 +207,7 @@ def brief_route(patient_id: str, user=Depends(get_current_user)):
         facts = load_facts(conn, patient_id)
         all_facts = load_facts(conn, patient_id, include_held_back=True)
         docs = load_documents(conn, patient_id)
-        questions = list_questions_for(conn, patient_id)
+        questions = list_questions_for(conn, patient_id, lang)
 
     meds = current_medicines(facts, docs)
     log_action(user, "view_brief", patient_id, "")
@@ -200,7 +218,7 @@ def brief_route(patient_id: str, user=Depends(get_current_user)):
         "conditions": conditions(facts, docs),
         "latest_results": latest_results(facts, docs),
         "events": events(facts, docs),
-        "red_flags": red_flags(all_facts, docs, meds, find_gaps(facts)),
+        "red_flags": red_flags(all_facts, docs, meds, find_gaps(facts), lang),
         "open_questions": [
             {"id": q["id"], "text": q["text"], "status": q["status"]}
             for q in questions

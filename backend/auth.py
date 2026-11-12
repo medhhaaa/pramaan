@@ -1,6 +1,7 @@
 """Login, passwords and per-patient access. (Core backend)
 
-POST /login  {"username", "password"} -> {"token", "role", "username"}
+POST /login  {"username", "password"} -> {"token", "role", "username", "language"}
+             language is "en", "kn", or null (not chosen yet: the frontend asks once)
 
 In any route:
     user = Depends(get_current_user)        -> {"id", "username", "role"} or 401
@@ -114,4 +115,9 @@ def login(body: LoginBody):
         ).fetchone()
     if not user or not verify_password(body.password, user["password_hash"]):
         raise HTTPException(status_code=401, detail="Wrong username or password")
-    return {"token": create_token(user), "role": user["role"], "username": user["username"]}
+    return {
+        "token": create_token(user),
+        "role": user["role"],
+        "username": user["username"],
+        "language": user["language"],
+    }

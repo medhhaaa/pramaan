@@ -13,6 +13,8 @@ export const USE_DUMMY = false;
 const BASE_URL = "http://localhost:8000";
 
 export const NOT_DOCUMENTED_ANSWER = "The records don't mention this.";
+// the Ask route answers in the user's language; both mean "not documented"
+export const NOT_DOCUMENTED_ANSWERS = [NOT_DOCUMENTED_ANSWER, "ದಾಖಲೆಗಳಲ್ಲಿ ಇದರ ಬಗ್ಗೆ ಉಲ್ಲೇಖವಿಲ್ಲ."];
 
 function readStorage(key) {
   try {
@@ -96,13 +98,15 @@ const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 // ---------- login ----------
 
 const DUMMY_USERS = { doctor: "doctor123", sunita: "sunita123" };
+const dummyLanguages = {}; // username -> "en" | "kn" (dummy mode forgets on reload)
 
+// -> {token, role, username, language}   language is "en", "kn" or null (not chosen yet)
 export async function login(username, password) {
   if (USE_DUMMY) {
     if (DUMMY_USERS[username] !== password) throw new Error("Wrong username or password");
     token = "dummy";
     dummyUser = { username, role: username === "doctor" ? "doctor" : "patient" };
-    return { token, ...dummyUser };
+    return { token, ...dummyUser, language: dummyLanguages[username] || null };
   }
   const data = await request("POST", "/login", { username, password });
   token = data.token;
@@ -118,6 +122,17 @@ export function logout() {
 // App.jsx tells dummy mode who is logged in after a page refresh
 export function setDummyUser(user) {
   dummyUser = user;
+}
+
+// ---------- language ----------
+
+// "en" | "kn" -> {language}. Saved on the user's account; asked once at first login.
+export async function setLanguage(language) {
+  if (USE_DUMMY) {
+    if (dummyUser) dummyLanguages[dummyUser.username] = language;
+    return { language };
+  }
+  return request("PUT", "/me/language", { language });
 }
 
 // ---------- patients ----------
@@ -262,7 +277,7 @@ export async function uploadDocument(patientId, file) {
 // ---------- ask my records ----------
 
 // body {question} -> {answer, fact_ids, citations: [fact]}
-// answer is exactly NOT_DOCUMENTED_ANSWER when the records don't cover the question.
+// answer is exactly one of NOT_DOCUMENTED_ANSWERS when the records don't cover the question.
 export async function askRecords(patientId, question) {
   if (USE_DUMMY) {
     await sleep(500);
