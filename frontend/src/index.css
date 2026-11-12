@@ -8,17 +8,12 @@
 @import "./styles/chips.css";
 @import "./styles/timeline.css";
 @import "./styles/proof.css";
+@import "./styles/medications.css";
+@import "./styles/flags.css";
+@import "./styles/brief.css";
 
 /* ---- not yet restyled (replaced step by step) ---- */
 
-.med { padding: 4px 12px; margin-bottom: 8px; border: 1px solid #ddd; background: #fff; }
-.med h2 { margin: 8px 0 0; font-size: 18px; }
-.med h2 small { font-size: 12px; font-weight: normal; color: #1b7a3a; }
-.med-stopped { opacity: 0.5; }
-.med-stopped h2 small { color: #666; }
-.med-steps li { margin-bottom: 4px; }
-.med-echo { color: #888; }
-.flag-group h2 { margin-bottom: 0; font-size: 18px; }
 .table { border-collapse: collapse; margin-top: 8px; width: 100%; background: #fff; }
 .table th, .table td { border: 1px solid #ddd; padding: 4px 8px; text-align: left; font-size: 14px; }
 .ask-form { display: flex; gap: 8px; }
@@ -44,14 +39,3 @@
 .answer-buttons { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; }
 .oq-facts { list-style: none; padding: 0; margin: 4px 0; }
 .oq-facts li { display: flex; justify-content: space-between; gap: 6px; flex-wrap: wrap; padding: 3px 0; border-top: 1px dashed #eee; }
-.check-medicine, .brief-block { border: 1px solid #ddd; background: #fff; padding: 4px 12px 8px; margin-bottom: 12px; }
-.check-medicine h2, .brief-block h2 { font-size: 17px; margin: 6px 0; }
-.brief-block ul { margin: 4px 0; padding-left: 18px; }
-.brief-block li { margin-bottom: 4px; }
-.brief-red { border-color: #e7a3a3; background: #fff6f6; }
-.brief-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 0 12px; }
-@media (max-width: 700px) { .brief-grid { grid-template-columns: 1fr; } }
-.source { color: #777; cursor: help; }
-.warnings { list-style: none; padding: 0; }
-.warning { padding: 6px 8px; margin-bottom: 6px; border-left: 4px solid #e0b400; background: #fff9e0; }
-.warning-allergy { border-left-color: #b00020; background: #fdecec; }

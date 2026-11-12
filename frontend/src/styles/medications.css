@@ -1,0 +1,112 @@
+/* Medications: each medicine is a card with a start -> change -> stop track.
+   Desktop: horizontal track. Phones: vertical track. Copies (echo) are dashed and grey. */
+
+.med {
+  margin: var(--s3) 0;
+  padding: var(--s4) var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--primary);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+.med h2 { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); margin: 0; font-size: var(--fs-h2); }
+.med > .hint { margin: var(--s1) 0 var(--s3); }
+
+/* "current" / "stopped" tag (the word itself is the signal) */
+.med h2 small {
+  display: inline-flex;
+  align-items: center;
+  padding: 2px 10px;
+  border-radius: 999px;
+  border: 1.5px solid var(--documented-fg);
+  background: var(--documented-bg);
+  color: var(--documented-fg);
+  font-size: 12.5px;
+  font-weight: 700;
+  letter-spacing: .03em;
+  text-transform: uppercase;
+}
+
+/* stopped: greyed card, solid slate tag */
+.med-stopped { background: var(--surface-sunken); border-left-color: #64748B; box-shadow: none; }
+.med-stopped h2 { color: var(--muted); }
+.med-stopped h2 small { background: #475569; border-color: #475569; color: #FFFFFF; }
+.med-stopped .med-steps li { color: var(--muted); }
+
+/* ---------- the track ---------- */
+.med-steps {
+  list-style: none;
+  margin: 0;
+  padding: var(--s5) 0 var(--s1);
+  display: grid;
+  grid-auto-flow: column;
+  grid-auto-columns: minmax(200px, 1fr);
+  gap: var(--s4);
+  overflow-x: auto;
+}
+.med-steps li {
+  position: relative;
+  margin: 0;
+  padding: var(--s3);
+  background: var(--surface);
+  border: 1px solid var(--border-strong);
+  border-radius: var(--radius-sm);
+  font-size: 14px;
+}
+.med-steps li strong { color: var(--text); }
+/* dot on the track */
+.med-steps li::before {
+  content: "";
+  position: absolute;
+  top: -19px;
+  left: 12px;
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  background: var(--primary);
+  border: 2px solid var(--surface);
+  box-shadow: 0 0 0 2px var(--primary);
+  z-index: 1;
+}
+/* line to the next step */
+.med-steps li:not(:last-child)::after {
+  content: "";
+  position: absolute;
+  top: -14px;
+  left: 24px;
+  right: calc(-1 * var(--s4) - 12px);
+  height: 2px;
+  background: var(--primary);
+}
+
+/* a copied (echo) entry: dashed card, hollow dot, dashed line */
+.med-steps li.med-echo { background: var(--surface-sunken); border-style: dashed; border-color: var(--border-input); color: var(--muted); }
+.med-steps li.med-echo strong { color: var(--muted); }
+.med-steps li.med-echo::before { background: var(--surface); box-shadow: 0 0 0 2px var(--border-input); }
+.med-steps li.med-echo:not(:last-child)::after,
+.med-steps li:has(+ li.med-echo)::after {
+  background: repeating-linear-gradient(90deg, var(--border-input) 0 6px, transparent 6px 10px);
+}
+.med-steps li.med-echo small:last-child { color: var(--negated-fg); font-weight: 600; }
+
+.med-stopped .med-steps li::before { background: #64748B; box-shadow: 0 0 0 2px #64748B; }
+.med-stopped .med-steps li:not(:last-child)::after { background: #64748B; }
+
+/* phones: vertical track on the left */
+@media (max-width: 767px) {
+  .med { padding: var(--s4); }
+  .med-steps { grid-auto-flow: row; grid-auto-columns: auto; padding: var(--s1) 0 0 var(--s6); gap: var(--s3); overflow: visible; }
+  .med-steps li::before { top: 14px; left: -22px; }
+  .med-steps li:not(:last-child)::after {
+    top: 26px;
+    left: -17px;
+    right: auto;
+    width: 2px;
+    height: calc(100% + var(--s3) - 12px);
+  }
+  .med-steps li.med-echo:not(:last-child)::after,
+  .med-steps li:has(+ li.med-echo)::after {
+    background: repeating-linear-gradient(180deg, var(--border-input) 0 6px, transparent 6px 10px);
+  }
+}

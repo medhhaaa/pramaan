@@ -39,7 +39,7 @@ export default function FlagsPage({ patient }) {
         {types.map((type) => {
           const facts = groups[type] || [];
           return (
-            <div key={type} className="flag-group">
+            <div key={type} className={`flag-group flag-group-${type}`}>
               <h2>
                 {type.replace("_", " ")} <small>({facts.length})</small>
               </h2>
