@@ -2,8 +2,10 @@
 // The user must type DELETE first, because this cannot be undone.
 import { useState } from "react";
 import { deletePatient } from "../api";
+import { useT } from "../i18n";
 
 export default function DeletePage({ patient, onDeleted }) {
+  const t = useT();
   const [confirmText, setConfirmText] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
@@ -24,40 +26,40 @@ export default function DeletePage({ patient, onDeleted }) {
   if (result) {
     return (
       <section>
-        <h1>Data deleted</h1>
-        <p>All records for {patient.name} have been permanently deleted:</p>
+        <h1>{t("delete.doneTitle")}</h1>
+        <p>{t("delete.doneText", { name: patient.name })}</p>
         <ul>
           {Object.entries(result.deleted).map(([what, n]) => (
             <li key={what}>
-              {n} {what.replace("_", " ")}
+              {t("delete.count", { n, what: t(`deleted.${what}`, null, what.replace("_", " ")) })}
             </li>
           ))}
         </ul>
-        <button className="btn-secondary" onClick={onDeleted}>Back to patients</button>
+        <button className="btn-secondary" onClick={onDeleted}>{t("delete.back")}</button>
       </section>
     );
   }
 
   return (
     <section className="danger-zone">
-      <h1>Delete all data for {patient.name}</h1>
-      <p>This permanently deletes:</p>
+      <h1>{t("delete.title", { name: patient.name })}</h1>
+      <p>{t("delete.intro")}</p>
       <ul>
-        <li>every uploaded document and its stored file</li>
-        <li>every fact extracted from them, and all corrections</li>
-        <li>all questions and answers</li>
-        <li>the audit history for this patient (one entry recording the deletion is kept)</li>
+        <li>{t("delete.docs")}</li>
+        <li>{t("delete.facts")}</li>
+        <li>{t("delete.questions")}</li>
+        <li>{t("delete.audit")}</li>
       </ul>
       <p className="warn">
-        <strong>This cannot be undone.</strong>
+        <strong>{t("delete.cannotUndo")}</strong>
       </p>
       <label className="form">
-        Type DELETE to confirm
+        {t("delete.type")}
         <input value={confirmText} onChange={(e) => setConfirmText(e.target.value)} />
       </label>
       <p className="actions">
         <button className="danger" onClick={handleDelete} disabled={busy || confirmText !== "DELETE"}>
-          {busy ? "Deleting..." : "Delete everything"}
+          {busy ? t("delete.busy") : t("delete.button")}
         </button>
       </p>
       {error && <p className="error">{error}</p>}

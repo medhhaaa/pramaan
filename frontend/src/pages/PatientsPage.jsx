@@ -2,8 +2,10 @@
 // the doctor gets everyone, a patient gets only themself.
 import { useEffect, useState } from "react";
 import { getPatients } from "../api";
+import { useT } from "../i18n";
 
 export default function PatientsPage({ user, onOpen }) {
+  const t = useT();
   const [patients, setPatients] = useState(null);
   const [error, setError] = useState("");
 
@@ -12,12 +14,12 @@ export default function PatientsPage({ user, onOpen }) {
   }, []);
 
   if (error) return <p className="error">{error}</p>;
-  if (!patients) return <p>Loading...</p>;
+  if (!patients) return <p>{t("loading")}</p>;
 
   return (
     <section>
-      <h1>{user.role === "doctor" ? "Patients" : "My records"}</h1>
-      {patients.length === 0 && <p>No patients to show.</p>}
+      <h1>{user.role === "doctor" ? t("nav.patients") : t("nav.myRecords")}</h1>
+      {patients.length === 0 && <p>{t("patients.none")}</p>}
       <ul className="list patient-list">
         {patients.map((p) => (
           <li key={p.id}>
@@ -25,17 +27,17 @@ export default function PatientsPage({ user, onOpen }) {
               <strong>{p.name}</strong>
               <small>
                 {" "}
-                {p.sex} · born {p.dob} · blood group {p.blood_group}
+                {t("patient.meta", { sex: p.sex, dob: p.dob, blood: p.blood_group })}
               </small>
             </div>
             <span className="card-actions">
               {user.role === "doctor" ? (
-                <button className="btn-primary" onClick={() => onOpen(p, "brief")}>Brief</button>
+                <button className="btn-primary" onClick={() => onOpen(p, "brief")}>{t("tab.brief")}</button>
               ) : (
-                <button className="btn-primary" onClick={() => onOpen(p, "questions")}>Things to check</button>
+                <button className="btn-primary" onClick={() => onOpen(p, "questions")}>{t("tab.questions")}</button>
               )}{" "}
-              <button className="btn-secondary" onClick={() => onOpen(p, "timeline")}>Timeline</button>{" "}
-              <button onClick={() => onOpen(p, "upload")}>Upload</button>
+              <button className="btn-secondary" onClick={() => onOpen(p, "timeline")}>{t("tab.timeline")}</button>{" "}
+              <button onClick={() => onOpen(p, "upload")}>{t("tab.upload")}</button>
             </span>
           </li>
         ))}

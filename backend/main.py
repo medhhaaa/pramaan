@@ -15,7 +15,7 @@ from backend import auth  # noqa: E402
 from backend.db import init_db  # noqa: E402
 from backend.routes import (  # noqa: E402
     ask, audit, brief, check_medicine, corrections, delete, documents, flags,
-    medications, metrics, patients, questions, timeline, upload,
+    language, medications, metrics, patients, questions, timeline, upload,
 )
 
 app = FastAPI(title="Pramaan")
@@ -34,7 +34,7 @@ for module in [
     # core backend
     patients, upload, timeline, medications, flags, documents, corrections,
     # Medha
-    ask, questions, brief, check_medicine, metrics, audit, delete,
+    ask, questions, brief, check_medicine, metrics, audit, delete, language,
 ]:
     app.include_router(module.router)
 

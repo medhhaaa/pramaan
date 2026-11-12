@@ -3,22 +3,26 @@ import { useEffect, useMemo, useState } from "react";
 import { getTimeline } from "../api";
 import FactCard from "../components/FactCard";
 import ProofPanel from "../components/ProofPanel";
+import { useT } from "../i18n";
+
+const NO_DATE = "none";
 
 function groupByYear(facts) {
   const groups = {};
   for (const fact of facts) {
-    const year = fact.event_date ? fact.event_date.slice(0, 4) : "Date not documented";
+    const year = fact.event_date ? fact.event_date.slice(0, 4) : NO_DATE;
     (groups[year] ||= []).push(fact);
   }
   // newest year first; undated facts last
   return Object.entries(groups).sort(([a], [b]) => {
-    if (a === "Date not documented") return 1;
-    if (b === "Date not documented") return -1;
+    if (a === NO_DATE) return 1;
+    if (b === NO_DATE) return -1;
     return b.localeCompare(a);
   });
 }
 
 export default function TimelinePage({ patient, user }) {
+  const t = useT();
   const [facts, setFacts] = useState(null);
   const [error, setError] = useState("");
   const [selected, setSelected] = useState(null);
@@ -35,20 +39,17 @@ export default function TimelinePage({ patient, user }) {
   const byId = useMemo(() => Object.fromEntries((facts || []).map((f) => [f.fact_id, f])), [facts]);
 
   if (error) return <p className="error">{error}</p>;
-  if (!facts) return <p>Loading...</p>;
+  if (!facts) return <p>{t("loading")}</p>;
 
   return (
     <section className={selected ? "with-panel" : ""}>
       <div>
-        <h1>Timeline: {patient.name}</h1>
-        <p className="hint">
-          {facts.length} facts. Faded entries are copies of an older document, not new evidence.
-          Click any fact to see the exact line it came from.
-        </p>
-        {facts.length === 0 && <p>No facts yet. Upload documents to build the timeline.</p>}
+        <h1>{t("timeline.title", { name: patient.name })}</h1>
+        <p className="hint">{t("timeline.hint", { n: facts.length })}</p>
+        {facts.length === 0 && <p>{t("timeline.empty")}</p>}
         {groupByYear(facts).map(([year, yearFacts]) => (
           <div key={year} className="year-group">
-            <h2 className="year-heading">{year}</h2>
+            <h2 className="year-heading">{year === NO_DATE ? t("timeline.noDate") : year}</h2>
             <ul className="facts">
               {yearFacts.map((fact) => (
                 <FactCard
