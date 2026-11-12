@@ -7,7 +7,7 @@ const LABELS = {
   ambiguous_date: "ambiguous date",
   wrong_patient: "wrong patient?",
   implausible_value: "implausible value",
-  handwriting: "read from handwriting",
+  handwriting: "extracted from handwriting",
   // badges
   doctor_verified: "doctor verified",
   independent_2plus: "2+ documents",

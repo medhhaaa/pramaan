@@ -11,7 +11,7 @@ const EXPLAIN = {
   ambiguous_date: "The date could be read two ways (e.g. 04/05/2023).",
   wrong_patient: "This document may belong to someone else. It is held back from the timeline.",
   implausible_value: "This value looks impossible; it may be a unit or typing error. The original is unchanged.",
-  handwriting: "Read from handwriting by an AI model running on this computer. Check it against the original image before relying on it.",
+  handwriting: "Extracted from a handwritten page, read by an AI model running on this computer. Doctor: check it against the original image before relying on it.",
   gap: "Basic information the records never mention. Not documented does not mean absent.",
 };
 

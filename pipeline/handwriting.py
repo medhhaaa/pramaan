@@ -34,7 +34,7 @@ import requests
 from rapidfuzz import fuzz
 
 TESS_DPI = 300
-VISION_WIDTH_PX = 1400          # page width sent to the model: readable, not too slow on a CPU
+VISION_WIDTH_PX = 1000          # page width sent to the model: handwriting still readable, much faster
 MIN_MEAN_CONFIDENCE = 90        # printed scans and photos score 92-96
 MAX_UNSURE_SHARE = 0.05         # printed: 0-4% of words below 60; handwriting: more
 MIN_MATCH = 35                  # rapidfuzz score to trust a line position
