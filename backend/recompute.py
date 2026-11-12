@@ -12,7 +12,7 @@ from backend.db import fact_from_row, get_conn
 from backend.logic import badges, echo, flags
 
 # flags set by other parts of the system; the checks must keep them
-OTHER_FLAGS = {"wrong_patient", "implausible_value"}
+OTHER_FLAGS = {"wrong_patient", "implausible_value", "handwriting"}
 
 
 def _try(step, facts, reset, *args):

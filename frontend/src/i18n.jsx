@@ -123,6 +123,7 @@ const en = {
   "chip.ambiguous_date": "ambiguous date",
   "chip.wrong_patient": "wrong patient?",
   "chip.implausible_value": "implausible value",
+  "chip.handwriting": "extracted from handwriting",
   "chip.gap": "gap",
   "chip.echo": "copied medicine",
   "chip.doctor_verified": "doctor verified",
@@ -190,6 +191,7 @@ const en = {
   "explain.ambiguous_date": "The date could be read two ways (e.g. 04/05/2023).",
   "explain.wrong_patient": "This document may belong to someone else. It is held back from the timeline.",
   "explain.implausible_value": "This value looks impossible; it may be a unit or typing error. The original is unchanged.",
+  "explain.handwriting": "Extracted from a handwritten page, read by an AI model running on this computer. Doctor: check it against the original image before relying on it.",
   "explain.gap": "Basic information the records never mention. Not documented does not mean absent.",
 
   // ask
@@ -430,6 +432,7 @@ const kn = {
   "chip.ambiguous_date": "ಅಸ್ಪಷ್ಟ ದಿನಾಂಕ",
   "chip.wrong_patient": "ಬೇರೆ ರೋಗಿಯದೇ?",
   "chip.implausible_value": "ಅಸಂಭವ ಮೌಲ್ಯ",
+  "chip.handwriting": "ಕೈಬರಹದಿಂದ ಪಡೆದದ್ದು",
   "chip.gap": "ಮಾಹಿತಿ ಕೊರತೆ",
   "chip.echo": "ನಕಲಾದ ಔಷಧ",
   "chip.doctor_verified": "ವೈದ್ಯರಿಂದ ದೃಢೀಕೃತ",
@@ -494,6 +497,7 @@ const kn = {
   "explain.ambiguous_date": "ದಿನಾಂಕವನ್ನು ಎರಡು ರೀತಿಯಲ್ಲಿ ಓದಬಹುದು (ಉದಾ. 04/05/2023).",
   "explain.wrong_patient": "ಈ ದಾಖಲೆ ಬೇರೆಯವರದ್ದಾಗಿರಬಹುದು. ಇದನ್ನು ಕಾಲರೇಖೆಯಿಂದ ತಡೆಹಿಡಿಯಲಾಗಿದೆ.",
   "explain.implausible_value": "ಈ ಮೌಲ್ಯ ಅಸಾಧ್ಯವೆನಿಸುತ್ತದೆ; ಘಟಕ ಅಥವಾ ಟೈಪಿಂಗ್ ದೋಷ ಇರಬಹುದು. ಮೂಲ ಮೌಲ್ಯ ಬದಲಾಗಿಲ್ಲ.",
+  "explain.handwriting": "ಕೈಬರಹದ ಪುಟದಿಂದ ಪಡೆದದ್ದು; ಈ ಕಂಪ್ಯೂಟರ್‌ನಲ್ಲೇ ಚಲಿಸುವ AI ಮಾದರಿ ಓದಿದೆ. ವೈದ್ಯರು: ನಂಬುವ ಮೊದಲು ಮೂಲ ಚಿತ್ರದೊಂದಿಗೆ ಪರಿಶೀಲಿಸಿ.",
   "explain.gap": "ದಾಖಲೆಗಳು ಎಂದಿಗೂ ಉಲ್ಲೇಖಿಸದ ಮೂಲ ಮಾಹಿತಿ. ದಾಖಲಾಗಿಲ್ಲ ಎಂದರೆ ಇಲ್ಲ ಎಂದಲ್ಲ.",
 
   "ask.title": "ದಾಖಲೆಗಳನ್ನು ಕೇಳಿ: {name}",
