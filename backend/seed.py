@@ -1,63 +1,79 @@
-"""Reset the database and load demo users + patient p1 sample facts. (Core backend)
+"""Reset the database with demo users and the 5 demo patients. (Core backend)
 
-Run:  python -m backend.seed
+    python -m backend.seed           users + patients p1-p5 + p1's SAMPLE facts
+                                     (shared/sample_facts.json; no AI calls, for frontend work)
+    python -m backend.seed --empty   users + patients p1-p5, no documents or facts
+                                     (backend/load_demo.py uses this, then uploads the real PDFs)
+
+Patient details come from Ashil's answer keys (data/answer_keys/pN.json), so they always
+match the synthetic PDFs.
 """
 import json
 import os
+import shutil
+import sys
 
 from backend.auth import hash_password
 from backend.db import DB_PATH, get_conn, init_db, insert_fact
 
-ROOT = os.path.dirname(os.path.dirname(__file__))
+ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAMPLE_FACTS = os.path.join(ROOT, "shared", "sample_facts.json")
+ANSWER_KEYS = os.path.join(ROOT, "data", "answer_keys")
+PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5"]
 
-USERS = [("doctor", "doctor123", "doctor"), ("sunita", "sunita123", "patient")]
-
-PATIENTS = [("p1", "Sunita Rao", "1952-06-14", "F", "O+")]
-
-DOCUMENTS = [
-    # id, filename, doc_type, document_date, held_back
-    ("p1_d1", "d1_prescription_2019.pdf", "prescription", "2019-03-12", 0),
-    ("p1_d2", "d2_lab_2021.pdf", "lab_report", "2021-06-20", 0),
-    ("p1_d3", "d3_discharge_2022.pdf", "discharge_summary", "2022-08-05", 0),
-    ("p1_d4", "d4_prescription_2023.pdf", "prescription", "2023-01-15", 0),
-    ("p1_d5", "d5_lab_2023.pdf", "lab_report", "2023-01-16", 0),
-    ("p1_d6", "d6_lab_2023_copy.pdf", "lab_report", "2023-01-16", 0),
-    ("p1_d7", "d7_lab_psa.pdf", "lab_report", "2023-05-04", 1),  # wrong patient: held back
+# username, password, role, patients they can see
+USERS = [
+    ("doctor", "doctor123", "doctor", PATIENT_IDS),
+    ("sunita", "sunita123", "patient", ["p1"]),
 ]
 
 
-def seed():
+def load_answer_key(patient_id):
+    with open(os.path.join(ANSWER_KEYS, f"{patient_id}.json"), encoding="utf-8") as f:
+        return json.load(f)
+
+
+def seed(with_sample_facts=True):
     if os.path.exists(DB_PATH):
         os.remove(DB_PATH)
+    # uploaded files belong to the old database, so remove them too
+    shutil.rmtree(os.path.join(ROOT, "storage"), ignore_errors=True)
+    os.makedirs(os.path.join(ROOT, "storage"), exist_ok=True)
+    open(os.path.join(ROOT, "storage", ".gitkeep"), "w").close()
+
     init_db()
     with get_conn() as conn:
-        for username, password, role in USERS:
+        for patient_id in PATIENT_IDS:
+            p = load_answer_key(patient_id)["patient"]
             conn.execute(
+                "INSERT INTO patients VALUES (?, ?, ?, ?, ?)",
+                (patient_id, p["name"], p["dob"], p["sex"], p["blood_group"]),
+            )
+
+        for username, password, role, patient_ids in USERS:
+            cur = conn.execute(
                 "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
                 (username, hash_password(password), role),
             )
-        conn.executemany("INSERT INTO patients VALUES (?, ?, ?, ?, ?)", PATIENTS)
+            for patient_id in patient_ids:
+                conn.execute("INSERT INTO user_patients VALUES (?, ?)", (cur.lastrowid, patient_id))
 
-        # doctor sees every patient, sunita sees only p1
-        ids = {r["username"]: r["id"] for r in conn.execute("SELECT id, username FROM users")}
-        for patient_id, *_ in PATIENTS:
-            conn.execute("INSERT INTO user_patients VALUES (?, ?)", (ids["doctor"], patient_id))
-        conn.execute("INSERT INTO user_patients VALUES (?, 'p1')", (ids["sunita"],))
+        facts = []
+        if with_sample_facts:
+            # p1's documents from the answer key, pointing at the real synthetic PDFs
+            for d in load_answer_key("p1")["documents"]:
+                conn.execute(
+                    "INSERT INTO documents VALUES (?, 'p1', ?, ?, ?, ?, ?)",
+                    (d["document_id"], d["filename"], d["doc_type"], d["document_date"],
+                     f"data/patients/p1/{d['filename']}", int(d["held_back"])),
+                )
+            with open(SAMPLE_FACTS, encoding="utf-8") as f:
+                facts = json.load(f)
+            for fact in facts:
+                insert_fact(conn, fact)
 
-        for doc_id, filename, doc_type, doc_date, held_back in DOCUMENTS:
-            conn.execute(
-                "INSERT INTO documents VALUES (?, 'p1', ?, ?, ?, ?, ?)",
-                (doc_id, filename, doc_type, doc_date, f"data/patients/p1/{filename}", held_back),
-            )
-
-        with open(SAMPLE_FACTS, encoding="utf-8") as f:
-            facts = json.load(f)
-        for fact in facts:
-            insert_fact(conn, fact)
-
-    print(f"Seeded {DB_PATH}: {len(USERS)} users, {len(PATIENTS)} patient, {len(facts)} facts")
+    print(f"Seeded {DB_PATH}: {len(USERS)} users, {len(PATIENT_IDS)} patients, {len(facts)} sample facts")
 
 
 if __name__ == "__main__":
-    seed()
+    seed(with_sample_facts="--empty" not in sys.argv)

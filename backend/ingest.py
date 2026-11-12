@@ -1,0 +1,88 @@
+"""ingest_document(): everything that happens to one uploaded PDF. (Core backend)
+
+Used by the upload route AND by backend/load_demo.py, so both run exactly the same steps:
+1. save the PDF ENCRYPTED under storage/<patient>/
+2. run Ashil's pipeline on a temporary decrypted copy (deleted right after)
+3. wrong-patient check: if the document's blood group / sex disagree with the patient
+   record, its facts get the wrong_patient flag and the document is held back
+4. save the document row + verified facts
+5. rerun the checks on ALL the patient's facts (recompute_patient)
+If the pipeline fails, the stored file is removed, nothing is saved, and the error is raised.
+"""
+import os
+
+from backend.db import get_conn, insert_fact
+from backend.logic.wrong_patient import find_conflicts
+from backend.recompute import recompute_patient
+from backend.storage import delete_file, save_encrypted, temp_copy
+from pipeline import process
+
+
+def new_document_id(conn, patient_id):
+    n = conn.execute("SELECT COUNT(*) FROM documents WHERE patient_id = ?", (patient_id,)).fetchone()[0] + 1
+    while conn.execute("SELECT 1 FROM documents WHERE id = ?", (f"{patient_id}_d{n}",)).fetchone():
+        n += 1
+    return f"{patient_id}_d{n}"
+
+
+def _use_saved(saved, patient_id, document_id):
+    """Ashil's saved pipeline output (data/extracted/pN.json) for one document, with the
+    IDs set to the document_id this upload got."""
+    result = dict(saved)
+    result["facts"] = [
+        dict(f, patient_id=patient_id, document_id=document_id, fact_id=f"{document_id}_f{n:03d}")
+        for n, f in enumerate(saved["facts"], start=1)
+    ]
+    return result
+
+
+def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
+    """data = the PDF bytes. Returns {"document_id", "facts_added", "held_back", "reasons",
+    "dropped", "doc_type", "document_date"}.
+    saved = optional saved pipeline output for this document: then the AI is not called
+    (used by load_demo --saved), and every other step still runs."""
+    with get_conn() as conn:
+        patient = dict(conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone())
+        document_id = new_document_id(conn, patient_id)
+
+    rel_path = f"storage/{patient_id}/{document_id}.pdf.enc"
+    save_encrypted(data, rel_path)
+    if saved is not None:
+        result = _use_saved(saved, patient_id, document_id)
+    else:
+        tmp = temp_copy(rel_path)
+        try:
+            # known_names makes sure the patient's own name is redacted before the AI call
+            result = process.process_document_full(tmp, patient_id, document_id, known_names=[patient["name"]])
+        except Exception:
+            delete_file(rel_path)
+            raise
+        finally:
+            os.remove(tmp)
+
+    facts = result["facts"]
+    conflicts = find_conflicts(facts, patient)
+    if conflicts:
+        for fact in facts:
+            fact["flags"] = list(fact.get("flags") or []) + ["wrong_patient"]
+
+    doc_type = doc_type or result.get("doc_type") or "unknown"
+    with get_conn() as conn:
+        conn.execute(
+            "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (document_id, patient_id, filename, doc_type, result.get("document_date"), rel_path,
+             int(bool(conflicts))),
+        )
+        for fact in facts:
+            insert_fact(conn, fact)
+
+    recompute_patient(patient_id)
+    return {
+        "document_id": document_id,
+        "facts_added": len(facts),
+        "held_back": bool(conflicts),
+        "reasons": conflicts,
+        "dropped": len(result.get("dropped") or []),
+        "doc_type": doc_type,
+        "document_date": result.get("document_date"),
+    }
