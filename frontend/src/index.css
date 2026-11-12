@@ -3,11 +3,9 @@
 @import "./styles/tokens.css";
 @import "./styles/base.css";
 @import "./styles/header.css";
+@import "./styles/forms.css";
 
 /* ---- not yet restyled (replaced step by step) ---- */
-.form { display: flex; flex-direction: column; gap: 10px; max-width: 320px; }
-.form label { display: flex; flex-direction: column; gap: 4px; }
-.checkbox { display: flex; gap: 8px; align-items: flex-start; }
 
 .list { list-style: none; padding: 0; }
 .list li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px; border: 1px solid #ddd; background: #fff; margin-bottom: 6px; }
