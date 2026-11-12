@@ -1,5 +1,11 @@
 """POST /patients/{id}/upload (multipart form, field "file", optional "doc_type")
--> {"document_id", "facts_added", "held_back", "reasons"}. (Core backend)
+-> {"document_id", "facts_added", "held_back", "reasons", "dropped", "doc_type",
+    "document_date", plus the upload report:
+    "read_with"     "text" (digital PDF) or "ocr" (scan or photo)
+    "added"         the saved facts (contract format, with their flags)
+    "left_out"      facts quote verification refused: type, name, dose..., quote, reason
+                    ("quote_not_found" | "dose_not_in_line" | "value_not_in_line" | "unit_not_in_line")
+    "not_captured"  medical lines no fact quotes: [{"page", "line", "text"}]}. (Core backend)
 
 Accepts a PDF (digital or scanned) or a photo of a document (JPG, PNG, WEBP). Everything
 is turned into a searchable PDF first (pipeline.ocr.prepare_document), so storage, the
@@ -39,9 +45,11 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
     if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail=f"File is larger than {MAX_UPLOAD_MB} MB")
     try:
-        data = await run_in_threadpool(prepare_document, data)  # PDF, scan or photo -> searchable PDF
+        prepared = await run_in_threadpool(prepare_document, data)  # PDF, scan or photo -> searchable PDF
     except ValueError as e:  # not a PDF or image, or a damaged PDF
         raise HTTPException(status_code=400, detail=str(e))
+    used_ocr = prepared is not data  # a digital PDF comes back unchanged
+    data = prepared
 
     try:
         result = await run_in_threadpool(_ingest_one, patient_id, file.filename, data, doc_type or None)
@@ -50,5 +58,28 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Could not process the document: {e}")
 
-    log_action(user, "upload_document", patient_id, {"filename": file.filename, **result})
-    return {key: result[key] for key in ("document_id", "facts_added", "held_back", "reasons")}
+    summary = {key: result[key] for key in ("document_id", "facts_added", "held_back", "reasons",
+                                            "dropped", "doc_type", "document_date")}
+    log_action(user, "upload_document", patient_id, {"filename": file.filename, **summary})
+    return {
+        **summary,
+        "read_with": "ocr" if used_ocr else "text",
+        "added": result["added_facts"],
+        "left_out": [_left_out(f) for f in result["dropped_facts"]],
+        "not_captured": result["not_captured"],
+    }
+
+
+def _left_out(fact):
+    """A fact the AI proposed but quote verification refused, and why (as a code the
+    screen can translate): its quote is not in the document, or a dose/value/unit is not
+    in the quoted line."""
+    reason = fact.get("drop_reason") or ""
+    field = reason.split(" ", 1)[0] if "is not in the quoted line" in reason else None
+    return {
+        "type": fact.get("type"), "name": fact.get("name"), "dose": fact.get("dose"),
+        "frequency": fact.get("frequency"), "value": fact.get("value"), "unit": fact.get("unit"),
+        "quote": fact.get("quote"),
+        "reason": f"{field}_not_in_line" if field else "quote_not_found",
+        "reason_text": reason,
+    }

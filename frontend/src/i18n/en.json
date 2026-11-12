@@ -45,10 +45,12 @@
     "single_document": "Only one document mentions this.", "patient_reported": "You told us this.", "conflicting": "Two documents disagree. Both are shown."
   },
   "flagNames": {
+    "handwriting": "Extracted from handwriting",
     "contradiction": "Contradiction", "duplicate": "Duplicate", "unit_mismatch": "Unit mismatch",
     "ambiguous_date": "Ambiguous date", "wrong_patient": "Wrong patient", "implausible_value": "Implausible value", "gap": "Gap"
   },
   "flagTips": {
+    "handwriting": "Read from a handwritten page by an AI model on this computer. Doctor: check it against the original image.",
     "contradiction": "Two documents disagree. Both are shown. Your doctor will check it.",
     "duplicate": "This document is an exact copy of another. It is counted once.",
     "unit_mismatch": "The same test is reported in different units. Values are shown exactly as written. Nothing is converted.",
@@ -62,11 +64,28 @@
   "flagsPage": { "title": "Flags", "allergen": "Allergen", "details": "Details", "held": "Held back, waiting for review" },
   "ask": { "title": "Ask my records", "placeholder": "Ask about your records", "send": "Ask", "footer": "Answers come only from your stored records.", "notMentioned": "The records don't mention this." },
   "upload": {
-    "title": "Upload", "choose": "Choose PDFs", "drop": "Drop PDFs here", "consentTitle": "Before your first upload",
+    "title": "Upload", "choose": "Choose files", "drop": "Drop PDFs or photos here", "consentTitle": "Before your first upload",
     "consent1": "I am the patient or their carer", "consent2": "I understand records are read by an AI tool with names removed",
     "consent3": "I can delete my data at any time", "continue": "Continue",
     "steps": ["Reading", "Removing personal details", "Extracting", "Checking quotes"],
-    "result": "{{added}} facts added · {{held}} held back", "heldNote": "Held back for review. A doctor will check it."
+    "result": "{{added}} facts added · {{held}} held back", "heldNote": "Held back for review. A doctor will check it.",
+    "working": "Reading {{name}}… about 20–40 seconds per document",
+    "waiting": "Waiting",
+    "failed": "Could not process this file: {{error}}",
+    "readText": "Read from the PDF text",
+    "readOcr": "Read with OCR (scan or photo): check values against the image",
+    "summary": "{{added}} added · {{left}} left out · {{missed}} not captured",
+    "added": "Added to the timeline ({{n}})",
+    "addedHint": "Each fact is quoted from the document.",
+    "addedNone": "No facts were added.",
+    "leftOut": "Left out by the quote check ({{n}})",
+    "leftOutHint": "The AI suggested these, but their exact words or numbers are not in the document, so they were not saved.",
+    "notCaptured": "Medical lines not captured ({{n}})",
+    "notCapturedHint": "These lines look medical but no fact quotes them. Check them in the document.",
+    "pageLine": "p. {{page}}, line {{line}}",
+    "openTimeline": "Open timeline",
+    "reasons": {"quote_not_found": "quote not found in the document", "dose_not_in_line": "dose not in the quoted line", "value_not_in_line": "value not in the quoted line", "unit_not_in_line": "unit not in the quoted line"},
+    "types": {"medication": "Medicine", "allergy": "Allergy", "condition": "Condition", "lab_test": "Test", "event": "Event", "demographic": "Personal detail"}
   },
   "doc": { "title": "Source", "held": "Held back", "close": "Close" },
   "myRecords": { "title": "My Records", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },

@@ -34,7 +34,12 @@ async function http(method, path, body, isForm = false) {
     headers,
     body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
-  if (!res.ok) throw new Error(`HTTP ${res.status}`);
+  if (!res.ok) {
+    // show the backend's own message ("Please upload a PDF or a photo...") when it sends one
+    let detail = '';
+    try { detail = (await res.json()).detail; } catch { /* not JSON */ }
+    throw new Error(typeof detail === 'string' && detail ? detail : `HTTP ${res.status}`);
+  }
   return res.json();
 }
 
@@ -187,7 +192,16 @@ export async function correctFact(fid, field, newValue) {
 export async function upload(pid, file) {
   if (USE_DUMMY) {
     await wait(1200);
-    return { document_id: `${pid}_dnew`, facts_added: 6, held_back: 1 };
+    return {
+      document_id: `${pid}_dnew`, facts_added: 1, held_back: false, reasons: [], dropped: 1,
+      doc_type: 'prescription', document_date: '2023-01-15', read_with: 'ocr',
+      added: [{ fact_id: `${pid}_dnew_f001`, type: 'medication', name: 'Metformin', dose: '1000mg', frequency: 'BD',
+        value: null, unit: null, action: 'changed', status: 'documented', quote: 'Tab. Metformin increased to 1000mg BD',
+        page: 1, line: 9, flags: [] }],
+      left_out: [{ type: 'medication', name: 'Atenolol', dose: '25mg', frequency: 'OD', value: null, unit: null,
+        quote: 'Tab. Atenolol 50mg OD', reason: 'dose_not_in_line' }],
+      not_captured: [{ page: 1, line: 12, text: 'Tab. Amlodipine 5mg OD - start' }],
+    };
   }
   const form = new FormData();
   form.append('file', file);

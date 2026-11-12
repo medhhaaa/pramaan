@@ -13,7 +13,7 @@ If the pipeline fails, the stored file is removed, nothing is saved, and the err
 """
 import os
 
-from backend.db import get_conn, insert_fact
+from backend.db import fact_from_row, get_conn, insert_fact
 from backend.logic.wrong_patient import find_conflicts
 from backend.recompute import recompute_patient
 from backend.storage import delete_file, save_encrypted, temp_copy
@@ -40,7 +40,9 @@ def _use_saved(saved, patient_id, document_id):
 
 def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
     """data = the PDF bytes. Returns {"document_id", "facts_added", "held_back", "reasons",
-    "dropped", "doc_type", "document_date"}.
+    "dropped", "doc_type", "document_date"} plus, for the upload report, "added_facts"
+    (the saved facts), "dropped_facts" (left out by quote verification, with drop_reason)
+    and "not_captured" (medical lines no fact quotes).
     saved = optional saved pipeline output for this document: then the AI is not called
     (used by load_demo --saved), and every other step still runs."""
     with get_conn() as conn:
@@ -87,7 +89,14 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
     if doc_type == "discharge_summary" and evidence.get("doc_type_quote") and not conflicts:
         from backend.routes.claims import stay_from_discharge_summary  # avoids an import loop
         stay_from_discharge_summary(patient_id, document_id, result.get("stay_dates") or {})
+    # the saved facts as they are now, with the flags the checks just added
+    with get_conn() as conn:
+        added = [fact_from_row(row) for row in conn.execute(
+            "SELECT * FROM facts WHERE document_id = ? ORDER BY page, line", (document_id,))]
     return {
+        "added_facts": added,
+        "dropped_facts": result.get("dropped") or [],
+        "not_captured": result.get("not_captured") or [],
         "document_id": document_id,
         "facts_added": len(facts),
         "held_back": bool(conflicts),
