@@ -76,14 +76,14 @@ select {
   font-size: 16px; /* 16px stops iOS zooming into the field */
   min-height: var(--tap);
   padding: var(--s2) var(--s3);
-  border: 1px solid var(--border-strong);
+  border: 1px solid var(--border-input);
   border-radius: var(--radius-sm);
   background: var(--surface);
   color: var(--text);
   max-width: 100%;
 }
 input::placeholder { color: #64748B; }
-input:hover, select:hover { border-color: var(--muted); }
+input:hover, select:hover { border-color: var(--text); }
 
 input[type="checkbox"] { width: 20px; height: 20px; margin: 2px 0 0; accent-color: var(--primary); flex-shrink: 0; }
 

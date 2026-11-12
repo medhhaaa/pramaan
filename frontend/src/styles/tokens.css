@@ -12,6 +12,7 @@
   --muted: #475569;
   --border: #E2E8F0;
   --border-strong: #CBD5E1;
+  --border-input: #7C8A9E; /* 3:1+ on white and bg: inputs, dashed copy markers */
   --focus: #0F766E;
 
   /* shape + depth */

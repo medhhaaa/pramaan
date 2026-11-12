@@ -27,7 +27,7 @@
   width: 100%;
   margin: var(--s4) 0 var(--s2);
   padding: var(--s8) var(--s4);
-  border: 2px dashed var(--border-strong);
+  border: 2px dashed var(--border-input);
   border-radius: var(--radius);
   background: var(--surface);
   color: var(--muted);

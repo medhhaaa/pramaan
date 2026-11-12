@@ -1,0 +1,63 @@
+/* Chips: <span class="chip chip-{kind} chip-{value}">.
+   Three families, told apart by SHAPE as well as colour (never colour alone):
+     status  filled pill with a dot         documented / explicitly negative / not documented
+     flag    square-cornered tag + diamond  something to look at
+     badge   outlined pill                  how much to trust it (doctor verified is solid) */
+
+.chips { display: flex; flex-wrap: wrap; gap: 6px; margin-top: var(--s2); }
+
+.chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  font-size: 12.5px;
+  font-weight: 600;
+  line-height: 18px;
+  padding: 2px 9px;
+  border: 1px solid transparent;
+  border-radius: 999px;
+  background: var(--negated-bg);
+  color: var(--negated-fg);
+  white-space: nowrap;
+}
+
+/* ---------- status: filled pill with a dot ---------- */
+.chip-status::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+.chip-status.chip-documented { background: var(--documented-bg); color: var(--documented-fg); }
+.chip-status.chip-negated { background: var(--negated-bg); color: var(--negated-fg); font-style: italic; border-color: #CBD5E1; }
+.chip-status.chip-not_documented { background: var(--notdoc-bg); color: var(--notdoc-fg); border-color: #FDE68A; }
+/* a ring instead of a dot: "nothing written", not "absent" */
+.chip-status.chip-not_documented::before { background: transparent; border: 1.5px solid currentColor; }
+
+/* ---------- flags: square-cornered tag with a diamond ---------- */
+.chip-flag { border-radius: 4px; }
+.chip-flag::before {
+  content: "";
+  width: 6px;
+  height: 6px;
+  background: currentColor;
+  transform: rotate(45deg);
+  flex-shrink: 0;
+}
+.chip-flag.chip-contradiction { background: var(--contradiction-bg); color: var(--contradiction-fg); border-color: #FCA5A5; }
+.chip-flag.chip-duplicate { background: var(--duplicate-bg); color: var(--duplicate-fg); border-color: #A5B4FC; }
+.chip-flag.chip-unit_mismatch { background: var(--unit-bg); color: var(--unit-fg); border-color: #FDBA74; }
+.chip-flag.chip-ambiguous_date { background: var(--ambiguous-bg); color: var(--ambiguous-fg); border-color: #D8B4FE; }
+.chip-flag.chip-wrong_patient { background: var(--wrongpt-bg); color: var(--wrongpt-fg); border: 2px solid #450A0A; }
+.chip-flag.chip-implausible_value { background: var(--implausible-bg); color: var(--implausible-fg); border-color: #F9A8D4; }
+
+/* ---------- badges: outlined pills ---------- */
+.chip-badge { background: var(--surface); border-width: 1.5px; border-color: currentColor; }
+.chip-badge.chip-doctor_verified { background: var(--badge-verified); border-color: var(--badge-verified); color: #FFFFFF; }
+.chip-badge.chip-independent_2plus { color: var(--badge-independent); }
+.chip-badge.chip-single_document { color: var(--badge-single); border-style: dashed; }
+.chip-badge.chip-patient_reported { color: var(--badge-patient); }
+.chip-badge.chip-corrected { color: var(--badge-corrected); }
+.chip-badge.chip-conflicting { color: var(--badge-conflicting); }

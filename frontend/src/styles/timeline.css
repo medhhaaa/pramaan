@@ -1,0 +1,89 @@
+/* Timeline: sticky year headers and fact cards with a left status stripe. */
+
+.year-group { margin-top: var(--s4); }
+.year-heading {
+  position: sticky;
+  top: 0;
+  z-index: 2;
+  margin: 0 0 var(--s2);
+  padding: var(--s2) 0;
+  background: var(--bg);
+  border-bottom: 1px solid var(--border);
+  font-size: var(--fs-h2);
+}
+
+.facts { list-style: none; padding: 0; margin: 0 0 var(--s4); display: grid; gap: var(--s2); }
+
+.fact {
+  position: relative;
+  padding: var(--s3) var(--s4) var(--s3) var(--s5);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-left: 5px solid var(--border-strong);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+  cursor: pointer;
+}
+.fact:hover { border-color: var(--muted); box-shadow: var(--shadow-raised); }
+
+/* the stripe follows the status chip inside the card (same colours as the chip) */
+.fact:has(.chip-status.chip-documented) { border-left-color: var(--documented-fg); }
+.fact:has(.chip-status.chip-negated) { border-left-color: #64748B; }
+.fact:has(.chip-status.chip-not_documented) { border-left-color: var(--notdoc-stripe); }
+
+.fact-main { display: flex; flex-wrap: wrap; align-items: baseline; gap: 2px var(--s2); font-size: 16px; }
+.fact-main small { color: var(--muted); }
+.fact-type {
+  display: inline-block;
+  min-width: 96px;
+  font-size: 11.5px;
+  font-weight: 700;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.fact-negated { font-style: italic; color: var(--negated-fg); }
+.fact-meta { font-size: var(--fs-meta); color: var(--muted); margin-top: var(--s1); }
+.fact-meta small { font-size: inherit; }
+
+/* selected: outline + tint, so it is visible even without colour vision */
+.fact-selected,
+.fact-selected:hover {
+  background: var(--info-bg);
+  border-color: var(--primary);
+  outline: 3px solid var(--primary);
+  outline-offset: 1px;
+}
+
+/* ---------- echo (copy of an older document) ----------
+   Faded with grey text and a dashed border instead of opacity, so every line still
+   passes 4.5:1 contrast. The "Copy of ..." note stays dark. */
+.fact-echo {
+  background: var(--surface-sunken);
+  border-style: dashed;
+  border-color: var(--border-strong);
+  border-left: 5px dashed var(--border-input);
+  box-shadow: none;
+  color: var(--muted);
+}
+/* beats the status-stripe rules above (higher specificity): copies get a grey dashed stripe */
+.fact.fact-echo:has(.chip.chip-status) { border-left-color: var(--border-input); }
+.fact-echo .fact-main { color: var(--muted); }
+.fact-echo .chip { background: transparent; color: var(--muted); border: 1px dashed var(--border-input); font-style: normal; }
+.fact-echo-note {
+  display: inline-block;
+  margin-top: var(--s2);
+  padding: 2px var(--s2);
+  border: 1px dashed var(--border-input);
+  border-radius: 4px;
+  background: var(--surface);
+  color: var(--negated-fg);
+  font-size: var(--fs-meta);
+  font-weight: 600;
+}
+.fact-echo.fact-selected { background: var(--info-bg); border-color: var(--primary); }
+
+@media (max-width: 767px) {
+  .fact { padding: var(--s3) var(--s3) var(--s3) var(--s4); }
+  .fact-type { min-width: 0; display: block; }
+}
