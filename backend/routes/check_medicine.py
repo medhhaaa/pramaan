@@ -1,14 +1,218 @@
-"""POST /patients/{patient_id}/check-medicine -> allergy / duplicate warning (Medha)
+"""POST /patients/{patient_id}/check-medicine -> warn about allergy / same medicine. (Medha)
 
-Stub so the frontend can see the route exists. Replace the 501 with the real code.
+Body:     {"drug": "Augmentin 625"}
+Response: {"drug", "generic", "drug_class", "class_label", "known", "warnings": [...], "note"}
+          warning = {"kind": "allergy" | "same_medicine" | "same_class", "text", "source"}
+
+Plain code: a small dictionary of brand and generic names -> (generic, class).
+Checks the drug against documented allergies and current medicines in the records only.
+It never says whether a drug is safe; it only points to what the records say.
 """
-from fastapi import APIRouter, Depends, HTTPException
+import json
+import re
 
-from backend.auth import get_current_user
+from fastapi import APIRouter, Depends
+from pydantic import BaseModel, Field
+
+from backend.auth import get_current_user, require_patient_access
+from backend.db import get_conn
+from backend.routes.audit_helper import log_action
+from backend.routes.fact_helpers import load_documents, load_facts, medication_summaries, source_info
 
 router = APIRouter()
 
+CLASS_LABELS = {
+    "penicillin": "penicillin antibiotics",
+    "cephalosporin": "cephalosporin antibiotics",
+    "macrolide": "macrolide antibiotics",
+    "fluoroquinolone": "fluoroquinolone antibiotics",
+    "sulfonamide": "sulfonamides (sulfa drugs)",
+    "nsaid": "NSAID painkillers",
+    "paracetamol": "paracetamol",
+    "beta_blocker": "beta blockers",
+    "biguanide": "biguanides",
+    "sulfonylurea": "sulfonylureas",
+    "calcium_channel_blocker": "calcium channel blockers",
+    "ace_inhibitor": "ACE inhibitors",
+    "arb": "angiotensin receptor blockers",
+    "statin": "statins",
+    "thyroid_hormone": "thyroid hormone",
+    "ppi": "proton pump inhibitors",
+    "bronchodilator": "bronchodilators",
+    "inhaled_steroid": "inhaled steroids",
+    "diuretic": "diuretics",
+    "anticoagulant": "anticoagulants",
+}
+
+# name (brand or generic, lower case) -> (generic, class)
+DRUGS = {
+    # penicillins
+    "penicillin": ("penicillin", "penicillin"), "amoxicillin": ("amoxicillin", "penicillin"),
+    "amoxycillin": ("amoxicillin", "penicillin"), "ampicillin": ("ampicillin", "penicillin"),
+    "cloxacillin": ("cloxacillin", "penicillin"), "piperacillin": ("piperacillin", "penicillin"),
+    "augmentin": ("amoxicillin + clavulanate", "penicillin"), "moxclav": ("amoxicillin + clavulanate", "penicillin"),
+    "clavam": ("amoxicillin + clavulanate", "penicillin"), "mox": ("amoxicillin", "penicillin"),
+    "novamox": ("amoxicillin", "penicillin"),
+    # other antibiotics
+    "cefixime": ("cefixime", "cephalosporin"), "taxim": ("cefixime", "cephalosporin"),
+    "cephalexin": ("cephalexin", "cephalosporin"), "ceftriaxone": ("ceftriaxone", "cephalosporin"),
+    "azithromycin": ("azithromycin", "macrolide"), "azithral": ("azithromycin", "macrolide"),
+    "clarithromycin": ("clarithromycin", "macrolide"),
+    "ciprofloxacin": ("ciprofloxacin", "fluoroquinolone"), "ciplox": ("ciprofloxacin", "fluoroquinolone"),
+    "levofloxacin": ("levofloxacin", "fluoroquinolone"),
+    "sulfamethoxazole": ("sulfamethoxazole", "sulfonamide"), "cotrimoxazole": ("co-trimoxazole", "sulfonamide"),
+    "co-trimoxazole": ("co-trimoxazole", "sulfonamide"), "septran": ("co-trimoxazole", "sulfonamide"),
+    "bactrim": ("co-trimoxazole", "sulfonamide"), "sulfasalazine": ("sulfasalazine", "sulfonamide"),
+    # painkillers
+    "ibuprofen": ("ibuprofen", "nsaid"), "brufen": ("ibuprofen", "nsaid"), "combiflam": ("ibuprofen + paracetamol", "nsaid"),
+    "diclofenac": ("diclofenac", "nsaid"), "voveran": ("diclofenac", "nsaid"),
+    "aspirin": ("aspirin", "nsaid"), "ecosprin": ("aspirin", "nsaid"), "disprin": ("aspirin", "nsaid"),
+    "naproxen": ("naproxen", "nsaid"), "aceclofenac": ("aceclofenac", "nsaid"), "zerodol": ("aceclofenac", "nsaid"),
+    "paracetamol": ("paracetamol", "paracetamol"), "dolo": ("paracetamol", "paracetamol"),
+    "crocin": ("paracetamol", "paracetamol"), "calpol": ("paracetamol", "paracetamol"),
+    # diabetes
+    "metformin": ("metformin", "biguanide"), "glycomet": ("metformin", "biguanide"), "glucophage": ("metformin", "biguanide"),
+    "glimepiride": ("glimepiride", "sulfonylurea"), "amaryl": ("glimepiride", "sulfonylurea"),
+    "gliclazide": ("gliclazide", "sulfonylurea"), "glibenclamide": ("glibenclamide", "sulfonylurea"),
+    # heart / blood pressure
+    "atenolol": ("atenolol", "beta_blocker"), "aten": ("atenolol", "beta_blocker"), "tenormin": ("atenolol", "beta_blocker"),
+    "metoprolol": ("metoprolol", "beta_blocker"), "metolar": ("metoprolol", "beta_blocker"),
+    "propranolol": ("propranolol", "beta_blocker"), "bisoprolol": ("bisoprolol", "beta_blocker"),
+    "amlodipine": ("amlodipine", "calcium_channel_blocker"), "amlong": ("amlodipine", "calcium_channel_blocker"),
+    "stamlo": ("amlodipine", "calcium_channel_blocker"), "norvasc": ("amlodipine", "calcium_channel_blocker"),
+    "enalapril": ("enalapril", "ace_inhibitor"), "ramipril": ("ramipril", "ace_inhibitor"),
+    "cardace": ("ramipril", "ace_inhibitor"), "lisinopril": ("lisinopril", "ace_inhibitor"),
+    "telmisartan": ("telmisartan", "arb"), "telma": ("telmisartan", "arb"), "losartan": ("losartan", "arb"),
+    "atorvastatin": ("atorvastatin", "statin"), "atorva": ("atorvastatin", "statin"), "lipitor": ("atorvastatin", "statin"),
+    "rosuvastatin": ("rosuvastatin", "statin"), "rosuvas": ("rosuvastatin", "statin"),
+    "furosemide": ("furosemide", "diuretic"), "lasix": ("furosemide", "diuretic"),
+    "hydrochlorothiazide": ("hydrochlorothiazide", "diuretic"),
+    "warfarin": ("warfarin", "anticoagulant"), "clopidogrel": ("clopidogrel", "anticoagulant"),
+    # thyroid, stomach, asthma
+    "levothyroxine": ("levothyroxine", "thyroid_hormone"), "thyronorm": ("levothyroxine", "thyroid_hormone"),
+    "eltroxin": ("levothyroxine", "thyroid_hormone"),
+    "pantoprazole": ("pantoprazole", "ppi"), "pan": ("pantoprazole", "ppi"), "pantocid": ("pantoprazole", "ppi"),
+    "omeprazole": ("omeprazole", "ppi"), "omez": ("omeprazole", "ppi"),
+    "salbutamol": ("salbutamol", "bronchodilator"), "asthalin": ("salbutamol", "bronchodilator"),
+    "budesonide": ("budesonide", "inhaled_steroid"), "budecort": ("budesonide", "inhaled_steroid"),
+}
+
+# words in an allergy name -> drug class ("Sulfa drugs", "NSAIDs", "Penicillin")
+ALLERGY_WORDS = {
+    "penicillin": "penicillin", "penicillins": "penicillin",
+    "sulfa": "sulfonamide", "sulpha": "sulfonamide", "sulfonamide": "sulfonamide", "sulfonamides": "sulfonamide",
+    "nsaid": "nsaid", "nsaids": "nsaid",
+    "cephalosporin": "cephalosporin", "cephalosporins": "cephalosporin",
+    "macrolide": "macrolide", "macrolides": "macrolide",
+    "quinolone": "fluoroquinolone", "fluoroquinolone": "fluoroquinolone", "fluoroquinolones": "fluoroquinolone",
+}
+
+NOTE = "Checked against these records only. This is not prescribing advice."
+
+
+def words(text):
+    return re.findall(r"[a-z][a-z\-]+", (text or "").lower())
+
+
+def lookup(name):
+    """'Tab. Augmentin 625mg' -> ('amoxicillin + clavulanate', 'penicillin'), or (None, None)."""
+    for word in words(name):
+        if word in DRUGS:
+            return DRUGS[word]
+    return None, None
+
+
+def allergy_class(allergy_name):
+    """Drug class (and generic, if it names one drug) of an allergy like 'Penicillin' or 'Sulfa drugs'."""
+    for word in words(allergy_name):
+        if word in ALLERGY_WORDS:
+            return None, ALLERGY_WORDS[word]
+        if word in DRUGS:
+            return DRUGS[word]
+    return None, None
+
+
+class CheckBody(BaseModel):
+    drug: str = Field(min_length=1, max_length=100)
+
 
 @router.post("/patients/{patient_id}/check-medicine")
-def check_medicine_route(user=Depends(get_current_user)):
-    raise HTTPException(status_code=501, detail="Not built yet")
+def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_current_user)):
+    require_patient_access(user, patient_id)
+    drug = body.drug.strip()
+    generic, drug_class = lookup(drug)
+    typed_words = set(words(drug))
+
+    with get_conn() as conn:
+        facts = load_facts(conn, patient_id)
+        docs = load_documents(conn, patient_id)
+        resolved = conn.execute(
+            "SELECT fact_ids, answer FROM questions WHERE patient_id = ? AND status = 'resolved'",
+            (patient_id,),
+        ).fetchall()
+    # fact_id -> how a doctor resolved the question about it (Things to Check / Open Questions)
+    resolved_by_fact = {}
+    for row in resolved:
+        answer = json.loads(row["answer"] or "{}")
+        for fact_id in json.loads(row["fact_ids"] or "[]"):
+            resolved_by_fact[fact_id] = answer
+
+    warnings = []
+    no_allergy_quotes = [f for f in facts if f["type"] == "allergy" and f["status"] == "negated"]
+
+    # 1. documented allergies
+    for allergy in (f for f in facts if f["type"] == "allergy" and f["status"] == "documented"):
+        a_generic, a_class = allergy_class(allergy["name"])
+        by_class = drug_class and a_class == drug_class
+        by_drug = generic and a_generic == generic
+        by_name = bool(typed_words & set(words(allergy["name"])))  # works for drugs not in the list
+        if not (by_class or by_drug or by_name):
+            continue
+        doc = docs.get(allergy["document_id"], {})
+        reaction = f" ({allergy['value']})" if allergy["value"] else ""
+        text = (
+            f"{allergy['name']} allergy{reaction} is documented in the "
+            f"{(doc.get('doc_type') or 'record').replace('_', ' ')} from "
+            f"{doc.get('document_date') or allergy['event_date']}: \"{allergy['quote']}\"."
+        )
+        if by_class and not by_drug and not by_name:
+            text = f"{drug} is one of the {CLASS_LABELS.get(drug_class, drug_class)}. " + text
+        resolution = resolved_by_fact.get(allergy["fact_id"])
+        if resolution and resolution.get("answer") in ("confirm", "correct"):
+            text += f" Confirmed by {resolution.get('by', 'a doctor')} on {resolution.get('at', '')[:10]}."
+        elif "contradiction" in allergy["flags"] and no_allergy_quotes:
+            other = no_allergy_quotes[0]
+            text += f' Another record says "{other["quote"]}" ({other["event_date"]}); this conflict is not resolved.'
+        warnings.append({"kind": "allergy", "text": text, "source": source_info(allergy, docs)})
+
+    # 2. current medicines: same drug or same class
+    for med in medication_summaries(facts):
+        if not med["current"]:
+            continue
+        m_generic, m_class = lookup(med["name"])
+        fresh = med["latest_fresh"]
+        dose = " ".join(p for p in [fresh["dose"], fresh["frequency"]] if p)
+        when = f"last new record {med['last_fresh_evidence_date'] or 'unknown'}"
+        if med["echo_count"]:
+            when += f", {med['echo_count']} later mention(s) are copies"
+        same_drug = (generic and m_generic == generic) or bool(typed_words & set(words(med["name"])))
+        if same_drug:
+            warnings.append({"kind": "same_medicine",
+                             "text": f"The records already list {med['name']} {dose} as a current medicine ({when}).",
+                             "source": source_info(fresh, docs)})
+        elif drug_class and m_class == drug_class:
+            warnings.append({"kind": "same_class",
+                             "text": f"{drug} is in the same group ({CLASS_LABELS.get(drug_class, drug_class)}) "
+                                     f"as current medicine {med['name']} {dose} ({when}).",
+                             "source": source_info(fresh, docs)})
+
+    log_action(user, "check_medicine", patient_id, f"{drug}: {len(warnings)} warning(s)")
+    return {
+        "drug": drug,
+        "generic": generic,
+        "drug_class": drug_class,
+        "class_label": CLASS_LABELS.get(drug_class) if drug_class else None,
+        "known": generic is not None,
+        "warnings": warnings,
+        "note": NOTE,
+    }
