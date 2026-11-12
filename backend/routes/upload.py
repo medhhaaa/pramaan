@@ -4,6 +4,8 @@
 1. check it's a PDF and save it ENCRYPTED under storage/<patient>/
 2. run Ashil's pipeline on a temporary decrypted copy (deleted right after)
 3. save the document row + verified facts
+   wrong-patient check: if its blood group / sex disagree with the patient record, its
+   facts are flagged wrong_patient and the document is held back from the timeline
 4. rerun the checks on all the patient's facts (recompute_patient)
 If the pipeline fails, the stored file is removed and nothing is saved.
 """
@@ -13,6 +15,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile
 
 from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn, insert_fact, log_action
+from backend.logic.wrong_patient import find_conflicts
 from backend.recompute import recompute_patient
 from backend.storage import delete_file, save_encrypted, temp_copy
 from pipeline import process
@@ -55,18 +58,24 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
     # document_date comes from the pipeline's facts (all facts carry the same one)
     document_date = next((f["document_date"] for f in facts if f.get("document_date")), None)
     with get_conn() as conn:
+        patient = dict(conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone())
+    conflicts = find_conflicts(facts, patient)
+    if conflicts:
+        for fact in facts:
+            fact["flags"] = list(fact.get("flags") or []) + ["wrong_patient"]
+
+    with get_conn() as conn:
         conn.execute(
-            "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, 0)",
-            (document_id, patient_id, file.filename, doc_type, document_date, rel_path),
+            "INSERT INTO documents VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (document_id, patient_id, file.filename, doc_type, document_date, rel_path, int(bool(conflicts))),
         )
         for fact in facts:
             insert_fact(conn, fact)
 
-    # TODO step 7: wrong-patient check here (may set held_back = 1)
     recompute_patient(patient_id)
 
-    with get_conn() as conn:
-        held_back = bool(conn.execute("SELECT held_back FROM documents WHERE id = ?", (document_id,)).fetchone()[0])
     log_action(user, "upload_document", patient_id,
-               {"document_id": document_id, "filename": file.filename, "facts_added": len(facts)})
-    return {"document_id": document_id, "facts_added": len(facts), "held_back": held_back}
+               {"document_id": document_id, "filename": file.filename, "facts_added": len(facts),
+                "held_back": bool(conflicts), "reasons": conflicts})
+    return {"document_id": document_id, "facts_added": len(facts), "held_back": bool(conflicts),
+            "reasons": conflicts}
