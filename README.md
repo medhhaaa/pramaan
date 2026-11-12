@@ -28,8 +28,10 @@ cd ..
 ## Run
 
 ```bash
-# 1. reset the database with demo users + patient p1 sample facts
+# 1. reset the database: demo users + patients p1-p5, plus p1's sample facts (no AI calls)
 python -m backend.seed
+#    OR build the REAL demo: every synthetic PDF through upload + AI (~8 min, needs LLM_API_KEY)
+python -m backend.load_demo            # or: python -m backend.load_demo p1
 
 # 2. backend on http://localhost:8000  (try routes at http://localhost:8000/docs)
 uvicorn backend.main:app --reload --port 8000
