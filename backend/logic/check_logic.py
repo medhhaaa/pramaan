@@ -17,7 +17,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(__file__)))
 SAMPLE_FACTS = os.path.join(ROOT, "shared", "sample_facts.json")
 
 # flags set by other parts of the system (pipeline, wrong-patient check): kept as input
-OTHER_FLAGS = {"wrong_patient", "implausible_value"}
+OTHER_FLAGS = {"wrong_patient", "implausible_value", "handwriting"}
 
 
 def load_expected():

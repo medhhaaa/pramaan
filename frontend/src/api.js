@@ -190,6 +190,7 @@ export const FLAG_TYPES = [
   "ambiguous_date",
   "wrong_patient",
   "implausible_value",
+  "handwriting",
   "gap",
 ];
 
