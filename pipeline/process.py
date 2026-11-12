@@ -22,6 +22,7 @@ process_document_full(...) -> {"facts", "dropped", "document_date", "document_da
 
 Try it:  python -m pipeline.process data/patients/p1/d1_prescription_2019.pdf p1 p1_d1 "Sunita Rao"
 """
+from pipeline.coverage import coverage
 from pipeline.deidentify import deidentify, reidentify
 from pipeline.doc_type import UNKNOWN, classify_document, date_written_in, stay_dates
 from pipeline.extract import extract_document
@@ -73,7 +74,7 @@ def _contract_fact(fact, number, patient_id, document_id, document_date, documen
 def process_document_full(pdf_path, patient_id, document_id, known_names=(), document_date=None):
     lines = read_pdf(pdf_path)
     if not lines:  # scanned image PDF: we do no OCR for the demo
-        return {"facts": [], "dropped": [], "document_date": document_date,
+        return {"facts": [], "dropped": [], "not_captured": [], "document_date": document_date,
                 "document_date_raw": None, "document_date_verified": False, **UNKNOWN,
                 "stay_dates": {"admitted_on": None, "discharged_on": None}, "redactions": 0}
 
@@ -100,9 +101,14 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
     for fact in facts:
         if fact["page"] in from_handwriting:
             fact["flags"].append("handwriting")
+    facts = check_plausibility(facts)
+    # medical lines no verified fact quotes: shown on the upload screen as "not captured"
+    not_captured = [{"page": c["page"], "line": c["line"], "text": c["text"]}
+                    for c in coverage(lines, facts) if c["medical"] and not c["covered"]]
     return {
-        "facts": check_plausibility(facts),
+        "facts": facts,
         "dropped": dropped,
+        "not_captured": not_captured,
         "document_date": document_date,
         "document_date_raw": document_date_raw,
         "document_date_verified": date_written_in(document_date_raw, lines),

@@ -304,3 +304,22 @@ a { color: var(--brand); }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { transition: none !important; animation: none !important; }
 }
+
+/* upload report: what was added, left out by the quote check, and not captured */
+.dropzone.disabled { opacity: 0.55; pointer-events: none; }
+.upload-item { margin-top: 14px; }
+.upload-item-head { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0 0 6px; overflow-wrap: anywhere; }
+.spin { animation: spin 1s linear infinite; color: var(--brand); flex-shrink: 0; }
+@keyframes spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+.upload-report .chip-row { align-items: center; margin: 4px 0 10px; }
+.report-held { color: var(--warn); margin: 0 0 10px; }
+.report-section { border-left: 3px solid var(--border); padding: 2px 0 2px 12px; margin: 12px 0; }
+.report-section summary { cursor: pointer; font-weight: 600; }
+.report-added { border-left-color: var(--verified); }
+.report-left { border-left-color: var(--neutral); }
+.report-missed { border-left-color: var(--warn); }
+.report-list { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 10px; }
+.report-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
+.report-type { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); min-width: 6.5em; }
+.report-quote { display: inline; color: var(--text-muted); font-size: 0.9rem; overflow-wrap: anywhere; }

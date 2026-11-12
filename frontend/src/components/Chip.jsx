@@ -30,7 +30,7 @@ export function BadgeChip({ badge }) {
 export function FlagChip({ flag }) {
   const { t } = useTranslation();
   return (
-    <span className={`chip ${flag === 'ambiguous_date' || flag === 'unit_mismatch' || flag === 'implausible_value' ? 'chip-warn' : 'chip-danger'}`} title={t(`flagTips.${flag}`)}>
+    <span className={`chip ${['ambiguous_date', 'unit_mismatch', 'implausible_value', 'handwriting'].includes(flag) ? 'chip-warn' : 'chip-danger'}`} title={t(`flagTips.${flag}`)}>
       <AlertTriangle size={14} />{t(`flagNames.${flag}`)}
     </span>
   );
