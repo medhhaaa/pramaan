@@ -51,7 +51,7 @@
   color: var(--muted);
   text-align: right;
 }
-.header-user button { min-height: 40px; padding: var(--s1) var(--s3); font-size: 14px; }
+.header-user button { min-height: var(--tap); padding: var(--s1) var(--s3); font-size: 14px; }
 
 /* slim info bar, not a warning */
 .disclaimer {
@@ -83,7 +83,7 @@
   padding: var(--s1);
   background: var(--surface);
   border: 1px solid var(--border);
-  border-radius: 999px;
+  border-radius: 24px; /* a pill on one row, a soft card when it wraps to two */
   box-shadow: var(--shadow);
 }
 .nav button {
