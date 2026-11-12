@@ -8,6 +8,7 @@ from pydantic import BaseModel
 
 from backend.auth import get_current_user, require_patient_access
 from backend.db import fact_from_row, get_conn, log_action
+from backend.recompute import recompute_patient
 
 # Only these fields can be corrected. Everything else is evidence or an ID.
 CORRECTABLE = {"name", "dose", "frequency", "value", "unit", "action", "status", "event_date"}
@@ -41,6 +42,10 @@ def correct_fact(fact_id: str, body: CorrectionBody, user=Depends(get_current_us
             f"UPDATE facts SET {body.field} = ?, corrected = 1 WHERE fact_id = ?",
             (body.new_value, fact_id),
         )
+
+    # rerun the checks: a doctor's correction makes the fact doctor_verified
+    recompute_patient(fact["patient_id"])
+    with get_conn() as conn:
         updated = conn.execute("SELECT * FROM facts WHERE fact_id = ?", (fact_id,)).fetchone()
 
     log_action(user, "correct_fact", fact["patient_id"],

@@ -13,9 +13,8 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn, log_action
+from backend.storage import abs_path, read_file, temp_copy
 from pipeline.read_pdf import read_pdf
-
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
 router = APIRouter()
 
@@ -28,13 +27,15 @@ def get_document(document_id: str, user=Depends(get_current_user)):
         raise HTTPException(status_code=404, detail="Document not found")
     require_patient_access(user, doc["patient_id"])
 
-    path = os.path.join(ROOT, doc["file_path"])
     pdf_base64, lines = None, []
-    if os.path.exists(path):
-        with open(path, "rb") as f:
-            pdf_base64 = base64.b64encode(f.read()).decode()
-        # covered is filled in later from pipeline.coverage (P2)
-        lines = [{**line, "covered": False} for line in read_pdf(path)]
+    if os.path.exists(abs_path(doc["file_path"])):
+        pdf_base64 = base64.b64encode(read_file(doc["file_path"])).decode()  # decrypts .enc files
+        tmp = temp_copy(doc["file_path"])
+        try:
+            # covered is filled in later from pipeline.coverage (P2)
+            lines = [{**line, "covered": False} for line in read_pdf(tmp)]
+        finally:
+            os.remove(tmp)
 
     log_action(user, "view_document", doc["patient_id"], {"document_id": document_id})
     return {
