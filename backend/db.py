@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('doctor', 'patient')),
-    language TEXT  -- 'en' or 'kn'; NULL until the user picks one at first login
+    language TEXT  -- 'en', 'kn' or 'hi'; NULL until the user picks one at first login
 );
 CREATE TABLE IF NOT EXISTS patients (
     id TEXT PRIMARY KEY,

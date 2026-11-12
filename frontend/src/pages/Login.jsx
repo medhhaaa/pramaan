@@ -8,7 +8,7 @@ import { useApp } from '../context/AppContext.jsx';
 import { login, setToken } from '../api.js';
 
 export default function Login() {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
   const { setUser } = useApp();
   const navigate = useNavigate();
   const [mode, setMode] = useState('login'); // login | signup (demo only)
@@ -26,7 +26,10 @@ export default function Login() {
     try {
       const res = await login(username.trim(), password);
       setToken(res.token);
-      setUser({ role: res.role, name: res.name, username: res.username, patientId: res.patientId });
+      // language is null on the first login: the language popup then asks (App.jsx)
+      const language = res.language || null;
+      if (language) { i18n.changeLanguage(language); localStorage.setItem('pramaan_lang', language); }
+      setUser({ role: res.role, name: res.name, username: res.username, patientId: res.patientId, language });
       navigate(res.role === 'doctor' ? '/patients' : '/my-records', { replace: true });
     } catch {
       setError(t('auth.badLogin'));

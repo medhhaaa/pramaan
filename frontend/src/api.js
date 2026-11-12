@@ -87,7 +87,9 @@ export async function login(username, password) {
     const u = USERS[username];
     if (!u || u.password !== password) throw new Error('bad_login');
     token = `dummy-${username}`;
-    return { token, role: u.role, name: u.name, username, patientId: u.patientId || null };
+    // demo mode: each demo user's language choice is kept in this browser
+    const language = localStorage.getItem(`pramaan_lang:${username}`);
+    return { token, role: u.role, name: u.name, username, patientId: u.patientId || null, language };
   }
   const data = await http('POST', '/login', { username, password });
   setToken(data.token);
@@ -99,6 +101,12 @@ export async function login(username, password) {
     if (own) { patientId = own.id; name = own.name; }
   }
   return { ...data, name, patientId };
+}
+
+// Saves the user's language (en | kn | hi) to their account, so it follows them to any device.
+export async function saveLanguage(username, language) {
+  if (USE_DUMMY) { localStorage.setItem(`pramaan_lang:${username}`, language); return { language }; }
+  return http('PUT', '/me/language', { language });
 }
 
 export async function listPatients() {

@@ -1,7 +1,7 @@
 """Login, passwords and per-patient access. (Core backend)
 
 POST /login  {"username", "password"} -> {"token", "role", "username", "language"}
-             language is "en", "kn", or null (not chosen yet: the frontend asks once)
+             language is "en", "kn", "hi", or null (not chosen yet: the frontend asks once)
 
 In any route:
     user = Depends(get_current_user)        -> {"id", "username", "role"} or 401
