@@ -25,24 +25,40 @@ def new_document_id(conn, patient_id):
     return f"{patient_id}_d{n}"
 
 
-def ingest_document(patient_id, filename, data, doc_type=None):
+def _use_saved(saved, patient_id, document_id):
+    """Ashil's saved pipeline output (data/extracted/pN.json) for one document, with the
+    IDs set to the document_id this upload got."""
+    result = dict(saved)
+    result["facts"] = [
+        dict(f, patient_id=patient_id, document_id=document_id, fact_id=f"{document_id}_f{n:03d}")
+        for n, f in enumerate(saved["facts"], start=1)
+    ]
+    return result
+
+
+def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
     """data = the PDF bytes. Returns {"document_id", "facts_added", "held_back", "reasons",
-    "dropped", "doc_type", "document_date"}."""
+    "dropped", "doc_type", "document_date"}.
+    saved = optional saved pipeline output for this document: then the AI is not called
+    (used by load_demo --saved), and every other step still runs."""
     with get_conn() as conn:
         patient = dict(conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone())
         document_id = new_document_id(conn, patient_id)
 
     rel_path = f"storage/{patient_id}/{document_id}.pdf.enc"
     save_encrypted(data, rel_path)
-    tmp = temp_copy(rel_path)
-    try:
-        # known_names makes sure the patient's own name is redacted before the AI call
-        result = process.process_document_full(tmp, patient_id, document_id, known_names=[patient["name"]])
-    except Exception:
-        delete_file(rel_path)
-        raise
-    finally:
-        os.remove(tmp)
+    if saved is not None:
+        result = _use_saved(saved, patient_id, document_id)
+    else:
+        tmp = temp_copy(rel_path)
+        try:
+            # known_names makes sure the patient's own name is redacted before the AI call
+            result = process.process_document_full(tmp, patient_id, document_id, known_names=[patient["name"]])
+        except Exception:
+            delete_file(rel_path)
+            raise
+        finally:
+            os.remove(tmp)
 
     facts = result["facts"]
     conflicts = find_conflicts(facts, patient)
