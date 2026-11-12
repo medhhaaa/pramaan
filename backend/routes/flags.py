@@ -10,7 +10,7 @@ Gaps are computed on the fly from the facts the patient's timeline trusts (not h
 from fastapi import APIRouter, Depends
 
 from backend.auth import get_current_user, require_patient_access
-from backend.db import fact_from_row, get_conn
+from backend.db import fact_from_row, get_conn, log_action
 from backend.logic.flags import find_gaps
 
 router = APIRouter()
@@ -52,9 +52,7 @@ def flags_route(patient_id: str, user=Depends(get_current_user)):
         if not held_back:
             trusted.append(fact)
 
+    log_action(user, "view_flags", patient_id)
     groups = group_by_flag(facts)
-    try:
-        groups["gap"] = find_gaps(trusted)
-    except NotImplementedError:  # until find_gaps is built
-        groups["gap"] = []
+    groups["gap"] = find_gaps(trusted)
     return groups
