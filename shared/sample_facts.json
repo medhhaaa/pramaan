@@ -20,7 +20,9 @@
     "quote_verified": true,
     "echo_of": null,
     "badge": "single_document",
-    "flags": [],
+    "flags": [
+      "ambiguous_date"
+    ],
     "corrected": false
   },
   {
@@ -44,7 +46,9 @@
     "quote_verified": true,
     "echo_of": null,
     "badge": "independent_2plus",
-    "flags": [],
+    "flags": [
+      "ambiguous_date"
+    ],
     "corrected": false
   },
   {
@@ -67,8 +71,10 @@
     "line": 8,
     "quote_verified": true,
     "echo_of": null,
-    "badge": "single_document",
-    "flags": [],
+    "badge": "independent_2plus",
+    "flags": [
+      "ambiguous_date"
+    ],
     "corrected": false
   },
   {
@@ -92,7 +98,9 @@
     "quote_verified": true,
     "echo_of": null,
     "badge": "single_document",
-    "flags": [],
+    "flags": [
+      "ambiguous_date"
+    ],
     "corrected": false
   },
   {
@@ -117,7 +125,8 @@
     "echo_of": null,
     "badge": "conflicting",
     "flags": [
-      "contradiction"
+      "contradiction",
+      "ambiguous_date"
     ],
     "corrected": false
   },
@@ -337,7 +346,7 @@
     "line": 8,
     "quote_verified": true,
     "echo_of": null,
-    "badge": "single_document",
+    "badge": "independent_2plus",
     "flags": [],
     "corrected": false
   },

@@ -2,7 +2,7 @@
 from fastapi import APIRouter, Depends
 
 from backend.auth import get_current_user
-from backend.db import get_conn
+from backend.db import get_conn, log_action
 
 router = APIRouter()
 
@@ -16,4 +16,5 @@ def list_patients(user=Depends(get_current_user)):
                WHERE up.user_id = ? ORDER BY p.id""",
             (user["id"],),
         ).fetchall()
+    log_action(user, "list_patients")
     return [dict(r) for r in rows]

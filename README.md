@@ -59,7 +59,8 @@ Demo logins: `doctor` / `doctor123`, `sunita` / `sunita123`.
 | Person | Folders |
 |---|---|
 | Ashil | `data/`, `pipeline/` |
-| Core backend (setup lead) | `backend/db.py`, `auth.py`, `seed.py`, `main.py`, core routes, `backend/logic/` |
+| Core backend (setup lead) | `backend/db.py`, `auth.py`, `seed.py`, `main.py`, `recompute.py`, routes patients, upload, timeline, documents, corrections, `logic/wrong_patient.py` |
+| Deeksha | `backend/logic/` flags, echo, badges; routes medications, flags; later styling + slides |
 | Medha | `frontend/`, `backend/routes/` ask, questions, brief, check_medicine, metrics, audit, delete |
 
 Shared, change only after telling the team: `CLAUDE.md`, `shared/sample_facts.json`, the fact format, the API list, database tables.
@@ -74,5 +75,7 @@ git push -u origin ashil/extraction
 # open a Pull Request into main on GitHub, merge it, then start the next branch from fresh main
 ```
 
+- **Never push directly to `main`.** Every change goes through a branch + pull request.
+- **No AI co-authors:** don't add Claude as a collaborator, and remove any `Co-Authored-By: Claude` line from commits or PRs.
 - Never commit `.env`, API keys, `backend/pramaan.db` or files in `storage/`.
 - Pull `main` into your branch every few hours (`git pull origin main`) to catch conflicts early.
