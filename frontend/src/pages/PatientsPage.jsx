@@ -18,7 +18,7 @@ export default function PatientsPage({ user, onOpen }) {
     <section>
       <h1>{user.role === "doctor" ? "Patients" : "My records"}</h1>
       {patients.length === 0 && <p>No patients to show.</p>}
-      <ul className="list">
+      <ul className="list patient-list">
         {patients.map((p) => (
           <li key={p.id}>
             <div>
@@ -28,13 +28,13 @@ export default function PatientsPage({ user, onOpen }) {
                 {p.sex} · born {p.dob} · blood group {p.blood_group}
               </small>
             </div>
-            <span>
+            <span className="card-actions">
               {user.role === "doctor" ? (
-                <button onClick={() => onOpen(p, "brief")}>Brief</button>
+                <button className="btn-primary" onClick={() => onOpen(p, "brief")}>Brief</button>
               ) : (
-                <button onClick={() => onOpen(p, "questions")}>Things to check</button>
+                <button className="btn-primary" onClick={() => onOpen(p, "questions")}>Things to check</button>
               )}{" "}
-              <button onClick={() => onOpen(p, "timeline")}>Timeline</button>{" "}
+              <button className="btn-secondary" onClick={() => onOpen(p, "timeline")}>Timeline</button>{" "}
               <button onClick={() => onOpen(p, "upload")}>Upload</button>
             </span>
           </li>

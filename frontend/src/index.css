@@ -4,11 +4,9 @@
 @import "./styles/base.css";
 @import "./styles/header.css";
 @import "./styles/forms.css";
+@import "./styles/lists.css";
 
 /* ---- not yet restyled (replaced step by step) ---- */
-
-.list { list-style: none; padding: 0; }
-.list li { display: flex; justify-content: space-between; gap: 12px; flex-wrap: wrap; padding: 10px; border: 1px solid #ddd; background: #fff; margin-bottom: 6px; }
 
 .with-panel { display: grid; grid-template-columns: 1fr 480px; gap: 16px; align-items: start; }
 @media (max-width: 900px) { .with-panel { grid-template-columns: 1fr; } }

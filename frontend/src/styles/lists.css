@@ -1,0 +1,71 @@
+/* Patient cards and the upload page. */
+
+.list { list-style: none; padding: 0; margin: var(--s4) 0; display: grid; gap: var(--s3); }
+.list li {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: var(--s3);
+  flex-wrap: wrap;
+  padding: var(--s4);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
+
+/* ---------- patient cards ---------- */
+.patient-list li { padding: var(--s4) var(--s5); }
+.patient-list li > div strong { display: block; font-size: 18px; }
+.patient-list li > div small { display: block; margin-top: 2px; color: var(--muted); font-size: 14px; }
+.card-actions { display: flex; flex-wrap: wrap; gap: var(--s2); }
+
+/* ---------- upload ---------- */
+/* the file input itself becomes the drop area (it accepts dropped files natively) */
+.upload input[type="file"] {
+  display: block;
+  width: 100%;
+  margin: var(--s4) 0 var(--s2);
+  padding: var(--s8) var(--s4);
+  border: 2px dashed var(--border-strong);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--muted);
+  font: inherit;
+  font-size: 15px;
+  text-align: center;
+  cursor: pointer;
+}
+.upload input[type="file"]:hover { border-color: var(--primary); background: var(--info-bg); }
+.upload input[type="file"]:focus-visible { outline-offset: 2px; border-color: var(--primary); }
+.upload input[type="file"]::file-selector-button {
+  font: inherit;
+  font-weight: 600;
+  min-height: var(--tap);
+  margin-right: var(--s3);
+  padding: var(--s2) var(--s4);
+  border: 1px solid var(--primary);
+  border-radius: var(--radius-sm);
+  background: var(--surface);
+  color: var(--primary);
+  cursor: pointer;
+}
+.upload input[type="file"]:hover::file-selector-button { background: var(--primary-soft); }
+
+/* result rows: the words "facts added" / "Held back" / "Failed" carry the meaning, colour backs it up */
+.upload-results li {
+  align-items: flex-start;
+  border-left: 6px solid var(--border-strong);
+  box-shadow: none;
+}
+.upload-results li > span:first-child { font-weight: 600; font-family: var(--font-mono); font-size: 14px; }
+.upload-results li:has(.ok) { border-left-color: var(--ok-fg); background: var(--ok-bg); }
+.upload-results li:has(.warn) { border-left-color: var(--notdoc-stripe); background: var(--warn-bg); }
+.upload-results li:has(.error) { border-left-color: var(--error-fg); background: var(--error-bg); }
+.upload-results .ok, .upload-results .warn, .upload-results .error { font-weight: 600; max-width: 60ch; }
+
+@media (max-width: 767px) {
+  .list li { flex-direction: column; align-items: stretch; }
+  .card-actions button { flex: 1 1 auto; }
+  .upload input[type="file"] { padding: var(--s6) var(--s3); }
+}
