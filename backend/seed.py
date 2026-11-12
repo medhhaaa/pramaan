@@ -25,6 +25,8 @@ PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5"]
 USERS = [
     ("doctor", "doctor123", "doctor", PATIENT_IDS),
     ("sunita", "sunita123", "patient", ["p1"]),
+    # a doctor at another clinic: sees no patients until one shares by QR / code
+    ("guestdoctor", "guest123", "doctor", []),
 ]
 
 
