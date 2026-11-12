@@ -78,9 +78,9 @@ E-prescription writer, medicine reminders, adherence tracking, caregiver alerts,
 | Person | Role | Owns |
 |---|---|---|
 | **Ashil** | Data + AI pipeline | `data/`, `pipeline/`: synthetic PDFs + traps, answer keys, PDF reading, de-identification, `llm.py`, extraction prompt, quote verification, `process_document()`, precision/recall script, coverage map, plausibility guard |
-| **Me (setup lead)** | Core backend | `backend/db.py`, `auth.py`, routes for patients, upload, timeline, medications, documents, corrections, flags; `backend/logic/` flags, echo detection, trust badges, wrong-patient detection; encryption; Ollama mode |
+| **Setup lead** | Core backend | `backend/db.py`, `auth.py`, `seed.py`, `main.py`, `recompute.py`; routes patients, upload, timeline, documents, corrections; `backend/logic/wrong_patient.py`; encryption; Ollama mode |
+| **Deeksha** | Checks backend, then polish | `backend/logic/` flags.py, echo.py, badges.py; routes medications, flags; later: styling (CSS only), mobile view, demo flow, slides |
 | **Medha** | Frontend + feature backends | `frontend/` (all screens) and `backend/routes/` ask, questions, brief, check_medicine, metrics, audit, delete |
-| **4th person** | Polish (later) | Styling, mobile view, demo flow, slides |
 
 **Rules**
 - The core backend owner owns the database tables. Ask before adding tables or columns.
@@ -150,8 +150,8 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `GET /patients` | Patients this user can access | Core backend |
 | `POST /patients/{id}/upload` | Upload PDF → pipeline → facts | Core backend |
 | `GET /patients/{id}/timeline` | Facts sorted by event_date with badges + flags | Core backend |
-| `GET /patients/{id}/medications` | Per medicine: entries (date, dose, action, echo) + last_fresh_evidence_date | Core backend |
-| `GET /patients/{id}/flags` | Flagged facts grouped by flag type | Core backend |
+| `GET /patients/{id}/medications` | Per medicine: entries (date, dose, action, echo) + last_fresh_evidence_date | Deeksha |
+| `GET /patients/{id}/flags` | Flagged facts grouped by flag type | Deeksha |
 | `GET /documents/{id}` | PDF + line positions for highlighting | Core backend |
 | `POST /facts/{id}/correct` | Correction, keeps original | Core backend |
 | `POST /patients/{id}/ask` | Q&A with citations or "not documented" | Medha |
@@ -194,9 +194,10 @@ pramaan/
     prompts/extraction.txt
   backend/
     main.py  db.py  auth.py  seed.py
-    routes/   patients, upload, timeline, medications, flags, documents, corrections (core)
-              ask, questions, brief, check_medicine, metrics, audit (Medha)
-    logic/    flags.py  echo.py  badges.py  wrong_patient.py (core)
+    routes/   patients, upload, timeline, documents, corrections (core)
+              medications, flags (Deeksha)
+              ask, questions, brief, check_medicine, metrics, audit, delete (Medha)
+    logic/    flags.py  echo.py  badges.py (Deeksha)   wrong_patient.py (core)
   frontend/            (Medha) React + Vite
     src/api.js  src/dummy/  src/pages/  src/components/
 ```
