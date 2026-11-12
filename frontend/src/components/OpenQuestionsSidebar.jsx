@@ -94,8 +94,9 @@ export default function OpenQuestionsSidebar({ patient, user, onChange }) {
     onChange?.();
   }
 
+  // claim checklist questions belong to the patient, not the doctor
   const open = (questions || [])
-    .filter((q) => q.status !== "resolved")
+    .filter((q) => q.status !== "resolved" && !q.claim_condition)
     .sort((a, b) => ORDER[a.status] - ORDER[b.status] || a.id - b.id);
   const resolved = (questions || []).filter((q) => q.status === "resolved");
 

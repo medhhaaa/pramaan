@@ -1,0 +1,11 @@
+[
+  {"doc": "discharge_summary",    "label": "Discharge summary",                        "when": "always"},
+  {"doc": "final_bill",           "label": "Final hospital bill with itemised breakup", "when": "always"},
+  {"doc": "payment_receipt",      "label": "Payment receipts",                          "when": "always"},
+  {"doc": "pharmacy_bill",        "label": "Pharmacy bills with prescriptions",         "when": "always"},
+  {"doc": "investigation_report", "label": "Lab and scan reports",                      "when": "always"},
+  {"doc": "prescription",         "label": "Doctor's prescriptions",                    "when": "always"},
+  {"doc": "operation_notes",      "label": "Operation notes",                           "when": "surgery"},
+  {"doc": "implant_invoice",      "label": "Implant invoice and sticker",               "when": "implant_used"},
+  {"doc": "fir_or_mlc",           "label": "FIR or MLC copy",                           "when": "accident"}
+]

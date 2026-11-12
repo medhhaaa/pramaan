@@ -15,6 +15,9 @@ POST /questions/{question_id}/answer   {"answer": "...", "value": "..."}
 
 The answer column holds JSON: {"answer", "value", "by", "role", "at"}.
 Each question is saved in English (text) and Kannada (text_kn); the user's language picks one.
+Claim checklist questions (stay_id + claim_condition set, see backend/routes/claims.py) live
+in the same table: the patient answers yes / no / dont_know, and the answer sets the hospital
+stay's condition. They never go to the doctor.
 Quotes, medicine names, doses and dates inside the text stay exactly as written.
 """
 import json
@@ -28,6 +31,7 @@ from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn
 from backend.logic.flags import find_gaps
 from backend.recompute import recompute_patient
+from backend.routes.claims import answer_claim_question, sync_claim_questions
 from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import (
     describe, load_documents, load_facts, medication_summaries, source_label,
@@ -156,6 +160,7 @@ def sync_questions(conn, patient_id):
             existing[key] = {"text_kn": texts["kn"]}
         elif not row["text_kn"]:
             conn.execute("UPDATE questions SET text_kn = ? WHERE id = ?", (texts["kn"], row["id"]))
+    sync_claim_questions(conn, patient_id)
 
 
 def question_out(row, facts_by_id, lang="en"):
@@ -168,6 +173,8 @@ def question_out(row, facts_by_id, lang="en"):
         "fact_ids": fact_ids,
         "facts": [facts_by_id[i] for i in fact_ids if i in facts_by_id],
         "created_at": row["created_at"],
+        "stay_id": row["stay_id"],
+        "claim_condition": row["claim_condition"],
     }
 
 
@@ -214,7 +221,10 @@ def answer_question(question_id: int, body: AnswerBody, user=Depends(get_current
 
     answer = body.answer
     value = (body.value or "").strip() or None
-    if answer in PATIENT_ANSWERS:
+    if row["claim_condition"]:  # hospital stay question for the Claim Documents checklist
+        new_status = answer_claim_question(row, answer, user)
+        value = None
+    elif answer in PATIENT_ANSWERS:
         if user["role"] != "patient":
             raise HTTPException(status_code=403, detail="Only the patient answers Things to Check.")
         if answer == "value" and not value:
@@ -243,7 +253,8 @@ def answer_question(question_id: int, body: AnswerBody, user=Depends(get_current
             (new_status, json.dumps(stored), question_id),
         )
     # badges.py counts facts in "answered" questions as patient_reported: rerun the checks now
-    recompute_patient(patient_id)
+    if not row["claim_condition"]:
+        recompute_patient(patient_id)
     with get_conn() as conn:
         updated = conn.execute("SELECT * FROM questions WHERE id = ?", (question_id,)).fetchone()
         facts_by_id = facts_with_gaps(conn, patient_id)

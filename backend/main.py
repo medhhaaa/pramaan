@@ -14,7 +14,7 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from backend import auth  # noqa: E402
 from backend.db import init_db  # noqa: E402
 from backend.routes import (  # noqa: E402
-    ask, audit, brief, check_medicine, corrections, delete, documents, flags,
+    ask, audit, brief, check_medicine, claims, corrections, delete, documents, flags,
     language, medications, metrics, patients, questions, share, timeline, upload,
 )
 
@@ -35,7 +35,7 @@ for module in [
     # core backend
     patients, upload, timeline, medications, flags, documents, corrections, share,
     # Medha
-    ask, questions, brief, check_medicine, metrics, audit, delete, language,
+    ask, questions, brief, check_medicine, metrics, audit, delete, language, claims,
 ]:
     app.include_router(module.router)
 

@@ -11,3 +11,4 @@ anthropic
 openai
 requests
 segno
+pytest

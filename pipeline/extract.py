@@ -4,8 +4,10 @@ extract_facts(clean_text, patient_id, document_id) -> list of fact dicts
     The AI's facts, cleaned up. page / line / quote_verified are filled in later by
     verify.py, and fact_id / document_date by process.py.
 
-extract_document(clean_text) -> {"document_date", "document_date_raw", "doc_type", "facts"}
-    Same call, but also returns what the AI read about the document itself.
+extract_document(clean_text) -> {"document_date", "document_date_raw", "doc_type",
+                                  "doc_type_quote", "doc_type_confidence", "facts"}
+    Same call, but also returns what the AI read about the document itself. doc_type is the
+    AI's raw answer here; pipeline/doc_type.py checks its quote (process.py does that).
 
 The AI reply is parsed robustly: strip code fences, json.loads, and retry once on bad JSON.
 Anything that breaks the rules (unknown type, no quote, "not_documented") is thrown away.
@@ -21,7 +23,6 @@ PROMPT_PATH = os.path.join(os.path.dirname(__file__), "prompts", "extraction.txt
 FACT_TYPES = {"medication", "allergy", "condition", "lab_test", "event", "demographic"}
 ACTIONS = {"started", "continued", "changed", "stopped", "mentioned"}
 DEMOGRAPHIC_NAMES = {"patient_name", "sex", "dob", "blood_group"}
-DOC_TYPES = {"prescription", "lab_report", "discharge_summary", "other"}
 ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
 
 RETRY_NOTE = "\n\nYour previous reply was not valid JSON. Reply with ONLY the JSON object."
@@ -108,12 +109,13 @@ def extract_document(clean_text):
         raise ValueError("AI reply was JSON but not an object or list")
 
     document_date = _text_or_none(data.get("document_date"))
-    doc_type = _text_or_none(data.get("doc_type"))
     facts = [clean_fact(raw) for raw in data.get("facts") or []]
     return {
         "document_date": document_date if document_date and ISO_DATE.match(document_date) else None,
         "document_date_raw": _text_or_none(data.get("document_date_raw")),
-        "doc_type": doc_type if doc_type in DOC_TYPES else "other",
+        "doc_type": _text_or_none(data.get("doc_type")),
+        "doc_type_quote": _text_or_none(data.get("doc_type_quote")),
+        "doc_type_confidence": _text_or_none(data.get("doc_type_confidence")),
         "facts": [f for f in facts if f is not None],
     }
 

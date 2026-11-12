@@ -1,0 +1,195 @@
+{
+ "stay": {
+  "id": 1,
+  "patient_id": "p6",
+  "admitted_on": "2026-10-05",
+  "discharged_on": "2026-10-09",
+  "surgery": true,
+  "implant_used": true,
+  "accident": false,
+  "source": "discharge_summary",
+  "source_document_id": "p6_d2",
+  "my_reminder_date": null,
+  "created_at": "2026-11-12 21:39:40"
+ },
+ "items": [
+  {
+   "doc": "discharge_summary",
+   "label": "Discharge summary",
+   "when": "always",
+   "document_ids": [
+    "p6_d2"
+   ],
+   "status": "saved",
+   "documents": [
+    {
+     "id": "p6_d2",
+     "filename": "d2_discharge_2026.pdf",
+     "doc_type": "discharge_summary",
+     "document_date": "2026-10-09",
+     "doc_type_quote": "DISCHARGE SUMMARY",
+     "doc_type_page": 1,
+     "doc_type_line": 4
+    }
+   ]
+  },
+  {
+   "doc": "final_bill",
+   "label": "Final hospital bill with itemised breakup",
+   "when": "always",
+   "document_ids": [
+    "p6_d3"
+   ],
+   "status": "saved",
+   "documents": [
+    {
+     "id": "p6_d3",
+     "filename": "d3_final_bill_2026.pdf",
+     "doc_type": "final_bill",
+     "document_date": "2026-10-09",
+     "doc_type_quote": "FINAL BILL",
+     "doc_type_page": 1,
+     "doc_type_line": 4
+    }
+   ]
+  },
+  {
+   "doc": "payment_receipt",
+   "label": "Payment receipts",
+   "when": "always",
+   "document_ids": [],
+   "status": "not_saved",
+   "documents": []
+  },
+  {
+   "doc": "pharmacy_bill",
+   "label": "Pharmacy bills with prescriptions",
+   "when": "always",
+   "document_ids": [
+    "p6_d4"
+   ],
+   "status": "saved",
+   "documents": [
+    {
+     "id": "p6_d4",
+     "filename": "d4_pharmacy_bill_2026.pdf",
+     "doc_type": "pharmacy_bill",
+     "document_date": "2026-10-09",
+     "doc_type_quote": "PHARMACY BILL",
+     "doc_type_page": 1,
+     "doc_type_line": 4
+    }
+   ]
+  },
+  {
+   "doc": "investigation_report",
+   "label": "Lab and scan reports",
+   "when": "always",
+   "document_ids": [
+    "p6_d1"
+   ],
+   "status": "saved",
+   "documents": [
+    {
+     "id": "p6_d1",
+     "filename": "d1_lab_2026.pdf",
+     "doc_type": "lab_report",
+     "document_date": "2026-10-05",
+     "doc_type_quote": "LABORATORY REPORT",
+     "doc_type_page": 1,
+     "doc_type_line": 4
+    }
+   ]
+  },
+  {
+   "doc": "prescription",
+   "label": "Doctor's prescriptions",
+   "when": "always",
+   "document_ids": [
+    "p6_d5"
+   ],
+   "status": "saved",
+   "documents": [
+    {
+     "id": "p6_d5",
+     "filename": "d5_prescription_2026.pdf",
+     "doc_type": "prescription",
+     "document_date": "2026-10-09",
+     "doc_type_quote": "PRESCRIPTION",
+     "doc_type_page": 1,
+     "doc_type_line": 4
+    }
+   ]
+  },
+  {
+   "doc": "operation_notes",
+   "label": "Operation notes",
+   "when": "surgery",
+   "document_ids": [],
+   "status": "not_saved",
+   "documents": []
+  },
+  {
+   "doc": "implant_invoice",
+   "label": "Implant invoice and sticker",
+   "when": "implant_used",
+   "document_ids": [],
+   "status": "not_saved",
+   "documents": []
+  },
+  {
+   "doc": "fir_or_mlc",
+   "label": "FIR or MLC copy",
+   "when": "accident",
+   "document_ids": [],
+   "status": "not_needed",
+   "documents": []
+  }
+ ],
+ "summary": {
+  "saved_count": 5,
+  "required_count": 8,
+  "unsure_count": 0
+ },
+ "also_keep_ready": [
+  {
+   "key": "claim_form",
+   "label": "Claim form"
+  },
+  {
+   "key": "policy_copy",
+   "label": "Policy copy or e-card"
+  },
+  {
+   "key": "id_proof",
+   "label": "ID proof"
+  },
+  {
+   "key": "bank_details",
+   "label": "Bank details (cancelled cheque)"
+  }
+ ],
+ "reminder": {
+  "show": true,
+  "docs": [
+   "payment_receipt",
+   "operation_notes",
+   "implant_invoice"
+  ]
+ },
+ "condition_questions": {
+  "surgery": {
+   "id": 1,
+   "status": "answered"
+  },
+  "implant_used": {
+   "id": 2,
+   "status": "answered"
+  },
+  "accident": {
+   "id": 3,
+   "status": "answered"
+  }
+ },
+ "note": "Documents commonly requested for reimbursement claims. Your insurer may ask for different or additional documents. Check your policy."
+}

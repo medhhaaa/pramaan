@@ -9,6 +9,7 @@ import { LanguageContext, translate } from "./i18n";
 import AskPage from "./pages/AskPage";
 import AuditPage from "./pages/AuditPage";
 import BriefPage from "./pages/BriefPage";
+import ClaimDocumentsPage from "./pages/ClaimDocumentsPage";
 import ConsentPage from "./pages/ConsentPage";
 import DeletePage from "./pages/DeletePage";
 import FlagsPage from "./pages/FlagsPage";
@@ -49,7 +50,7 @@ const tabsFor = (role) => [
   "upload",
   "audit",
   "delete",
-  ...(role === "patient" ? ["share"] : []),
+  ...(role === "patient" ? ["claims", "share"] : []),
 ];
 
 // a doctor viewing records shared by QR / code can only read: hide the tabs that change data
@@ -73,6 +74,7 @@ export default function App() {
   const [page, setPage] = useState(() => (shareToken ? "open-share" : "patients"));
   const [patient, setPatient] = useState(null);
   const [notice, setNotice] = useState("");
+  const [claimStayId, setClaimStayId] = useState(null); // hospital stay shown on Claim documents
 
   // The user's saved language. Before login (and before they choose), the last language
   // used on this browser, else English.
@@ -107,8 +109,9 @@ export default function App() {
     setPatient(null);
   }
 
-  function openPatient(p, target) {
+  function openPatient(p, target, stayId = null) {
     setPatient(p);
+    if (target === "claims") setClaimStayId(stayId);
     // consent is asked once per user, before their first upload
     if (target === "upload" && !load(`consent_${user.username}`)) setPage("consent");
     else setPage(target);
@@ -158,6 +161,10 @@ export default function App() {
   else if (page === "delete") content = <DeletePage patient={patient} onDeleted={goToPatients} />;
   else if (page === "brief" && user.role === "doctor") content = <BriefPage patient={patient} user={user} />;
   else if (page === "questions") content = <ThingsToCheckPage patient={patient} />;
+  else if (page === "claims" && user.role === "patient")
+    content = (
+      <ClaimDocumentsPage patient={patient} user={user} stayId={claimStayId} onStayChange={setClaimStayId} />
+    );
   else content = <TimelinePage patient={patient} user={user} />;
 
   return (

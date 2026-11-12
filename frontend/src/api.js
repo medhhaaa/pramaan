@@ -4,6 +4,7 @@
 // Response shapes follow KICKOFF.md "Handoffs".
 import dummyBrief from "./dummy/brief.json";
 import dummyChecks from "./dummy/check_medicine.json";
+import dummyClaimChecklist from "./dummy/claim_checklist.json";
 import dummyDocuments from "./dummy/documents.json";
 import dummyMetrics from "./dummy/metrics_results.json";
 import dummyQuestionsSeed from "./dummy/questions.json";
@@ -40,7 +41,8 @@ export function hasSession() {
   return USE_DUMMY || Boolean(token);
 }
 
-async function request(method, path, body) {
+// fetch with the login token and error handling; returns the Response
+async function send(method, path, body) {
   const isForm = body instanceof FormData;
   const res = await fetch(BASE_URL + path, {
     method,
@@ -66,7 +68,11 @@ async function request(method, path, body) {
     }
     throw new Error(detail || `${method} ${path} failed: ${res.status}`);
   }
-  return res.json();
+  return res;
+}
+
+async function request(method, path, body) {
+  return (await send(method, path, body)).json();
 }
 
 // ---------- dummy in-memory state (resets on page reload) ----------
@@ -467,4 +473,51 @@ export async function getShares(patientId) {
 export async function stopShare(shareId) {
   if (USE_DUMMY) needsBackend();
   return request("DELETE", `/share/${shareId}`);
+}
+
+// ---------- Claim Documents (hospital stay checklist: backend/routes/claims.py) ----------
+// Documents COMMONLY needed for a reimbursement claim; no claim decision of any kind.
+
+let dummyStays = [structuredClone(dummyClaimChecklist.stay)];
+
+// -> [{id, patient_id, admitted_on, discharged_on, surgery, implant_used, accident,
+//      my_reminder_date, created_at, summary: {saved_count, required_count, unsure_count}}]
+export async function getHospitalStays(patientId) {
+  if (USE_DUMMY) return dummyStays.map((s) => ({ ...s, summary: dummyClaimChecklist.summary }));
+  return request("GET", `/patients/${patientId}/hospital-stays`);
+}
+
+// patient: "I had a hospital stay" -> the new stay
+export async function createHospitalStay(patientId, dates = {}) {
+  if (USE_DUMMY) {
+    const stay = { ...dummyClaimChecklist.stay, id: dummyStays.length + 1, admitted_on: null, discharged_on: null };
+    dummyStays = [stay, ...dummyStays];
+    return stay;
+  }
+  return request("POST", `/patients/${patientId}/hospital-stays`, dates);
+}
+
+// patient: {admitted_on?, discharged_on?, my_reminder_date?} (YYYY-MM-DD or "") -> the stay
+export async function updateHospitalStay(patientId, stayId, changes) {
+  if (USE_DUMMY) {
+    dummyStays = dummyStays.map((s) => (s.id === stayId ? { ...s, ...changes } : s));
+    return dummyStays.find((s) => s.id === stayId);
+  }
+  return request("PATCH", `/patients/${patientId}/hospital-stays/${stayId}`, changes);
+}
+
+// -> {stay, items: [{doc, label, when, status, document_ids, documents}], summary,
+//     also_keep_ready, reminder: {show, docs}, condition_questions: {surgery: {id, status}}, note}
+export async function getClaimChecklist(patientId, stayId) {
+  if (USE_DUMMY) {
+    const stay = dummyStays.find((s) => s.id === stayId) || dummyStays[0];
+    return { ...dummyClaimChecklist, stay };
+  }
+  return request("GET", `/patients/${patientId}/hospital-stays/${stayId}/claim-checklist`);
+}
+
+// -> a zip Blob: saved documents in checklist order + checklist.txt
+export async function downloadClaimPack(patientId, stayId) {
+  if (USE_DUMMY) throw new Error("The claim pack needs the real backend (USE_DUMMY = false).");
+  return (await send("GET", `/patients/${patientId}/hospital-stays/${stayId}/claim-pack`)).blob();
 }
