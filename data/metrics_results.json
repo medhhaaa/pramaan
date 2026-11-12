@@ -1,0 +1,447 @@
+{
+  "generated_at": "2026-11-12T12:30:52+00:00",
+  "overall": {
+    "precision": 0.991,
+    "recall": 0.991,
+    "f1": 0.991,
+    "matched": 227,
+    "extracted": 229,
+    "expected": 229
+  },
+  "per_type": {
+    "allergy": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 11,
+      "extracted": 11,
+      "expected": 11
+    },
+    "condition": {
+      "precision": 0.968,
+      "recall": 1.0,
+      "f1": 0.984,
+      "matched": 30,
+      "extracted": 31,
+      "expected": 30
+    },
+    "demographic": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 79,
+      "extracted": 79,
+      "expected": 79
+    },
+    "event": {
+      "precision": 0.857,
+      "recall": 0.75,
+      "f1": 0.8,
+      "matched": 6,
+      "extracted": 7,
+      "expected": 8
+    },
+    "lab_test": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 63,
+      "extracted": 63,
+      "expected": 63
+    },
+    "medication": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 38,
+      "extracted": 38,
+      "expected": 38
+    }
+  },
+  "field_accuracy": {
+    "status": 1.0,
+    "action": 1.0,
+    "event_date": 0.991,
+    "unit": 1.0,
+    "frequency": 0.974,
+    "line": 0.991
+  },
+  "dropped_by_verification": 0,
+  "per_patient": {
+    "p1": {
+      "precision": 0.957,
+      "recall": 0.978,
+      "f1": 0.967,
+      "matched": 45,
+      "extracted": 47,
+      "expected": 46,
+      "by_type": {
+        "allergy": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 2,
+          "extracted": 2,
+          "expected": 2
+        },
+        "condition": {
+          "precision": 0.857,
+          "recall": 1.0,
+          "f1": 0.923,
+          "matched": 6,
+          "extracted": 7,
+          "expected": 6
+        },
+        "demographic": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 19,
+          "extracted": 19,
+          "expected": 19
+        },
+        "event": {
+          "precision": 0.5,
+          "recall": 0.5,
+          "f1": 0.5,
+          "matched": 1,
+          "extracted": 2,
+          "expected": 2
+        },
+        "lab_test": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 10,
+          "extracted": 10,
+          "expected": 10
+        },
+        "medication": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 7,
+          "extracted": 7,
+          "expected": 7
+        }
+      },
+      "field_accuracy": {
+        "status": 1.0,
+        "action": 1.0,
+        "event_date": 1.0,
+        "unit": 1.0,
+        "frequency": 1.0,
+        "line": 0.978
+      },
+      "false_positives": [
+        {
+          "document_id": "p1_d3",
+          "type": "condition",
+          "name": "MI",
+          "dose": null,
+          "value": null,
+          "quote": "History of MI in 2015."
+        },
+        {
+          "document_id": "p1_d3",
+          "type": "event",
+          "name": "discharge",
+          "dose": null,
+          "value": null,
+          "quote": "Date of discharge: 05-Aug-2022"
+        }
+      ],
+      "missed": [
+        {
+          "document_id": "p1_d3",
+          "type": "event",
+          "name": "Myocardial infarction",
+          "dose": null,
+          "value": null,
+          "quote": "History of MI in 2015."
+        }
+      ]
+    },
+    "p2": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 45,
+      "extracted": 45,
+      "expected": 45,
+      "by_type": {
+        "allergy": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 1,
+          "extracted": 1,
+          "expected": 1
+        },
+        "condition": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 7,
+          "extracted": 7,
+          "expected": 7
+        },
+        "demographic": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 13,
+          "extracted": 13,
+          "expected": 13
+        },
+        "event": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 1,
+          "extracted": 1,
+          "expected": 1
+        },
+        "lab_test": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 15,
+          "extracted": 15,
+          "expected": 15
+        },
+        "medication": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 8,
+          "extracted": 8,
+          "expected": 8
+        }
+      },
+      "field_accuracy": {
+        "status": 1.0,
+        "action": 1.0,
+        "event_date": 0.978,
+        "unit": 1.0,
+        "frequency": 1.0,
+        "line": 0.978
+      },
+      "false_positives": [],
+      "missed": []
+    },
+    "p3": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 39,
+      "extracted": 39,
+      "expected": 39,
+      "by_type": {
+        "allergy": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 2,
+          "extracted": 2,
+          "expected": 2
+        },
+        "condition": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 5,
+          "extracted": 5,
+          "expected": 5
+        },
+        "demographic": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 16,
+          "extracted": 16,
+          "expected": 16
+        },
+        "event": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 2,
+          "extracted": 2,
+          "expected": 2
+        },
+        "lab_test": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 9,
+          "extracted": 9,
+          "expected": 9
+        },
+        "medication": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 5,
+          "extracted": 5,
+          "expected": 5
+        }
+      },
+      "field_accuracy": {
+        "status": 1.0,
+        "action": 1.0,
+        "event_date": 1.0,
+        "unit": 1.0,
+        "frequency": 0.8,
+        "line": 1.0
+      },
+      "false_positives": [],
+      "missed": []
+    },
+    "p4": {
+      "precision": 1.0,
+      "recall": 1.0,
+      "f1": 1.0,
+      "matched": 47,
+      "extracted": 47,
+      "expected": 47,
+      "by_type": {
+        "allergy": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 4,
+          "extracted": 4,
+          "expected": 4
+        },
+        "condition": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 5,
+          "extracted": 5,
+          "expected": 5
+        },
+        "demographic": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 14,
+          "extracted": 14,
+          "expected": 14
+        },
+        "event": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 1,
+          "extracted": 1,
+          "expected": 1
+        },
+        "lab_test": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 11,
+          "extracted": 11,
+          "expected": 11
+        },
+        "medication": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 12,
+          "extracted": 12,
+          "expected": 12
+        }
+      },
+      "field_accuracy": {
+        "status": 1.0,
+        "action": 1.0,
+        "event_date": 0.979,
+        "unit": 1.0,
+        "frequency": 1.0,
+        "line": 1.0
+      },
+      "false_positives": [],
+      "missed": []
+    },
+    "p5": {
+      "precision": 1.0,
+      "recall": 0.981,
+      "f1": 0.99,
+      "matched": 51,
+      "extracted": 51,
+      "expected": 52,
+      "by_type": {
+        "allergy": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 2,
+          "extracted": 2,
+          "expected": 2
+        },
+        "condition": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 7,
+          "extracted": 7,
+          "expected": 7
+        },
+        "demographic": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 17,
+          "extracted": 17,
+          "expected": 17
+        },
+        "event": {
+          "precision": 1.0,
+          "recall": 0.5,
+          "f1": 0.667,
+          "matched": 1,
+          "extracted": 1,
+          "expected": 2
+        },
+        "lab_test": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 18,
+          "extracted": 18,
+          "expected": 18
+        },
+        "medication": {
+          "precision": 1.0,
+          "recall": 1.0,
+          "f1": 1.0,
+          "matched": 6,
+          "extracted": 6,
+          "expected": 6
+        }
+      },
+      "field_accuracy": {
+        "status": 1.0,
+        "action": 1.0,
+        "event_date": 1.0,
+        "unit": 1.0,
+        "frequency": 1.0,
+        "line": 1.0
+      },
+      "false_positives": [],
+      "missed": [
+        {
+          "document_id": "p5_d4",
+          "type": "event",
+          "name": "Admission for reduced urine output and leg swelling",
+          "dose": null,
+          "value": null,
+          "quote": "Admitted with reduced urine output and swelling of legs."
+        }
+      ]
+    }
+  }
+}
