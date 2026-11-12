@@ -1,0 +1,9 @@
+[
+  { "id": "p1_d1", "patient_id": "p1", "filename": "d1_prescription_2019.pdf", "doc_type": "prescription", "document_date": "2019-03-12", "held_back": false },
+  { "id": "p1_d2", "patient_id": "p1", "filename": "d2_lab_2021.pdf", "doc_type": "lab_report", "document_date": "2021-06-20", "held_back": false },
+  { "id": "p1_d3", "patient_id": "p1", "filename": "d3_discharge_2022.pdf", "doc_type": "discharge_summary", "document_date": "2022-08-05", "held_back": false },
+  { "id": "p1_d4", "patient_id": "p1", "filename": "d4_prescription_2023.pdf", "doc_type": "prescription", "document_date": "2023-01-15", "held_back": false },
+  { "id": "p1_d5", "patient_id": "p1", "filename": "d5_lab_2023.pdf", "doc_type": "lab_report", "document_date": "2023-01-16", "held_back": false },
+  { "id": "p1_d6", "patient_id": "p1", "filename": "d6_lab_2023_copy.pdf", "doc_type": "lab_report", "document_date": "2023-01-16", "held_back": false },
+  { "id": "p1_d7", "patient_id": "p1", "filename": "d7_lab_psa.pdf", "doc_type": "lab_report", "document_date": "2023-05-04", "held_back": true }
+]

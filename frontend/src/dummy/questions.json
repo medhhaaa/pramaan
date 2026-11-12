@@ -1,0 +1,153 @@
+[
+ {
+  "id": 1,
+  "text": "Your records disagree. The prescription from 2019-03-12 says \"No known drug allergies\", but the discharge summary from 2022-08-05 says \"Allergy: Penicillin (rash)\". Are you allergic to Penicillin?",
+  "status": "open",
+  "answer": null,
+  "fact_ids": [
+   "p1_d1_f005",
+   "p1_d3_f004"
+  ],
+  "facts": [
+   {
+    "fact_id": "p1_d1_f005",
+    "patient_id": "p1",
+    "document_id": "p1_d1",
+    "type": "allergy",
+    "name": "Drug allergy",
+    "dose": null,
+    "frequency": null,
+    "value": null,
+    "unit": null,
+    "action": null,
+    "status": "negated",
+    "event_date": "2019-03-12",
+    "document_date": "2019-03-12",
+    "date_raw": "12/03/2019",
+    "quote": "No known drug allergies",
+    "page": 1,
+    "line": 11,
+    "quote_verified": true,
+    "echo_of": null,
+    "badge": "conflicting",
+    "flags": [
+     "contradiction"
+    ],
+    "corrected": false
+   },
+   {
+    "fact_id": "p1_d3_f004",
+    "patient_id": "p1",
+    "document_id": "p1_d3",
+    "type": "allergy",
+    "name": "Penicillin",
+    "dose": null,
+    "frequency": null,
+    "value": "rash",
+    "unit": null,
+    "action": null,
+    "status": "documented",
+    "event_date": "2022-08-05",
+    "document_date": "2022-08-05",
+    "date_raw": "05-Aug-2022",
+    "quote": "Allergy: Penicillin (rash)",
+    "page": 1,
+    "line": 10,
+    "quote_verified": true,
+    "echo_of": null,
+    "badge": "conflicting",
+    "flags": [
+     "contradiction"
+    ],
+    "corrected": false
+   }
+  ],
+  "created_at": "2026-11-12 12:24:09"
+ },
+ {
+  "id": 2,
+  "text": "Atenolol 50mg once daily appears in 3 documents, but 2 of them are copies of your prescription from 2019-03-12. The last new record of it is from 2019-03-12. Are you still taking Atenolol?",
+  "status": "open",
+  "answer": null,
+  "fact_ids": [
+   "p1_d1_f004",
+   "p1_d3_f006",
+   "p1_d4_f002"
+  ],
+  "facts": [
+   {
+    "fact_id": "p1_d1_f004",
+    "patient_id": "p1",
+    "document_id": "p1_d1",
+    "type": "medication",
+    "name": "Atenolol",
+    "dose": "50mg",
+    "frequency": "once daily",
+    "value": null,
+    "unit": null,
+    "action": "started",
+    "status": "documented",
+    "event_date": "2019-03-12",
+    "document_date": "2019-03-12",
+    "date_raw": "12/03/2019",
+    "quote": "Tab. Atenolol 50mg OD",
+    "page": 1,
+    "line": 9,
+    "quote_verified": true,
+    "echo_of": null,
+    "badge": "single_document",
+    "flags": [],
+    "corrected": false
+   },
+   {
+    "fact_id": "p1_d3_f006",
+    "patient_id": "p1",
+    "document_id": "p1_d3",
+    "type": "medication",
+    "name": "Atenolol",
+    "dose": "50mg",
+    "frequency": "once daily",
+    "value": null,
+    "unit": null,
+    "action": "continued",
+    "status": "documented",
+    "event_date": "2022-08-05",
+    "document_date": "2022-08-05",
+    "date_raw": "05-Aug-2022",
+    "quote": "Tab. Atenolol 50mg OD",
+    "page": 1,
+    "line": 15,
+    "quote_verified": true,
+    "echo_of": "p1_d1_f004",
+    "badge": null,
+    "flags": [],
+    "corrected": false
+   },
+   {
+    "fact_id": "p1_d4_f002",
+    "patient_id": "p1",
+    "document_id": "p1_d4",
+    "type": "medication",
+    "name": "Atenolol",
+    "dose": "50mg",
+    "frequency": "once daily",
+    "value": null,
+    "unit": null,
+    "action": "continued",
+    "status": "documented",
+    "event_date": "2023-01-15",
+    "document_date": "2023-01-15",
+    "date_raw": "15/01/2023",
+    "quote": "Tab. Atenolol 50mg OD",
+    "page": 1,
+    "line": 9,
+    "quote_verified": true,
+    "echo_of": "p1_d1_f004",
+    "badge": null,
+    "flags": [],
+    "corrected": false
+   }
+  ],
+  "created_at": "2026-11-12 12:24:09"
+ }
+]

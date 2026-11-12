@@ -1,0 +1,181 @@
+{
+ "augmentin": {
+  "drug": "augmentin",
+  "generic": "amoxicillin + clavulanate",
+  "drug_class": "penicillin",
+  "class_label": "penicillin antibiotics",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "allergy",
+    "text": "augmentin is one of the penicillin antibiotics. Penicillin allergy (rash) is documented in the discharge summary from 2022-08-05: \"Allergy: Penicillin (rash)\". Another record says \"No known drug allergies\" (2019-03-12); this conflict is not resolved.",
+    "source": {
+     "fact_id": "p1_d3_f004",
+     "document_id": "p1_d3",
+     "doc_type": "discharge_summary",
+     "document_date": "2022-08-05",
+     "quote": "Allergy: Penicillin (rash)",
+     "page": 1,
+     "line": 10
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "amoxicillin": {
+  "drug": "amoxicillin",
+  "generic": "amoxicillin",
+  "drug_class": "penicillin",
+  "class_label": "penicillin antibiotics",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "allergy",
+    "text": "amoxicillin is one of the penicillin antibiotics. Penicillin allergy (rash) is documented in the discharge summary from 2022-08-05: \"Allergy: Penicillin (rash)\". Another record says \"No known drug allergies\" (2019-03-12); this conflict is not resolved.",
+    "source": {
+     "fact_id": "p1_d3_f004",
+     "document_id": "p1_d3",
+     "doc_type": "discharge_summary",
+     "document_date": "2022-08-05",
+     "quote": "Allergy: Penicillin (rash)",
+     "page": 1,
+     "line": 10
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "penicillin": {
+  "drug": "penicillin",
+  "generic": "penicillin",
+  "drug_class": "penicillin",
+  "class_label": "penicillin antibiotics",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "allergy",
+    "text": "Penicillin allergy (rash) is documented in the discharge summary from 2022-08-05: \"Allergy: Penicillin (rash)\". Another record says \"No known drug allergies\" (2019-03-12); this conflict is not resolved.",
+    "source": {
+     "fact_id": "p1_d3_f004",
+     "document_id": "p1_d3",
+     "doc_type": "discharge_summary",
+     "document_date": "2022-08-05",
+     "quote": "Allergy: Penicillin (rash)",
+     "page": 1,
+     "line": 10
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "aten": {
+  "drug": "aten",
+  "generic": "atenolol",
+  "drug_class": "beta_blocker",
+  "class_label": "beta blockers",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "same_medicine",
+    "text": "The records already list Atenolol 50mg once daily as a current medicine (last new record 2019-03-12, 2 later mention(s) are copies).",
+    "source": {
+     "fact_id": "p1_d1_f004",
+     "document_id": "p1_d1",
+     "doc_type": "prescription",
+     "document_date": "2019-03-12",
+     "quote": "Tab. Atenolol 50mg OD",
+     "page": 1,
+     "line": 9
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "atenolol": {
+  "drug": "atenolol",
+  "generic": "atenolol",
+  "drug_class": "beta_blocker",
+  "class_label": "beta blockers",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "same_medicine",
+    "text": "The records already list Atenolol 50mg once daily as a current medicine (last new record 2019-03-12, 2 later mention(s) are copies).",
+    "source": {
+     "fact_id": "p1_d1_f004",
+     "document_id": "p1_d1",
+     "doc_type": "prescription",
+     "document_date": "2019-03-12",
+     "quote": "Tab. Atenolol 50mg OD",
+     "page": 1,
+     "line": 9
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "metoprolol": {
+  "drug": "metoprolol",
+  "generic": "metoprolol",
+  "drug_class": "beta_blocker",
+  "class_label": "beta blockers",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "same_class",
+    "text": "metoprolol is in the same group (beta blockers) as current medicine Atenolol 50mg once daily (last new record 2019-03-12, 2 later mention(s) are copies).",
+    "source": {
+     "fact_id": "p1_d1_f004",
+     "document_id": "p1_d1",
+     "doc_type": "prescription",
+     "document_date": "2019-03-12",
+     "quote": "Tab. Atenolol 50mg OD",
+     "page": 1,
+     "line": 9
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "metformin": {
+  "drug": "metformin",
+  "generic": "metformin",
+  "drug_class": "biguanide",
+  "class_label": "biguanides",
+  "known": true,
+  "warnings": [
+   {
+    "kind": "same_medicine",
+    "text": "The records already list Metformin 1000mg twice daily as a current medicine (last new record 2023-01-15, 1 later mention(s) are copies).",
+    "source": {
+     "fact_id": "p1_d4_f001",
+     "document_id": "p1_d4",
+     "doc_type": "prescription",
+     "document_date": "2023-01-15",
+     "quote": "Tab. Metformin increased to 1000mg BD",
+     "page": 1,
+     "line": 8
+    }
+   }
+  ],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "paracetamol": {
+  "drug": "paracetamol",
+  "generic": "paracetamol",
+  "drug_class": "paracetamol",
+  "class_label": "paracetamol",
+  "known": true,
+  "warnings": [],
+  "note": "Checked against these records only. This is not prescribing advice."
+ },
+ "ibuprofen": {
+  "drug": "ibuprofen",
+  "generic": "ibuprofen",
+  "drug_class": "nsaid",
+  "class_label": "NSAID painkillers",
+  "known": true,
+  "warnings": [],
+  "note": "Checked against these records only. This is not prescribing advice."
+ }
+}

@@ -1,0 +1,259 @@
+{
+ "patient": {
+  "id": "p1",
+  "name": "Sunita Rao",
+  "dob": "1952-06-14",
+  "sex": "F",
+  "blood_group": "O+"
+ },
+ "current_medicines": [
+  {
+   "name": "Amlodipine",
+   "dose": "5mg",
+   "frequency": "once daily",
+   "last_fresh_evidence_date": "2023-01-15",
+   "mentions": 1,
+   "echo_count": 0,
+   "only_copies_since": null,
+   "source": {
+    "fact_id": "p1_d4_f003",
+    "document_id": "p1_d4",
+    "doc_type": "prescription",
+    "document_date": "2023-01-15",
+    "quote": "Tab. Amlodipine 5mg OD - start",
+    "page": 1,
+    "line": 10
+   }
+  },
+  {
+   "name": "Atenolol",
+   "dose": "50mg",
+   "frequency": "once daily",
+   "last_fresh_evidence_date": "2019-03-12",
+   "mentions": 3,
+   "echo_count": 2,
+   "only_copies_since": "2019-03-12",
+   "source": {
+    "fact_id": "p1_d1_f004",
+    "document_id": "p1_d1",
+    "doc_type": "prescription",
+    "document_date": "2019-03-12",
+    "quote": "Tab. Atenolol 50mg OD",
+    "page": 1,
+    "line": 9
+   }
+  },
+  {
+   "name": "Metformin",
+   "dose": "1000mg",
+   "frequency": "twice daily",
+   "last_fresh_evidence_date": "2023-01-15",
+   "mentions": 3,
+   "echo_count": 1,
+   "only_copies_since": null,
+   "source": {
+    "fact_id": "p1_d4_f001",
+    "document_id": "p1_d4",
+    "doc_type": "prescription",
+    "document_date": "2023-01-15",
+    "quote": "Tab. Metformin increased to 1000mg BD",
+    "page": 1,
+    "line": 8
+   }
+  }
+ ],
+ "allergies": [
+  {
+   "name": "Drug allergy",
+   "reaction": null,
+   "status": "negated",
+   "date": "2019-03-12",
+   "conflicting": true,
+   "source": {
+    "fact_id": "p1_d1_f005",
+    "document_id": "p1_d1",
+    "doc_type": "prescription",
+    "document_date": "2019-03-12",
+    "quote": "No known drug allergies",
+    "page": 1,
+    "line": 11
+   }
+  },
+  {
+   "name": "Penicillin",
+   "reaction": "rash",
+   "status": "documented",
+   "date": "2022-08-05",
+   "conflicting": true,
+   "source": {
+    "fact_id": "p1_d3_f004",
+    "document_id": "p1_d3",
+    "doc_type": "discharge_summary",
+    "document_date": "2022-08-05",
+    "quote": "Allergy: Penicillin (rash)",
+    "page": 1,
+    "line": 10
+   }
+  }
+ ],
+ "conditions": [
+  {
+   "name": "Type 2 diabetes mellitus",
+   "first_date": "2019-03-12",
+   "last_date": "2022-08-05",
+   "mentions": 2,
+   "source": {
+    "fact_id": "p1_d3_f002",
+    "document_id": "p1_d3",
+    "doc_type": "discharge_summary",
+    "document_date": "2022-08-05",
+    "quote": "Known case of Type 2 diabetes mellitus.",
+    "page": 1,
+    "line": 7
+   }
+  }
+ ],
+ "latest_results": [
+  {
+   "name": "HbA1c",
+   "value": "8.1",
+   "unit": "%",
+   "date": "2023-01-16",
+   "flags": [
+    "duplicate"
+   ],
+   "previous": {
+    "value": "7.2",
+    "unit": "%",
+    "date": "2021-06-20",
+    "fact_id": "p1_d2_f001"
+   },
+   "source": {
+    "fact_id": "p1_d5_f001",
+    "document_id": "p1_d5",
+    "doc_type": "lab_report",
+    "document_date": "2023-01-16",
+    "quote": "HbA1c 8.1 %",
+    "page": 1,
+    "line": 6
+   }
+  },
+  {
+   "name": "Fasting blood glucose",
+   "value": "122",
+   "unit": "mg/dL",
+   "date": "2023-01-16",
+   "flags": [
+    "duplicate",
+    "unit_mismatch"
+   ],
+   "previous": {
+    "value": "6.8",
+    "unit": "mmol/L",
+    "date": "2021-06-20",
+    "fact_id": "p1_d2_f002"
+   },
+   "source": {
+    "fact_id": "p1_d5_f002",
+    "document_id": "p1_d5",
+    "doc_type": "lab_report",
+    "document_date": "2023-01-16",
+    "quote": "Fasting Glucose 122 mg/dL",
+    "page": 1,
+    "line": 7
+   }
+  }
+ ],
+ "events": [
+  {
+   "name": "Myocardial infarction",
+   "date": "2015-01-01",
+   "source": {
+    "fact_id": "p1_d3_f003",
+    "document_id": "p1_d3",
+    "doc_type": "discharge_summary",
+    "document_date": "2022-08-05",
+    "quote": "History of MI in 2015.",
+    "page": 1,
+    "line": 8
+   }
+  },
+  {
+   "name": "Admission for chest pain",
+   "date": "2022-08-05",
+   "source": {
+    "fact_id": "p1_d3_f001",
+    "document_id": "p1_d3",
+    "doc_type": "discharge_summary",
+    "document_date": "2022-08-05",
+    "quote": "Admitted with complaints of chest pain.",
+    "page": 1,
+    "line": 6
+   }
+  }
+ ],
+ "red_flags": [
+  {
+   "flag": "contradiction",
+   "text": "Allergy records disagree: \"No known drug allergies\" (2019-03-12); \"Allergy: Penicillin (rash)\" (2022-08-05).",
+   "fact_ids": [
+    "p1_d1_f005",
+    "p1_d3_f004"
+   ]
+  },
+  {
+   "flag": "unit_mismatch",
+   "text": "Fasting blood glucose recorded in different units: 122 mg/dL (2023-01-16), 6.8 mmol/L (2021-06-20). Not converted.",
+   "fact_ids": [
+    "p1_d2_f002",
+    "p1_d5_f002",
+    "p1_d6_f002"
+   ]
+  },
+  {
+   "flag": "duplicate",
+   "text": "d6_lab_2023_copy.pdf repeats results already in another document.",
+   "fact_ids": [
+    "p1_d6_f001",
+    "p1_d6_f002"
+   ]
+  },
+  {
+   "flag": "wrong_patient",
+   "text": "d7_lab_psa.pdf is held back: it may belong to another patient.",
+   "fact_ids": [
+    "p1_d7_f001",
+    "p1_d7_f002",
+    "p1_d7_f003"
+   ]
+  },
+  {
+   "flag": "ambiguous_date",
+   "text": "Date \"04/05/2023\" in d7_lab_psa.pdf could be read two ways.",
+   "fact_ids": [
+    "p1_d7_f001",
+    "p1_d7_f002",
+    "p1_d7_f003"
+   ]
+  },
+  {
+   "flag": "echo",
+   "text": "Atenolol: last real evidence 2019-03-12; 2 later mention(s) are copies.",
+   "fact_ids": [
+    "p1_d1_f004"
+   ]
+  }
+ ],
+ "open_questions": [
+  {
+   "id": 1,
+   "text": "Your records disagree. The prescription from 2019-03-12 says \"No known drug allergies\", but the discharge summary from 2022-08-05 says \"Allergy: Penicillin (rash)\". Are you allergic to Penicillin?",
+   "status": "open"
+  },
+  {
+   "id": 2,
+   "text": "Atenolol 50mg once daily appears in 3 documents, but 2 of them are copies of your prescription from 2019-03-12. The last new record of it is from 2019-03-12. Are you still taking Atenolol?",
+   "status": "open"
+  }
+ ]
+}
