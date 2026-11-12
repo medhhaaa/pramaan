@@ -1,0 +1,98 @@
+{
+  "appName": "Pramaan",
+  "tagline": "Information from your records only. Not medical advice.",
+  "demoBanner": "Demo data · synthetic patients only",
+  "disclaimer": "Information from your records only. Not medical advice.",
+  "langPopupTitle": "Choose your language",
+  "langs": { "en": "English", "hi": "हिंदी", "kn": "ಕನ್ನಡ" },
+  "translatedNote": "Medicine names, doses and values are shown as written in the original.",
+  "nav": {
+    "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
+    "medication": "Medication", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
+    "audit": "Audit log", "delete": "Delete data", "myRecords": "My Records",
+    "thingsToCheck": "Things to check", "generateQr": "Generate QR"
+  },
+  "auth": {
+    "signup": "SIGN-UP", "login": "LOG IN", "alreadyUser": "Already a user?", "newHere": "New here?",
+    "loginLink": "Login", "signupLink": "Sign up", "username": "Username", "password": "Password",
+    "demoHint": "Demo: doctor / doctor123 · sunita / sunita123", "signupDemoOnly": "Sign-up is demo only for now.",
+    "badLogin": "Username or password is not right.", "logout": "Log out"
+  },
+  "scan": {
+    "title": "Scan the patient's QR", "orCode": "Or enter the code", "check": "Check",
+    "simulate": "Simulate scan (demo)", "granted": "Access granted for 30 minutes",
+    "expired": "This code has expired. Ask the patient to generate a new one.",
+    "sessionChip": "Session active", "endSession": "End session", "needScan": "Scan the patient's QR to open this."
+  },
+  "patients": { "title": "PATIENTS", "count": "{{count}} patients", "empty": "No patients yet. Upload records to start.", "search": "Search patients", "brief": "BRIEF", "timeline": "TIMELINE", "upload": "UPLOAD", "born": "Born", "bloodGroup": "Blood group", "sex": "Sex" },
+  "brief": {
+    "title": "Brief", "checkTitle": "Check a medicine", "checkPlaceholder": "Type a brand or generic name", "check": "Check",
+    "noMatch": "No match in the records. This does not mean the medicine is safe.",
+    "flags": "Flags", "currentMeds": "Current medicines", "allergies": "Allergies", "conditions": "Conditions in the record",
+    "latestResults": "Latest results", "keyEvents": "Key events", "redFlags": "Red flags", "openQuestions": "Open questions",
+    "confirm": "Confirm", "correct": "Correct", "markUnclear": "Mark unclear", "since": "since"
+  },
+  "status": {
+    "documented": "Documented", "negated": "Explicitly absent", "not_documented": "Not in your records"
+  },
+  "badges": {
+    "doctor_verified": "Doctor verified", "independent_2plus": "2+ independent documents",
+    "single_document": "One document only", "patient_reported": "You reported this", "conflicting": "Conflicting records"
+  },
+  "badgeTips": {
+    "doctor_verified": "A doctor has checked this.", "independent_2plus": "Two or more separate documents agree.",
+    "single_document": "Only one document mentions this.", "patient_reported": "You told us this.", "conflicting": "Two documents disagree. Both are shown."
+  },
+  "flagNames": {
+    "contradiction": "Contradiction", "duplicate": "Duplicate", "unit_mismatch": "Unit mismatch",
+    "ambiguous_date": "Ambiguous date", "wrong_patient": "Wrong patient", "implausible_value": "Implausible value", "gap": "Gap"
+  },
+  "flagTips": {
+    "contradiction": "Two documents disagree. Both are shown. Your doctor will check it.",
+    "duplicate": "This document is an exact copy of another. It is counted once.",
+    "unit_mismatch": "The same test is reported in different units. Values are shown exactly as written. Nothing is converted.",
+    "ambiguous_date": "This date could be read two ways (day/month). Both readings are shown.",
+    "wrong_patient": "This report may belong to someone else. It is held back until a doctor checks it.",
+    "implausible_value": "This value looks impossible. It may be a typing or scanning error. The original is unchanged.",
+    "gap": "Not in your records. This does not mean you don't have it."
+  },
+  "timeline": { "title": "Timeline", "hideCopies": "Hide copies", "copyOf": "Copy of {{doc}}", "legend": "What the labels mean", "date": "Date", "type": "Type", "name": "Name", "doseValue": "Dose / value", "status": "Status", "badge": "Badge", "flags": "Flags", "source": "Source", "empty": "No facts yet." },
+  "medication": { "title": "Medication", "current": "Current", "stopped": "Stopped", "summary": "{{mentions}} mentions · {{copies}} copies · last real evidence {{date}}", "empty": "No medicines documented yet." },
+  "flagsPage": { "title": "Flags", "allergen": "Allergen", "details": "Details", "held": "Held back, waiting for review" },
+  "ask": { "title": "Ask my records", "placeholder": "Ask about your records", "send": "Ask", "footer": "Answers come only from your stored records.", "notMentioned": "The records don't mention this." },
+  "upload": {
+    "title": "Upload", "choose": "Choose PDFs", "drop": "Drop PDFs here", "consentTitle": "Before your first upload",
+    "consent1": "I am the patient or their carer", "consent2": "I understand records are read by an AI tool with names removed",
+    "consent3": "I can delete my data at any time", "continue": "Continue",
+    "steps": ["Reading", "Removing personal details", "Extracting", "Checking quotes"],
+    "result": "{{added}} facts added · {{held}} held back", "heldNote": "Held back for review. A doctor will check it."
+  },
+  "doc": { "title": "Source", "held": "Held back", "close": "Close" },
+  "myRecords": { "title": "My Records", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
+  "things": {
+    "title": "Things to check", "problem": "Problem", "yes": "Yes", "no": "No", "dontKnow": "I don't know", "skip": "Skip",
+    "other": "Other", "send": "SEND", "why": "Why are we asking?", "sentDoctor": "Your doctor will check this.",
+    "progress": "{{done}} of {{total}} answered", "empty": "Nothing to check right now."
+  },
+  "qr": {
+    "title": "Generate QR", "button": "Generate QR", "expires": "Expires in {{time}}",
+    "share": "Share this only with your doctor. It opens your records for 10 minutes, one time.",
+    "scope": "Brief and records. Your data is not changed.", "expired": "This QR has expired.", "new": "Generate a new one"
+  },
+  "accuracy": { "title": "Accuracy", "precision": "Precision", "recall": "Recall", "f1": "F1", "byType": "By fact type", "byPatient": "By patient", "note": "Checked against answer keys · synthetic data." },
+  "audit": { "title": "Audit log", "time": "Time", "who": "Who", "action": "Action", "patient": "Patient", "detail": "Detail" },
+  "delete": {
+    "title": "Delete data", "explain": "This deletes all facts, documents, files, questions and corrections for this patient.",
+    "understand": "I understand this cannot be undone", "typeDelete": "Type DELETE to confirm", "button": "Delete all data",
+    "done": "All data for {{name}} was deleted."
+  },
+  "claim": {
+    "title": "Claim Ready", "caveat": "This is general information, not advice. Your policy wording decides. Rules change.",
+    "routeTitle": "Which route may apply", "pmjay": "PM-JAY (cashless at empanelled hospitals)", "private": "Private insurance", "oop": "Out of pocket",
+    "verify": "Check eligibility on the official portal: beneficiary.nha.gov.in or call 14555.",
+    "papersTitle": "Papers to keep", "deadline": "Reimbursement papers are usually due within 30 days of discharge. Check your policy.",
+    "pedTitle": "Pre-existing condition check", "policyStart": "Policy start date", "check": "Check",
+    "scamTitle": "Scam shield", "scam": "Verify any agent or insurer on the IRDAI website. Never share OTPs or card details with someone who called you first. Genuine policies come with official policy documents. IRDAI helpline 155255 or policyholder.gov.in."
+  },
+  "common": { "back": "Back", "close": "Close", "loading": "Loading…", "error": "Something went wrong. Please try again." }
+}

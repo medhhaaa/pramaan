@@ -1,470 +1,220 @@
-// Every call to the backend goes through this file.
-// USE_DUMMY = true  -> return sample data, no backend needed.
-// USE_DUMMY = false -> call the real FastAPI backend on localhost:8000.
-// Response shapes follow KICKOFF.md "Handoffs".
-import dummyBrief from "./dummy/brief.json";
-import dummyChecks from "./dummy/check_medicine.json";
-import dummyDocuments from "./dummy/documents.json";
-import dummyMetrics from "./dummy/metrics_results.json";
-import dummyQuestionsSeed from "./dummy/questions.json";
-import sampleFacts from "./dummy/sample_facts.json";
+// The ONLY file that talks to the backend.
+// USE_DUMMY = true: answers come from src/dummy/data.js (no backend needed).
+// When the backend is ready: set VITE_USE_DUMMY=false in .env.local. Nothing else changes.
+import {
+  USERS, PATIENTS, P1_FACTS, DOCUMENTS, QUESTIONS_P1, METRICS, AUDIT_ROWS,
+} from './dummy/data.js';
 
-export const USE_DUMMY = false;
-const BASE_URL = "http://localhost:8000";
+const USE_DUMMY = import.meta.env.VITE_USE_DUMMY !== 'false';
+const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
-export const NOT_DOCUMENTED_ANSWER = "The records don't mention this.";
-// the Ask route answers in the user's language; both mean "not documented"
-export const NOT_DOCUMENTED_ANSWERS = [NOT_DOCUMENTED_ANSWER, "ದಾಖಲೆಗಳಲ್ಲಿ ಇದರ ಬಗ್ಗೆ ಉಲ್ಲೇಖವಿಲ್ಲ."];
+// Token lives in memory only (not localStorage), per the prompt.
+let token = null;
+export const setToken = (t) => { token = t; };
 
-function readStorage(key) {
-  try {
-    return localStorage.getItem(key);
-  } catch {
-    return null;
-  }
-}
-
-function writeStorage(key, value) {
-  try {
-    if (value === null) localStorage.removeItem(key);
-    else localStorage.setItem(key, value);
-  } catch {
-    // storage blocked (private window): the app still works for this tab
-  }
-}
-
-let token = readStorage("token");
-
-// App.jsx only restores a saved login if there is a token to go with it
-export function hasSession() {
-  return USE_DUMMY || Boolean(token);
-}
-
-async function request(method, path, body) {
-  const isForm = body instanceof FormData;
-  const res = await fetch(BASE_URL + path, {
+async function http(method, path, body, isForm = false) {
+  const headers = {};
+  if (token) headers.Authorization = `Bearer ${token}`;
+  if (body && !isForm) headers['Content-Type'] = 'application/json';
+  const res = await fetch(`${BASE}${path}`, {
     method,
-    headers: {
-      ...(isForm ? {} : { "Content-Type": "application/json" }),
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    body: isForm ? body : body ? JSON.stringify(body) : undefined,
+    headers,
+    body: body ? (isForm ? body : JSON.stringify(body)) : undefined,
   });
-  // expired or missing token (not the login call itself): back to the login page
-  if (res.status === 401 && path !== "/login") {
-    logout();
-    writeStorage("user", null);
-    window.location.reload();
-    throw new Error("Your session has expired. Please log in again.");
-  }
-  if (!res.ok) {
-    let detail = "";
-    try {
-      detail = (await res.json()).detail || "";
-    } catch {
-      // response had no JSON body
-    }
-    throw new Error(detail || `${method} ${path} failed: ${res.status}`);
-  }
+  if (!res.ok) throw new Error(`HTTP ${res.status}`);
   return res.json();
 }
 
-// ---------- dummy in-memory state (resets on page reload) ----------
+const wait = (ms = 250) => new Promise((r) => setTimeout(r, ms));
 
-let dummyFacts = structuredClone(sampleFacts);
-let dummyQuestions = structuredClone(dummyQuestionsSeed);
-let dummyDeleted = new Set();
-let dummyUser = null;
-const dummyAudit = [
-  { id: 1, username: "sunita", role: "patient", action: "upload", detail: "d1_prescription_2019.pdf", created_at: "2026-11-12 09:02:11" },
-  { id: 2, username: "doctor", role: "doctor", action: "view_timeline", detail: "", created_at: "2026-11-12 09:15:40" },
-];
+// ---- helpers for dummy mode (same rules the backend will use) ----
+const facts = (pid) => P1_FACTS.filter((f) => f.patient_id === pid && !f.held_back);
 
-function dummyLog(patientId, action, detail = "") {
-  dummyAudit.push({
-    id: dummyAudit.length + 1,
-    patient_id: patientId,
-    username: dummyUser?.username || "?",
-    role: dummyUser?.role || "?",
-    action,
-    detail,
-    created_at: new Date().toISOString().slice(0, 19).replace("T", " "),
+function groupMedications(pid) {
+  const meds = facts(pid).filter((f) => f.type === 'medication');
+  const byName = {};
+  meds.forEach((f) => { (byName[f.name] ||= []).push(f); });
+  return Object.entries(byName).map(([name, list]) => {
+    const sorted = [...list].sort((a, b) => (a.event_date > b.event_date ? 1 : -1));
+    const latest = sorted[sorted.length - 1];
+    const fresh = sorted.filter((f) => !f.echo_of);
+    return {
+      name,
+      current: latest.action !== 'stopped',
+      last_fresh_evidence_date: fresh.length ? fresh[fresh.length - 1].event_date : null,
+      echo_count: sorted.filter((f) => f.echo_of).length,
+      entries: sorted.map((f) => ({
+        fact_id: f.fact_id, document_id: f.document_id, date: f.event_date,
+        dose: f.dose, frequency: f.frequency, action: f.action, echo_of: f.echo_of,
+      })),
+    };
   });
 }
 
-const heldBackIds = () => new Set(dummyDocuments.filter((d) => d.held_back).map((d) => d.id));
-const sleep = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+function groupFlags(pid) {
+  const all = P1_FACTS.filter((f) => f.patient_id === pid);
+  const out = { contradiction: [], duplicate: [], unit_mismatch: [], ambiguous_date: [], wrong_patient: [], implausible_value: [], gap: [] };
+  all.forEach((f) => f.flags.forEach((fl) => out[fl] && out[fl].push(f)));
+  if (!all.some((f) => f.type === 'allergy' && f.status === 'documented') && !all.some((f) => f.type === 'allergy')) {
+    out.gap.push({ fact_id: `${pid}_gap_allergy`, status: 'not_documented', name: 'Allergy information', document_id: null });
+  }
+  return out;
+}
 
-// ---------- login ----------
+// ---- API ----
 
-const DUMMY_USERS = { doctor: "doctor123", sunita: "sunita123" };
-const dummyLanguages = {}; // username -> "en" | "kn" (dummy mode forgets on reload)
-
-// -> {token, role, username, language}   language is "en", "kn" or null (not chosen yet)
 export async function login(username, password) {
   if (USE_DUMMY) {
-    if (DUMMY_USERS[username] !== password) throw new Error("Wrong username or password");
-    token = "dummy";
-    dummyUser = { username, role: username === "doctor" ? "doctor" : "patient" };
-    return { token, ...dummyUser, language: dummyLanguages[username] || null };
+    await wait();
+    const u = USERS[username];
+    if (!u || u.password !== password) throw new Error('bad_login');
+    token = `dummy-${username}`;
+    return { token, role: u.role, name: u.name, username, patientId: u.patientId || null };
   }
-  const data = await request("POST", "/login", { username, password });
+  const data = await http('POST', '/login', { username, password });
   token = data.token;
-  writeStorage("token", token);
   return data;
 }
 
-export function logout() {
-  token = null;
-  writeStorage("token", null);
+export async function listPatients() {
+  if (USE_DUMMY) { await wait(); return PATIENTS; }
+  return http('GET', '/patients');
 }
 
-// App.jsx tells dummy mode who is logged in after a page refresh
-export function setDummyUser(user) {
-  dummyUser = user;
+export async function getTimeline(pid) {
+  if (USE_DUMMY) { await wait(); return facts(pid).sort((a, b) => (a.event_date > b.event_date ? 1 : -1)); }
+  return http('GET', `/patients/${pid}/timeline`);
 }
 
-// ---------- language ----------
+export async function getMedications(pid) {
+  if (USE_DUMMY) { await wait(); return groupMedications(pid); }
+  return http('GET', `/patients/${pid}/medications`);
+}
 
-// "en" | "kn" -> {language}. Saved on the user's account; asked once at first login.
-export async function setLanguage(language) {
+export async function getFlags(pid) {
+  if (USE_DUMMY) { await wait(); return groupFlags(pid); }
+  return http('GET', `/patients/${pid}/flags`);
+}
+
+export async function getBrief(pid) {
   if (USE_DUMMY) {
-    if (dummyUser) dummyLanguages[dummyUser.username] = language;
-    return { language };
-  }
-  return request("PUT", "/me/language", { language });
-}
-
-// ---------- patients ----------
-
-export async function getPatients() {
-  if (USE_DUMMY) {
-    return [{ id: "p1", name: "Sunita Rao", dob: "1952-06-14", sex: "F", blood_group: "O+" }].filter(
-      (p) => !dummyDeleted.has(p.id),
-    );
-  }
-  return request("GET", "/patients");
-}
-
-// ---------- timeline ----------
-
-export async function getTimeline(patientId) {
-  if (USE_DUMMY) {
-    // the backend hides facts from held-back (wrong-patient) documents; mimic that here
-    const heldBack = heldBackIds();
-    return dummyFacts
-      .filter((f) => f.patient_id === patientId && !heldBack.has(f.document_id))
-      .sort((a, b) => (a.event_date || "").localeCompare(b.event_date || ""));
-  }
-  return request("GET", `/patients/${patientId}/timeline`);
-}
-
-// ---------- medications ----------
-
-// -> [{name, current, last_fresh_evidence_date, echo_count,
-//      entries: [{fact_id, document_id, date, dose, frequency, action, echo_of}]}]
-export async function getMedications(patientId) {
-  if (USE_DUMMY) {
-    const heldBack = heldBackIds();
-    const byName = {};
-    for (const f of dummyFacts) {
-      if (f.patient_id !== patientId || f.type !== "medication" || heldBack.has(f.document_id)) continue;
-      (byName[f.name.toLowerCase()] ||= []).push(f);
-    }
-    return Object.values(byName).map((facts) => {
-      const entries = facts
-        .sort((a, b) => a.event_date.localeCompare(b.event_date))
-        .map((f) => ({
-          fact_id: f.fact_id,
-          document_id: f.document_id,
-          date: f.event_date,
-          dose: f.dose,
-          frequency: f.frequency,
-          action: f.action,
-          echo_of: f.echo_of,
-        }));
-      const fresh = entries.filter((e) => !e.echo_of);
-      return {
-        name: facts[0].name,
-        current: entries[entries.length - 1].action !== "stopped",
-        last_fresh_evidence_date: fresh.length ? fresh[fresh.length - 1].date : null,
-        echo_count: entries.length - fresh.length,
-        entries,
-      };
+    await wait();
+    const f = facts(pid);
+    const latestLab = {};
+    f.filter((x) => x.type === 'lab_test').forEach((x) => {
+      if (!latestLab[x.name] || x.event_date > latestLab[x.name].event_date) latestLab[x.name] = x;
     });
-  }
-  return request("GET", `/patients/${patientId}/medications`);
-}
-
-// ---------- flags ----------
-
-export const FLAG_TYPES = [
-  "contradiction",
-  "duplicate",
-  "unit_mismatch",
-  "ambiguous_date",
-  "wrong_patient",
-  "implausible_value",
-  "handwriting",
-  "gap",
-];
-
-// -> {"contradiction": [fact], "duplicate": [...], ..., "gap": [...]}
-export async function getFlags(patientId) {
-  if (USE_DUMMY) {
-    const groups = Object.fromEntries(FLAG_TYPES.map((t) => [t, []]));
-    for (const f of dummyFacts) {
-      if (f.patient_id !== patientId) continue;
-      for (const flag of f.flags) (groups[flag] ||= []).push(f);
-    }
-    return groups;
-  }
-  return request("GET", `/patients/${patientId}/flags`);
-}
-
-// ---------- documents (click-to-proof) ----------
-
-// -> {id, patient_id, filename, doc_type, document_date, held_back, pdf_base64, lines: [{page, line, text, covered}]}
-export async function getDocument(documentId) {
-  if (USE_DUMMY) {
-    const doc = dummyDocuments.find((d) => d.id === documentId);
-    if (!doc) throw new Error(`Document ${documentId} not found`);
-    // no real PDFs in dummy mode: rebuild the known lines from the sample facts' quotes
-    const lines = sampleFacts
-      .filter((f) => f.document_id === documentId)
-      .map((f) => ({ page: f.page, line: f.line, text: f.quote, covered: true }))
-      .sort((a, b) => a.page - b.page || a.line - b.line);
-    return { ...doc, pdf_base64: null, lines };
-  }
-  return request("GET", `/documents/${documentId}`);
-}
-
-// ---------- corrections ----------
-
-// body {field, new_value} -> the updated fact (corrected: true). The original stays in the
-// corrections table and the quote is never changed.
-export async function correctFact(factId, field, newValue) {
-  if (USE_DUMMY) {
-    const fact = dummyFacts.find((f) => f.fact_id === factId);
-    if (!fact) throw new Error(`Fact ${factId} not found`);
-    dummyLog(fact.patient_id, "correct_fact", `${factId}.${field}: ${fact[field]} -> ${newValue}`);
-    fact[field] = newValue;
-    fact.corrected = true;
-    // mimics backend/logic/badges.py: a doctor's correction or confirmation -> doctor_verified
-    if (dummyUser?.role === "doctor") fact.badge = "doctor_verified";
-    return { ...fact };
-  }
-  return request("POST", `/facts/${factId}/correct`, { field, new_value: newValue });
-}
-
-// ---------- upload ----------
-
-// -> {document_id, facts_added, held_back}
-export async function uploadDocument(patientId, file) {
-  if (USE_DUMMY) {
-    await sleep(600);
-    dummyLog(patientId, "upload", file.name);
     return {
-      document_id: `${patientId}_dummy_${Date.now()}`,
-      facts_added: 5,
-      held_back: /psa/i.test(file.name), // lets you try the held-back message in dummy mode
+      patient: PATIENTS.find((p) => p.id === pid),
+      flags: groupFlags(pid),
+      current_medicines: groupMedications(pid).filter((m) => m.current),
+      allergies: f.filter((x) => x.type === 'allergy'),
+      conditions: f.filter((x) => x.type === 'condition'),
+      latest_results: Object.values(latestLab),
+      key_events: f.filter((x) => x.type === 'event'),
+      red_flags: [],
+      open_questions: QUESTIONS_P1.filter((q) => q.patient_id === pid && q.status !== 'resolved'),
     };
+  }
+  return http('GET', `/patients/${pid}/brief`);
+}
+
+export async function checkMedicine(pid, name) {
+  if (USE_DUMMY) {
+    await wait();
+    const n = name.trim().toLowerCase();
+    const penicillinClass = ['penicillin', 'amoxicillin', 'ampicillin', 'augmentin'];
+    const allergy = facts(pid).find((x) => x.type === 'allergy' && x.status === 'documented' && /penicillin/i.test(x.name));
+    if (allergy && penicillinClass.some((c) => n.includes(c) || c.includes(n) && n.length > 3)) {
+      return { warning: true, text: 'Penicillin allergy documented in 2022 discharge summary (d3). This may conflict with the medicine you typed.', source: allergy.document_id };
+    }
+    return { warning: false, text: null };
+  }
+  return http('POST', `/patients/${pid}/check-medicine`, { name });
+}
+
+export async function ask(pid, question) {
+  if (USE_DUMMY) {
+    await wait(400);
+    const q = question.toLowerCase();
+    const hit = facts(pid).find((x) => q.split(' ').some((w) => w.length > 3 && (x.name || '').toLowerCase().includes(w)));
+    if (!hit) return { answer: "The records don't mention this.", citations: [] };
+    return { answer: `Documented: ${hit.name}${hit.dose ? ` ${hit.dose}` : ''}${hit.value ? ` ${hit.value}${hit.unit ? ` ${hit.unit}` : ''}` : ''} (${hit.date_raw}).`, citations: [hit.fact_id] };
+  }
+  return http('POST', `/patients/${pid}/ask`, { question });
+}
+
+export async function getQuestions(pid) {
+  if (USE_DUMMY) { await wait(); return QUESTIONS_P1.filter((q) => q.patient_id === pid); }
+  return http('GET', `/patients/${pid}/questions`);
+}
+
+export async function answerQuestion(qid, answer, value = null) {
+  if (USE_DUMMY) {
+    await wait();
+    const q = QUESTIONS_P1.find((x) => x.id === qid);
+    if (q) q.status = answer === 'dont_know' || answer === 'skip' ? 'sent_to_doctor' : 'answered';
+    return { ...q, answer, value };
+  }
+  return http('POST', `/questions/${qid}/answer`, { answer, value });
+}
+
+export async function correctFact(fid, field, newValue) {
+  if (USE_DUMMY) { await wait(); return { fact_id: fid, field, new_value: newValue, corrected: true }; }
+  return http('POST', `/facts/${fid}/correct`, { field, new_value: newValue });
+}
+
+export async function upload(pid, file) {
+  if (USE_DUMMY) {
+    await wait(1200);
+    return { document_id: `${pid}_dnew`, facts_added: 6, held_back: 1 };
   }
   const form = new FormData();
-  form.append("file", file);
-  return request("POST", `/patients/${patientId}/upload`, form);
+  form.append('file', file);
+  return http('POST', `/patients/${pid}/upload`, form, true);
 }
 
-// ---------- ask my records ----------
-
-// body {question} -> {answer, fact_ids, citations: [fact]}
-// answer is exactly one of NOT_DOCUMENTED_ANSWERS when the records don't cover the question.
-export async function askRecords(patientId, question) {
+export async function getDocument(did) {
   if (USE_DUMMY) {
-    await sleep(500);
-    dummyLog(patientId, "ask", question);
-    // dummy: plain keyword match on fact names (the real route uses the AI)
-    // first 5 letters as a rough stem, so "allergic" matches "allergy"
-    const words = (question.toLowerCase().match(/[a-z0-9]{4,}/g) || []).map((w) => w.slice(0, 5));
-    const heldBack = heldBackIds();
-    const hits = dummyFacts.filter(
-      (f) =>
-        f.patient_id === patientId &&
-        !heldBack.has(f.document_id) &&
-        words.some((w) => f.name.toLowerCase().includes(w) || f.type.includes(w)),
-    );
-    if (hits.length === 0) return { answer: NOT_DOCUMENTED_ANSWER, fact_ids: [], citations: [] };
-    const answer = hits
-      .map((f) => {
-        const what = [f.name, f.dose, f.frequency, f.value, f.unit].filter(Boolean).join(" ");
-        const neg = f.status === "negated" ? "Recorded as absent: " : "";
-        const copy = f.echo_of ? " (copied from an older document)" : "";
-        return `${neg}${what} on ${f.event_date}${copy} [${f.fact_id}]`;
-      })
-      .join(". ");
-    return { answer, fact_ids: hits.map((f) => f.fact_id), citations: hits };
+    await wait();
+    const d = DOCUMENTS[did];
+    if (!d) return { id: did, filename: 'Sample document', lines: [], pdf_base64: null };
+    return { ...d, pdf_base64: null };
   }
-  return request("POST", `/patients/${patientId}/ask`, { question });
+  return http('GET', `/documents/${did}`);
 }
 
-// ---------- audit log ----------
-
-// -> [{id, username, role, action, detail, created_at}] newest first
-export async function getAudit(patientId) {
-  if (USE_DUMMY) {
-    return dummyAudit.filter((a) => !a.patient_id || a.patient_id === patientId).slice().reverse();
-  }
-  return request("GET", `/patients/${patientId}/audit`);
-}
-
-// ---------- delete my data ----------
-
-// -> {deleted: {facts, documents, files, corrections, questions}}
-export async function deletePatient(patientId) {
-  if (USE_DUMMY) {
-    await sleep(400);
-    const facts = dummyFacts.filter((f) => f.patient_id === patientId).length;
-    dummyFacts = dummyFacts.filter((f) => f.patient_id !== patientId);
-    dummyDeleted.add(patientId);
-    return { deleted: { facts, documents: 7, files: 0, corrections: 0, questions: 0 } };
-  }
-  return request("DELETE", `/patients/${patientId}`);
-}
-
-// ---------- metrics ----------
-
-// -> {overall: {precision, recall, f1}, per_patient: {...}, per_type: {...}}
 export async function getMetrics() {
-  if (USE_DUMMY) return dummyMetrics;
-  return request("GET", "/metrics");
+  if (USE_DUMMY) { await wait(); return METRICS; }
+  return http('GET', '/metrics');
 }
 
-// ---------- Things to Check / Open Questions ----------
+export async function getAudit(pid) {
+  if (USE_DUMMY) { await wait(); return AUDIT_ROWS.filter((r) => !pid || r.patient === pid); }
+  return http('GET', `/patients/${pid}/audit`);
+}
 
-export const PATIENT_ANSWERS = ["yes", "no", "value", "dont_know", "skip"];
-export const DOCTOR_ANSWERS = ["confirm", "correct", "unclear"];
+export async function deletePatient(pid) {
+  if (USE_DUMMY) { await wait(); return { ok: true, patient_id: pid }; }
+  return http('DELETE', `/patients/${pid}`);
+}
 
-// -> [{id, text, status, answer, fact_ids, facts: [fact], created_at}]
-// status: open | answered | sent_to_doctor | resolved
-export async function getQuestions(patientId) {
+// NEW ROUTES, not in CLAUDE.md yet. Agree with the core backend owner before merging.
+export async function createQR(pid) {
   if (USE_DUMMY) {
-    if (dummyDeleted.has(patientId)) return [];
-    // re-attach facts so corrections made in this session show up
-    return dummyQuestions.map((q) => ({
-      ...q,
-      facts: q.fact_ids.map((id) => dummyFacts.find((f) => f.fact_id === id)).filter(Boolean),
-    }));
+    await wait(200);
+    return { token: `demo-${pid}-${Date.now()}`, expires_at: Date.now() + 10 * 60 * 1000 };
   }
-  return request("GET", `/patients/${patientId}/questions`);
+  return http('POST', `/patients/${pid}/share-token`);
 }
 
-// patient: yes | no | value | dont_know | skip     doctor: confirm | correct | unclear
-// -> the updated question
-export async function answerQuestion(questionId, answer, value = null) {
+export async function scanQR(code) {
   if (USE_DUMMY) {
-    const q = dummyQuestions.find((x) => x.id === questionId);
-    if (!q) throw new Error("Question not found");
-    const role = dummyUser?.role;
-    if (PATIENT_ANSWERS.includes(answer) && role !== "patient")
-      throw new Error("Only the patient answers Things to Check.");
-    if (DOCTOR_ANSWERS.includes(answer) && role !== "doctor")
-      throw new Error("Only a doctor resolves open questions.");
-    if (q.status === "resolved") throw new Error("This question is already resolved.");
-    if (answer === "value" && !value) throw new Error("Please type a value.");
-    q.status = DOCTOR_ANSWERS.includes(answer)
-      ? "resolved"
-      : ["dont_know", "skip"].includes(answer)
-        ? "sent_to_doctor"
-        : "answered";
-    q.answer = {
-      answer,
-      value,
-      by: dummyUser?.username,
-      role,
-      at: new Date().toISOString().slice(0, 19).replace("T", " "),
-    };
-    dummyLog("p1", "answer_question", `question ${questionId}: ${answer}`);
-    return (await getQuestions("p1")).find((x) => x.id === questionId);
+    await wait(500);
+    if (!code || !code.startsWith('demo-')) throw new Error('expired');
+    return { session_id: 'demo-session', patient_id: code.split('-')[1], expires_at: Date.now() + 30 * 60 * 1000 };
   }
-  return request("POST", `/questions/${questionId}/answer`, { answer, value });
+  return http('POST', '/scan', { token: code });
 }
 
-// ---------- 60-second doctor brief ----------
-
-// -> {patient, current_medicines, allergies, conditions, latest_results, events,
-//     red_flags, open_questions}   (shapes documented in backend/routes/brief.py)
-export async function getBrief(patientId) {
-  if (USE_DUMMY) {
-    const open = dummyQuestions
-      .filter((q) => q.status !== "resolved")
-      .map(({ id, text, status }) => ({ id, text, status }));
-    return { ...dummyBrief, open_questions: open };
-  }
-  return request("GET", `/patients/${patientId}/brief`);
-}
-
-// ---------- check a medicine ----------
-
-// body {drug} -> {drug, generic, drug_class, class_label, known, warnings: [{kind, text, source}], note}
-export async function checkMedicine(patientId, drug) {
-  if (USE_DUMMY) {
-    await sleep(300);
-    const key = drug.toLowerCase().match(/[a-z]+/)?.[0] || "";
-    const saved = dummyChecks[key];
-    if (saved) {
-      // like the backend: once a doctor resolved the question about an allergy, say so
-      const warnings = saved.warnings.map((saved_w) => {
-        // the captured text uses the captured name ("augmentin"); show what was typed
-        const w = { ...saved_w, text: saved_w.text.replace(saved.drug, drug) };
-        const q = dummyQuestions.find(
-          (x) => x.status === "resolved" && x.fact_ids.includes(w.source?.fact_id) && ["confirm", "correct"].includes(x.answer?.answer),
-        );
-        if (!q) return w;
-        const text = w.text.replace(/ Another record says .*not resolved\./, "") + ` Confirmed by ${q.answer.by} on ${q.answer.at.slice(0, 10)}.`;
-        return { ...w, text };
-      });
-      return { ...saved, drug, warnings };
-    }
-    return {
-      drug,
-      generic: null,
-      drug_class: null,
-      class_label: null,
-      known: false,
-      warnings: [],
-      note: "Checked against these records only. This is not prescribing advice.",
-    };
-  }
-  return request("POST", `/patients/${patientId}/check-medicine`, { drug });
-}
-
-// ---------- QR / code sharing (core backend: backend/routes/share.py) ----------
-// Sharing needs the real backend: there is no dummy version.
-
-const needsBackend = () => {
-  throw new Error("Sharing works with the real backend only (USE_DUMMY = false).");
-};
-
-// patient: body {minutes} -> {share_id, code, token, url, qr_svg, expires_at, seconds_left}
-export async function createShare(patientId, minutes) {
-  if (USE_DUMMY) needsBackend();
-  return request("POST", `/patients/${patientId}/share`, { minutes });
-}
-
-// doctor: {code} or {token} -> {share_id, patient, expires_at, seconds_left}
-export async function openShare({ code, token }) {
-  if (USE_DUMMY) needsBackend();
-  return request("POST", "/share/open", code ? { code } : { token });
-}
-
-// patient: -> [{share_id, created_at, expires_at, seconds_left, opened_by, opened_at}]
-export async function getShares(patientId) {
-  if (USE_DUMMY) return [];
-  return request("GET", `/patients/${patientId}/shares`);
-}
-
-// patient stops a share early -> {stopped: true}
-export async function stopShare(shareId) {
-  if (USE_DUMMY) needsBackend();
-  return request("DELETE", `/share/${shareId}`);
-}
+export const isDummy = USE_DUMMY;

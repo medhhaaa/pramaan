@@ -1,7 +1,24 @@
-import { createRoot } from 'react-dom/client'
-import './index.css'
-import App from './App.jsx'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { BrowserRouter, MemoryRouter } from 'react-router-dom';
+import './i18n';
+import App from './App.jsx';
+import './styles/theme.css';
+import './styles/app.css';
+import { applyTheme, getTheme } from './lib/theme.js';
 
-// No <StrictMode>: in dev it runs every effect twice, so every page view would call the
-// API twice and show up twice in the audit log during the demo.
-createRoot(document.getElementById('root')).render(<App />)
+applyTheme(getTheme());
+
+ReactDOM.createRoot(document.getElementById('root')).render(
+  <React.StrictMode>
+    {import.meta.env.VITE_ROUTER === 'memory' ? (
+      <MemoryRouter>
+        <App />
+      </MemoryRouter>
+    ) : (
+      <BrowserRouter>
+        <App />
+      </BrowserRouter>
+    )}
+  </React.StrictMode>,
+);
