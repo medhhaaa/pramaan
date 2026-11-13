@@ -45,6 +45,9 @@ def delete_route(patient_id: str, user=Depends(get_current_user)):
             r["file_path"]
             for r in conn.execute("SELECT file_path FROM documents WHERE patient_id = ?", (patient_id,))
         ]
+        # before the stays: claim_pack_items only knows its stay
+        conn.execute("DELETE FROM claim_pack_items WHERE stay_id IN (SELECT id FROM hospital_stays WHERE patient_id = ?)",
+                     (patient_id,))
         deleted = {
             "corrections": conn.execute(
                 "DELETE FROM corrections WHERE fact_id IN (SELECT fact_id FROM facts WHERE patient_id = ?)",
@@ -60,6 +63,7 @@ def delete_route(patient_id: str, user=Depends(get_current_user)):
         }
         conn.execute("DELETE FROM user_patients WHERE patient_id = ?", (patient_id,))
         conn.execute("DELETE FROM share_requests WHERE patient_id = ?", (patient_id,))
+        conn.execute("DELETE FROM assistant_actions WHERE patient_id = ?", (patient_id,))
         conn.execute("DELETE FROM share_links WHERE patient_id = ?", (patient_id,))
         conn.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
 

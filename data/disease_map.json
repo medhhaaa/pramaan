@@ -1,0 +1,131 @@
+{
+  "_about": "Disease search (backend/disease_search.py, AGENTIC_PLAN point 14). Each key is a group name from data/synonyms.json, whose terms are reused as the disease's names; extra_terms adds everyday words (\"sugar\"). drug_classes are the classes in backend/routes/check_medicine.py DRUGS, so any brand or generic there (Glycomet -> metformin -> biguanide) leads here; medicines lists generics that table does not have. labs and events are matched as whole words in fact names, case-insensitive. Keep short terms (hb, bp) whole words only. This is a lookup list for finding records, not medical advice.",
+  "diabetes": {
+    "label": "Diabetes",
+    "extra_terms": ["sugar", "diabetic", "madhumeha"],
+    "drug_classes": ["biguanide", "sulfonylurea"],
+    "medicines": ["insulin", "glargine", "sitagliptin", "vildagliptin", "linagliptin", "teneligliptin", "dapagliflozin", "empagliflozin", "pioglitazone", "voglibose", "acarbose"],
+    "labs": ["hba1c", "glycated haemoglobin", "glycated hemoglobin", "fasting glucose", "fasting blood glucose", "fasting blood sugar", "fbs", "ppbs", "post prandial blood sugar", "postprandial glucose", "random blood sugar", "rbs", "blood glucose", "blood sugar", "urine acr", "microalbumin"],
+    "events": ["diabetic ketoacidosis", "dka", "hypoglycaemia", "hypoglycemia", "diabetic foot", "retinopathy", "neuropathy", "nephropathy"]
+  },
+  "hypertension": {
+    "label": "High blood pressure",
+    "extra_terms": ["bp", "blood pressure"],
+    "drug_classes": ["beta_blocker", "calcium_channel_blocker", "ace_inhibitor", "arb", "diuretic"],
+    "medicines": ["olmesartan", "cilnidipine", "chlorthalidone", "indapamide", "nebivolol", "prazosin"],
+    "labs": ["blood pressure", "potassium", "serum potassium", "sodium", "serum sodium", "serum creatinine", "creatinine", "ecg"],
+    "events": ["hypertensive crisis", "hypertensive urgency", "hypertensive emergency"]
+  },
+  "hypothyroidism": {
+    "label": "Thyroid",
+    "extra_terms": ["thyroid"],
+    "drug_classes": ["thyroid_hormone"],
+    "medicines": ["thyroxine"],
+    "labs": ["tsh", "t3", "t4", "free t4", "ft4", "free t3", "thyroid profile"],
+    "events": []
+  },
+  "asthma": {
+    "label": "Asthma",
+    "extra_terms": [],
+    "drug_classes": ["bronchodilator", "inhaled_steroid"],
+    "medicines": ["montelukast", "formoterol", "levosalbutamol", "fluticasone", "deriphylline", "theophylline"],
+    "labs": ["pefr", "peak flow", "fev1", "spirometry", "eosinophil", "eosinophils", "ige", "spo2"],
+    "events": ["exacerbation", "nebulisation", "nebulization", "acute asthma"]
+  },
+  "copd": {
+    "label": "COPD",
+    "extra_terms": [],
+    "drug_classes": ["bronchodilator", "inhaled_steroid"],
+    "medicines": ["tiotropium", "ipratropium", "formoterol"],
+    "labs": ["spirometry", "fev1", "spo2", "abg", "arterial blood gas"],
+    "events": ["exacerbation", "nebulisation", "nebulization"]
+  },
+  "chronic kidney disease": {
+    "label": "Kidney disease",
+    "extra_terms": ["kidney", "renal"],
+    "drug_classes": [],
+    "medicines": ["sodium bicarbonate", "febuxostat", "erythropoietin", "sevelamer", "torsemide"],
+    "labs": ["serum creatinine", "creatinine", "egfr", "urea", "blood urea", "bun", "urine acr", "urine protein", "potassium", "usg abdomen"],
+    "events": ["dialysis", "haemodialysis", "hemodialysis", "av fistula"]
+  },
+  "myocardial infarction": {
+    "label": "Heart attack",
+    "extra_terms": [],
+    "drug_classes": ["statin", "anticoagulant"],
+    "medicines": ["aspirin", "ticagrelor", "nitroglycerin", "isosorbide"],
+    "labs": ["troponin", "ck-mb", "ecg", "echo", "2d echo"],
+    "events": ["myocardial infarction", "heart attack", "angioplasty", "ptca", "cabg", "stent", "chest pain"]
+  },
+  "coronary artery disease": {
+    "label": "Coronary artery disease",
+    "extra_terms": ["heart disease"],
+    "drug_classes": ["statin", "anticoagulant"],
+    "medicines": ["aspirin", "ticagrelor", "nitroglycerin", "isosorbide"],
+    "labs": ["troponin", "ecg", "tmt", "echo", "2d echo", "lipid profile", "ldl", "angiogram"],
+    "events": ["chest pain", "angina", "angioplasty", "ptca", "cabg", "stent", "myocardial infarction"]
+  },
+  "heart failure": {
+    "label": "Heart failure",
+    "extra_terms": [],
+    "drug_classes": ["diuretic"],
+    "medicines": ["spironolactone", "sacubitril", "digoxin"],
+    "labs": ["bnp", "nt-probnp", "echo", "2d echo", "ejection fraction"],
+    "events": ["pulmonary oedema", "pulmonary edema", "breathlessness"]
+  },
+  "dyslipidaemia": {
+    "label": "High cholesterol",
+    "extra_terms": ["cholesterol"],
+    "drug_classes": ["statin"],
+    "medicines": ["fenofibrate", "ezetimibe"],
+    "labs": ["lipid profile", "total cholesterol", "cholesterol", "ldl", "hdl", "triglycerides"],
+    "events": []
+  },
+  "pneumonia": {
+    "label": "Pneumonia",
+    "extra_terms": [],
+    "drug_classes": ["penicillin", "cephalosporin", "macrolide", "fluoroquinolone"],
+    "medicines": [],
+    "labs": ["chest x-ray", "x-ray chest", "crp", "c-reactive protein", "wbc", "total leucocyte count", "tlc", "neutrophils", "sputum culture", "procalcitonin", "spo2"],
+    "events": ["respiratory distress", "oxygen support"]
+  },
+  "urinary tract infection": {
+    "label": "Urinary tract infection",
+    "extra_terms": [],
+    "drug_classes": ["fluoroquinolone", "cephalosporin"],
+    "medicines": ["nitrofurantoin", "fosfomycin"],
+    "labs": ["urine routine", "urine culture", "urine r/m", "pus cells"],
+    "events": []
+  },
+  "tuberculosis": {
+    "label": "Tuberculosis",
+    "extra_terms": [],
+    "drug_classes": [],
+    "medicines": ["isoniazid", "rifampicin", "pyrazinamide", "ethambutol", "akt"],
+    "labs": ["sputum afb", "afb", "cbnaat", "genexpert", "mantoux", "chest x-ray", "esr"],
+    "events": []
+  },
+  "stroke": {
+    "label": "Stroke",
+    "extra_terms": [],
+    "drug_classes": ["anticoagulant", "statin"],
+    "medicines": ["aspirin"],
+    "labs": ["ct brain", "mri brain", "carotid doppler"],
+    "events": ["stroke", "tia", "transient ischaemic attack", "hemiparesis", "hemiplegia"]
+  },
+  "anaemia": {
+    "label": "Anaemia",
+    "extra_terms": [],
+    "drug_classes": [],
+    "medicines": ["ferrous sulphate", "ferrous sulfate", "iron sucrose", "folic acid", "vitamin b12", "methylcobalamin"],
+    "labs": ["haemoglobin", "hemoglobin", "hb", "ferritin", "serum iron", "mcv", "peripheral smear"],
+    "events": ["blood transfusion", "transfusion"]
+  },
+  "osteoarthritis": {
+    "label": "Osteoarthritis",
+    "extra_terms": ["joint pain", "knee pain"],
+    "drug_classes": [],
+    "medicines": ["glucosamine", "diacerein"],
+    "labs": ["x-ray knee", "knee x-ray"],
+    "events": ["knee replacement", "joint replacement"]
+  }
+}

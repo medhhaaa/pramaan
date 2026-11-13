@@ -10,9 +10,11 @@ import Brief from './pages/Brief.jsx';
 import Timeline from './pages/Timeline.jsx';
 import Medication from './pages/Medication.jsx';
 import Records from './pages/Records.jsx';
+import DiseaseSearch from './pages/DiseaseSearch.jsx';
 import Flags from './pages/Flags.jsx';
 import Ask from './pages/Ask.jsx';
-import { ASK_ON } from './lib/features.js';
+import { ASK_ON, ASSISTANT_ON } from './lib/features.js';
+import Assistant from './pages/Assistant.jsx';
 import Upload from './pages/Upload.jsx';
 import Accuracy from './pages/Accuracy.jsx';
 import Audit from './pages/Audit.jsx';
@@ -70,8 +72,10 @@ function Shell() {
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/medication" element={<Medication />} />
           <Route path="/records" element={<RoleRoute roles={['doctor']}><Records /></RoleRoute>} />
+          <Route path="/disease-search" element={<RoleRoute roles={['doctor']}><DiseaseSearch /></RoleRoute>} />
           <Route path="/flags" element={<Flags />} />
           {ASK_ON && <Route path="/ask" element={<Ask />} />}
+          {ASSISTANT_ON && <Route path="/assistant" element={<Assistant />} />}
           <Route path="/upload" element={<Upload />} />
           <Route path="/audit" element={<Audit />} />
           <Route path="/security" element={<Security />} />

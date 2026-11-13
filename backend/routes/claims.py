@@ -14,7 +14,8 @@ GET   /patients/{pid}/hospital-stays/{sid}/claim-checklist
       -> {"stay", "items", "summary", "also_keep_ready", "reminder", "condition_questions", "note"}
 GET   /patients/{pid}/hospital-stays/{sid}/claim-pack
       -> a zip: saved documents named in checklist order (01_discharge_summary.pdf, ...)
-         plus checklist.txt listing every item and its status.
+         plus checklist.txt listing every item and its status. Documents the patient added in the
+         assistant (claim_pack_items, backend/agent/claim_pack.py) come after: added_01_<type>.pdf ...
 
 A stay is also opened automatically when a discharge summary is saved with a verified
 doc_type and the patient has no open stay (stay_from_discharge_summary, called by ingest.py).
@@ -237,6 +238,7 @@ def list_stays(patient_id: str, user=Depends(get_current_user)):
         stays = [stay_out(r) for r in rows]
         for stay in stays:
             stay["summary"] = stay_summary(conn, patient_id, stay)
+    log_action(user, "list_hospital_stays", patient_id, f"{len(stays)} stays")
     return stays
 
 
@@ -277,7 +279,7 @@ def pack_filenames(items):
     return names
 
 
-def checklist_text(result, files_by_doc):
+def checklist_text(result, files_by_doc, added_files=()):
     stay, s = result["stay"], result["summary"]
     dates = (f"{stay['admitted_on'] or 'date not known'} to {stay['discharged_on'] or 'date not known'}"
              if stay["admitted_on"] or stay["discharged_on"] else "dates not known")
@@ -295,6 +297,8 @@ def checklist_text(result, files_by_doc):
         if files_by_doc.get(item["doc"]):
             line += " (" + ", ".join(files_by_doc[item["doc"]]) + ")"
         lines.append(line)
+    if added_files:  # documents the patient chose in the assistant (claim_pack_items)
+        lines += ["", "Added by you: " + ", ".join(added_files)]
     lines += [
         "",
         "Also keep ready (not stored in Pramaan): " + ", ".join(i["label"] for i in ALSO_KEEP_READY),
@@ -309,18 +313,28 @@ def claim_pack(patient_id: str, stay_id: int, user=Depends(get_current_user)):
     require_patient_access(user, patient_id)
     with get_conn() as conn:
         result = checklist_for(conn, patient_id, load_stay(conn, patient_id, stay_id))
-        paths = {d["id"]: d["file_path"] for d in patient_documents(conn, patient_id)}
+        documents = {d["id"]: d for d in patient_documents(conn, patient_id)}
+        paths = {i: d["file_path"] for i, d in documents.items()}
+        # documents the patient confirmed in the assistant (backend/agent/claim_pack.py)
+        chosen = [r["document_id"] for r in conn.execute(
+            "SELECT document_id FROM claim_pack_items WHERE stay_id = ? ORDER BY created_at, document_id", (stay_id,))]
 
-    files_by_doc = {}
+    files_by_doc, added_files = {}, []
     buffer = io.BytesIO()
     with zipfile.ZipFile(buffer, "w", zipfile.ZIP_DEFLATED) as pack:
         for item_doc, doc, name in pack_filenames(result["items"]):
             pack.writestr(name, read_file(paths[doc["id"]]))
             files_by_doc.setdefault(item_doc, []).append(name)
-        pack.writestr("checklist.txt", checklist_text(result, files_by_doc))
+        listed = {doc["id"] for _item, doc, _name in pack_filenames(result["items"])}
+        extra = [i for i in chosen if i in documents and i not in listed and not documents[i]["held_back"]]
+        for n, doc_id in enumerate(extra, start=1):
+            name = f"added_{n:02d}_{documents[doc_id]['doc_type'] or 'document'}.pdf"
+            pack.writestr(name, read_file(paths[doc_id]))
+            added_files.append(name)
+        pack.writestr("checklist.txt", checklist_text(result, files_by_doc, added_files))
 
     log_action(user, "download_claim_pack", patient_id,
-               json.dumps({"stay": stay_id, "files": sum(len(v) for v in files_by_doc.values())}))
+               json.dumps({"stay": stay_id, "files": sum(len(v) for v in files_by_doc.values()) + len(added_files)}))
     return Response(
         content=buffer.getvalue(),
         media_type="application/zip",

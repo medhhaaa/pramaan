@@ -6,7 +6,7 @@
   "langPopupTitle": "Choose your language",
   "langs": { "en": "English", "hi": "हिंदी", "kn": "ಕನ್ನಡ" },
   "translatedNote": "Medicine names, doses and values are shown as written in the original.",
-  "nav": {
+  "nav": { "assistant": "Assistant", "diseaseSearch": "Disease search",
     "security": "Privacy & security",
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
     "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
@@ -179,6 +179,86 @@
       "asthma": "Asthma and breathing",
       "kidney": "Kidney",
       "other": "Other records"
+    }
+  },
+  "disease": {
+    "title": "Disease search",
+    "intro": "Everything in this patient's records about one disease. Type a disease, an everyday word (sugar), a medicine (Glycomet) or a test (HbA1c).",
+    "placeholder": "Disease, medicine or test, e.g. diabetes, sugar, Glycomet",
+    "search": "Search",
+    "examples": "Examples",
+    "via": {
+      "condition": "found from “{{q}}”",
+      "medicine": "found from the medicine “{{q}}”",
+      "lab": "found from the test “{{q}}”"
+    },
+    "hidden_one": "1 more record about this is not shared with you.",
+    "hidden_other": "{{count}} more records about this are not shared with you.",
+    "nothing": "The records you can see don't mention {{label}}.",
+    "unknown": "“{{q}}” is not in the disease list yet. Try a disease name, a synonym or a medicine.",
+    "sections": {
+      "conditions": "Conditions",
+      "medicines": "Medicines",
+      "labs": "Lab tests",
+      "events": "Events",
+      "documents": "Documents"
+    },
+    "negated": "Recorded as absent",
+    "copy": "Copy of an older record",
+    "source": "Open source"
+  },
+  "assistant": {
+    "note": "Answers come only from the records, with sources. Not medical advice. Personal details are removed before anything reaches the AI.",
+    "blocked": "Please remove these personal details before sending:",
+    "hidden": "Some records are not shared with you, so this answer may be incomplete.",
+    "sources": "Sources (tap to open the line):",
+    "confirmTitle": "Needs your OK",
+    "confirm": "Confirm",
+    "cancel": "Cancel",
+    "done": "Done. Saved to your claim pack.",
+    "cancelled": "Cancelled. Nothing was changed.",
+    "looked": "Looked at: {{tools}}",
+    "thinking": "Looking in the records…",
+    "previewTitle": "This is what the AI will see",
+    "previewHint": "Names and other personal details are replaced before sending.",
+    "sendAnyway": "Send",
+    "edit": "Edit",
+    "send": "Send",
+    "doctor": {
+      "title": "Assistant",
+      "empty": "Ask about this patient's records. Every answer cites its source.",
+      "placeholder": "e.g. Any red flags? Can I give Augmentin?",
+      "suggest": {
+        "brief": "Give me the 60-second brief",
+        "redFlags": "Any red flags or conflicts?",
+        "diabetes": "Everything about her diabetes",
+        "augmentin": "Can I prescribe Augmentin?"
+      }
+    },
+    "patient": {
+      "title": "Ask about my records",
+      "empty": "Ask about your own records. Every answer shows where it comes from.",
+      "placeholder": "e.g. What medicines am I taking?",
+      "suggest": {
+        "medicines": "What medicines am I taking?",
+        "sugar": "How has my sugar been?",
+        "claim": "What do I still need for my insurance claim?",
+        "who": "Who can see my records?"
+      }
+    },
+    "tools": {
+      "brief": "60-second brief",
+      "flags": "flags",
+      "disease_search": "disease search",
+      "check_medicine": "medicine check",
+      "open_questions": "open questions",
+      "timeline": "timeline",
+      "explain_records": "your records",
+      "my_medicines": "your medicines",
+      "things_to_check": "things to check",
+      "claim_checklist": "claim checklist",
+      "save_to_claim_pack": "claim pack",
+      "who_can_see": "who can see your records"
     }
   },
   "accuracy": { "title": "Accuracy", "precision": "Precision", "recall": "Recall", "f1": "F1", "byType": "By fact type", "byPatient": "By patient", "note": "Checked against answer keys · synthetic data." },

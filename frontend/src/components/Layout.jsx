@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ASK_ON } from '../lib/features.js';
+import { ASK_ON, ASSISTANT_ON } from '../lib/features.js';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck, Lock } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck, Lock, SearchCheck, Bot } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
 import HiddenNotice from './HiddenNotice.jsx';
@@ -17,6 +17,8 @@ const DOCTOR_NAV = [
   { to: '/scan', key: 'nav.scan', icon: Scan, action: 'scan' },
   { to: '/timeline', key: 'nav.timeline', icon: Clock, gated: true },
   { to: '/records', key: 'nav.records', icon: FolderOpen, gated: true },
+  { to: '/disease-search', key: 'nav.diseaseSearch', icon: SearchCheck, gated: true },
+  { to: '/assistant', key: 'nav.assistant', icon: Bot, gated: true },
   { to: '/medication', key: 'nav.medication', icon: Pill, gated: true },
   { to: '/flags', key: 'nav.flags', icon: Flag, gated: true },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare, gated: true },
@@ -28,6 +30,7 @@ const DOCTOR_NAV = [
 
 const PATIENT_NAV = [
   { to: '/my-records', key: 'nav.myRecords', icon: FileText },
+  { to: '/assistant', key: 'nav.assistant', icon: Bot },
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
@@ -64,7 +67,7 @@ export default function Layout() {
   const onMoreShared = useCallback(() => setDataVersion((v) => v + 1), []);
   const navigate = useNavigate();
   // Ask my records only when switched on (VITE_ENABLE_ASK=true in .env.local)
-  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => i.to !== '/ask' || ASK_ON);
+  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => (i.to !== '/ask' || ASK_ON) && (i.to !== '/assistant' || ASSISTANT_ON));
   const sessionActive = session && session.expiresAt > Date.now();
 
   const onLang = (e) => {

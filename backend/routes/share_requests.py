@@ -118,6 +118,7 @@ def share_options(patient_id: str, user=Depends(get_current_user)):
     with get_conn() as conn:
         require_own(user, patient_id, conn)
         groups = share_groups(conn, patient_id)
+    log_action(user, "view_share_options", patient_id, {"groups": [g["tag"] for g in groups]})
     return {"groups": groups, "always": sorted(ALWAYS_VISIBLE)}
 
 
@@ -143,6 +144,8 @@ def pending_requests(patient_id: str, user=Depends(get_current_user)):
             "created_at": r["created_at"], "scope": scope,
             "options": [g for g in groups if scope != "all" and g["tag"] not in scope],
         })
+    if out:  # the Share page polls this every 10 s: log only when there is a request to show
+        log_action(user, "view_share_requests", patient_id, {"requests": [r["id"] for r in out]})
     return out
 
 
@@ -192,8 +195,11 @@ def hidden(patient_id: str, user=Depends(get_current_user)):
         if access.get("share_id"):
             req = conn.execute("SELECT * FROM share_requests WHERE share_id = ? AND doctor_id = ? ORDER BY id DESC",
                                (access["share_id"], user["id"])).fetchone()
+    partial = summary["total"] > 0 or summary["documents"] > 0
+    if partial:  # counts drawn from the records (polled every 5 s only while a request waits)
+        log_action(user, "view_hidden_summary", patient_id, {"total": summary["total"]})
     return {
-        "partial": summary["total"] > 0 or summary["documents"] > 0,
+        "partial": partial,
         "hidden": summary,
         "can_request": bool(access.get("share_id")),
         "request": request_out(req) if req else None,
