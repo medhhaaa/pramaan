@@ -15,6 +15,9 @@ cd pramaan
 python -m venv .venv
 .venv\Scripts\activate          # Windows   (Mac/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
+# optional, for "Similar meaning" in the in-page search (see requirements-search.txt):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-search.txt
 
 # secrets: copy the example and fill in your values (never commit .env)
 copy .env.example .env          # Mac/Linux: cp .env.example .env

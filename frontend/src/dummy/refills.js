@@ -24,7 +24,7 @@ const EVENING_TAKEN = new Set([1, 2, 4, 5, 7, 9, 12, 13, 15, 16, 17, 18, 19, 20,
 const EVENING_SKIPPED = new Set([3, 8, 10, 14]);
 
 export const REFILL_REVIEW = {
-  patient_id: 'p7',
+  patient_id: 'p8',
   refill_request: { id: 1, status: 'pending', patient_note: 'My tablets finish in 4 days.', doctor_note: null,
     created_at: at(0, 8), decided_at: null },
   medicine: { prescription_item_id: 1, medicine: 'Metformin', dose: '500mg', frequency: 'BD', duration_days: 30,
@@ -37,15 +37,15 @@ export const REFILL_REVIEW = {
       return { date: day(n), due, taken: due ? 1 + (EVENING_TAKEN.has(n) ? 1 : 0) : 0, skipped: due && EVENING_SKIPPED.has(n) ? 1 : 0 };
     }),
   },
-  latest_report: { name: 'HbA1c', value: '7.4', unit: '%', date: '2026-08-20', fact_id: 'p7_d2_f003',
-    document_id: 'p7_d2', quote: 'HbA1c 7.4 %', page: 1, line: 14 },
+  latest_report: { name: 'HbA1c', value: '7.4', unit: '%', date: '2026-08-20', fact_id: 'p8_d2_f003',
+    document_id: 'p8_d2', quote: 'HbA1c 7.4 %', page: 1, line: 14 },
   brief: {
     current_medicines: [{ name: 'Metformin', last_fresh_evidence_date: '2026-08-22',
       entries: [{ date: '2024-02-14', dose: '500mg', frequency: 'BD' }, { date: '2026-08-22', dose: '500mg', frequency: 'BD' }] }],
-    allergies: [{ fact_id: 'p7_d1_f008', name: 'Sulfa drugs', status: 'documented', document_id: 'p7_d1',
+    allergies: [{ fact_id: 'p8_d1_f008', name: 'Sulfa drugs', status: 'documented', document_id: 'p8_d1',
       quote: 'Allergy: Sulfa drugs (skin rash on co-trimoxazole)' }],
-    conditions: [{ fact_id: 'p7_d1_f001', name: 'Type 2 diabetes mellitus', badge: 'independent_2plus' }],
-    latest_results: [{ fact_id: 'p7_d2_f003', name: 'HbA1c', value: '7.4', unit: '%', date_raw: '20/08/2026' }],
+    conditions: [{ fact_id: 'p8_d1_f001', name: 'Type 2 diabetes mellitus', badge: 'independent_2plus' }],
+    latest_results: [{ fact_id: 'p8_d2_f003', name: 'HbA1c', value: '7.4', unit: '%', date_raw: '20/08/2026' }],
     red_flags: [], open_questions: [],
   },
   warnings: [],
@@ -61,10 +61,10 @@ export const CONSULT_RECORDS = [
 ];
 
 export const CONSULT_RECORD_1 = {
-  id: 1, doctor_id: 9, patient_id: 'p7', type: 'prescription', created_at: at(26), corrects_record_id: null,
+  id: 1, doctor_id: 9, patient_id: 'p8', type: 'prescription', created_at: at(26), corrects_record_id: null,
   sha256: '3f7c0a1e9b2d4c6f8a0b1c2d3e4f5a6b7c8d9e0f1a2b3c4d5e6f7a8b9c0d1e2f',
-  snapshot: { brief: REFILL_REVIEW.brief, active_in_app_prescriptions: [], source_document_ids: ['p7_d1', 'p7_d2', 'p7_d3'] },
+  snapshot: { brief: REFILL_REVIEW.brief, active_in_app_prescriptions: [], source_document_ids: ['p8_d1', 'p8_d2', 'p8_d3'] },
   decision: CONSULT_RECORDS[0].decision, warnings_shown: [], overrides: [],
   doctor: { id: 9, name: 'Dr. Rao', registration_number: 'KMC 63105' },
-  patient: { id: 'p7', name: 'Meena Shenoy', dob: '1966-07-02', sex: 'F' },
+  patient: { id: 'p8', name: 'Meena Shenoy', dob: '1966-07-02', sex: 'F' },
 };

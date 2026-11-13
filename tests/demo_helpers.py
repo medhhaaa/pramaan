@@ -8,7 +8,7 @@ from backend.db import get_conn
 from backend.ingest import ingest_document
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-DEMO = ["p1", "p2", "p3", "p4", "p7"]
+DEMO = ["p1", "p2", "p3", "p4", "p8"]
 
 
 def load_care_team_demo():

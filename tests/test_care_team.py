@@ -48,22 +48,22 @@ def test_care_team_doctor_reads_but_never_uploads_deletes_or_shares(client):
     r = client.post("/patients/p4/upload", files={"file": ("x.pdf", b"%PDF-1.4", "application/pdf")}, headers=rao)
     assert r.status_code == 403
     ids = [p["id"] for p in client.get("/patients", headers=rao).json()]
-    assert ids == ["p1", "p2", "p3", "p4", "p7"]
+    assert ids == ["p1", "p2", "p3", "p4", "p8"]
 
 
 def test_out_of_scope_data_is_hidden(client):
     rao, meena = login(client, "drrao"), login(client, "meena")
-    own = {f["name"] for f in client.get("/patients/p7/timeline", headers=meena).json()}
-    seen = client.get("/patients/p7/timeline", headers=rao).json()
+    own = {f["name"] for f in client.get("/patients/p8/timeline", headers=meena).json()}
+    seen = client.get("/patients/p8/timeline", headers=rao).json()
     names = {f["name"] for f in seen}
     assert {"Nitrofurantoin", "Urinary tract infection"} <= own
     assert not {"Nitrofurantoin", "Urinary tract infection"} & names   # outside "diabetes"
     assert {"Metformin", "Sulfa drugs", "Type 2 diabetes mellitus"} <= names  # allergy always shown
     assert all(fact_in_scope(f, ["diabetes"]) for f in seen)
 
-    meds = {m["name"] for m in client.get("/patients/p7/medications", headers=rao).json()}
+    meds = {m["name"] for m in client.get("/patients/p8/medications", headers=rao).json()}
     assert "Nitrofurantoin" not in meds and "Metformin" in meds
-    brief = client.get("/patients/p7/brief", headers=rao).json()
+    brief = client.get("/patients/p8/brief", headers=rao).json()
     assert "Nitrofurantoin" not in json.dumps(brief)
     assert any(a["name"] == "Sulfa drugs" for a in brief["allergies"])
 
@@ -84,16 +84,16 @@ def test_revoked_doctor_gets_403(client):
 def test_dr_rao_dashboard_tags_and_order(client):
     rows = client.get("/doctors/me/patients", headers=login(client, "drrao")).json()
     assert [(r["patient_id"], r["tags"]) for r in rows] == [
-        ("p7", ["refill_request"]),
+        ("p8", ["refill_request"]),
         ("p1", ["new_report"]),
         ("p2", ["missed_doses"]),
         ("p3", ["followup_overdue"]),
         ("p4", ["stable"]),
     ]
     by_id = {r["patient_id"]: r for r in rows}
-    assert by_id["p2"]["adherence_14d"] == 57 and by_id["p7"]["adherence_14d"] == 79
-    assert by_id["p7"]["conditions"] == ["Type 2 diabetes mellitus"]  # within scope only
-    assert by_id["p7"]["scope"] == ["diabetes"] and by_id["p7"]["age"] == 60
+    assert by_id["p2"]["adherence_14d"] == 57 and by_id["p8"]["adherence_14d"] == 79
+    assert by_id["p8"]["conditions"] == ["Type 2 diabetes mellitus"]  # within scope only
+    assert by_id["p8"]["scope"] == ["diabetes"] and by_id["p8"]["age"] == 60
 
 
 def test_opening_the_patient_clears_new_report(client):

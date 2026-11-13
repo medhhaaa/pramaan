@@ -27,7 +27,7 @@ def client():
 
 def meena_request():
     with get_conn() as conn:
-        return dict(conn.execute("SELECT * FROM refill_requests WHERE patient_id = 'p7' ORDER BY id").fetchone())
+        return dict(conn.execute("SELECT * FROM refill_requests WHERE patient_id = 'p8' ORDER BY id").fetchone())
 
 
 def item_id(patient_id, medicine):
@@ -41,15 +41,15 @@ def item_id(patient_id, medicine):
 
 def test_meenas_refill_is_at_the_top_of_dr_raos_dashboard(client):
     rows = client.get("/doctors/me/patients", headers=login(client, "drrao")).json()
-    assert rows[0]["patient_id"] == "p7" and rows[0]["tags"] == ["refill_request"]
+    assert rows[0]["patient_id"] == "p8" and rows[0]["tags"] == ["refill_request"]
     assert rows[0]["refill_request_id"] == meena_request()["id"]
     pending = client.get("/doctors/me/refill-requests", headers=login(client, "drrao")).json()
-    assert [(r["patient_id"], r["medicine"]) for r in pending] == [("p7", "Metformin")]
+    assert [(r["patient_id"], r["medicine"]) for r in pending] == [("p8", "Metformin")]
 
 
 def test_patient_sees_her_in_app_medicines_and_logs_doses(client):
     meena = login(client, "meena")
-    data = client.get("/patients/p7/my-medicines", headers=meena).json()
+    data = client.get("/patients/p8/my-medicines", headers=meena).json()
     [med] = data["medicines"]
     assert (med["medicine"], med["dose"], med["frequency"]) == ("Metformin", "500mg", "BD")
     assert med["can_request_refill"] is False and med["refill_blocked_reason"] == "pending"
@@ -60,7 +60,7 @@ def test_patient_sees_her_in_app_medicines_and_logs_doses(client):
     future = (today_utc() + timedelta(days=1)).isoformat()
     assert client.post(f"/reminders/{rid}/log", json={"status": "taken", "date": future}, headers=meena).status_code == 422
     assert client.post(f"/reminders/{rid}/log", json={"status": "taken"}, headers=login(client, "drrao")).status_code == 403
-    assert client.get("/patients/p7/my-medicines", headers=login(client, "drrao")).status_code == 403
+    assert client.get("/patients/p8/my-medicines", headers=login(client, "drrao")).status_code == 403
 
 
 # ---------- refill rules ----------
@@ -81,15 +81,15 @@ def test_refill_only_for_an_active_in_app_medicine_from_a_care_team_doctor(clien
     assert r.status_code == 422 and "not active" in r.json()["detail"]
     # a medicine read from documents (no prescription_items row) or someone else's item
     assert client.post("/patients/p4/refill-requests", json={"prescription_item_id": 99999}, headers=arjun).status_code == 404
-    other = item_id("p7", "Metformin")
+    other = item_id("p8", "Metformin")
     assert client.post("/patients/p4/refill-requests", json={"prescription_item_id": other}, headers=arjun).status_code == 404
     # only the patient asks
-    assert client.post("/patients/p7/refill-requests", json={"prescription_item_id": other},
+    assert client.post("/patients/p8/refill-requests", json={"prescription_item_id": other},
                        headers=login(client, "drrao")).status_code == 403
 
 
 def test_one_pending_request_per_medicine(client):
-    r = client.post("/patients/p7/refill-requests", json={"prescription_item_id": item_id("p7", "Metformin")},
+    r = client.post("/patients/p8/refill-requests", json={"prescription_item_id": item_id("p8", "Metformin")},
                     headers=login(client, "meena"))
     assert r.status_code == 409
 
@@ -110,7 +110,7 @@ def test_review_shows_records_and_checks_and_never_recommends(client):
     assert med["first_prescribed_at"] == med["prescribed_at"]
     assert len(data["adherence_30d"]["days"]) == 30 and data["adherence_30d"]["percent"] is not None
     report = data["latest_report"]
-    assert report["document_id"].startswith("p7_") and report["quote"]
+    assert report["document_id"].startswith("p8_") and report["quote"]
     assert any(a["name"] == "Sulfa drugs" for a in data["brief"]["allergies"])
     assert "Nitrofurantoin" not in json.dumps(data)  # outside Dr. Rao's "diabetes" scope
     assert data["refill_request"]["patient_note"] == "My tablets finish in 4 days."
@@ -174,7 +174,7 @@ def test_approve_creates_a_new_version_extends_reminders_and_notifies(client):
     note = client.get("/me/notifications", headers=meena).json()[0]
     assert note["kind"] == "refill_approved" and expected_end in note["text"] and note["link"] == "/my-medicines"
     assert client.post(f"/notifications/{note['id']}/read", headers=meena).json()["updated"] is True
-    [med] = client.get("/patients/p7/my-medicines", headers=meena).json()["medicines"]
+    [med] = client.get("/patients/p8/my-medicines", headers=meena).json()["medicines"]
     assert med["end_date"] == expected_end and med["last_refill_request"]["status"] == "approved"
     # decided once only; the renewed medicine can be refilled again later
     assert client.post(f"/refill-requests/{req['id']}/decision", json={"action": "decline", "note": "x"},
@@ -213,14 +213,14 @@ def records(client, patient_id, who):
 
 
 def test_consult_record_on_every_refill_decision(client):
-    recs = records(client, "p7", "drrao")
+    recs = records(client, "p8", "drrao")
     assert [r["type"] for r in recs] == ["refill_decision", "prescription"]  # newest first; demo prescription
     rec = client.get(f"/consult-records/{recs[0]['id']}", headers=login(client, "drrao")).json()
     assert rec["decision"]["action"] == "approve" and rec["decision"]["reminders_until"]
     snap = rec["snapshot"]
     assert snap["brief"]["allergies"] and snap["adherence_30d"]["percent"] is not None
     assert snap["refill_request"]["patient_note"] == "My tablets finish in 4 days."
-    assert "p7_d1" in snap["source_document_ids"]
+    assert "p8_d1" in snap["source_document_ids"]
     assert [r["decision"]["status"] for r in records(client, "p2", "drrao")[:2]] == ["declined", "visit_required"]
 
 
@@ -247,20 +247,20 @@ def test_prescribing_needs_the_care_team_and_the_scope(client):
     body = {"items": [{"medicine": "Metformin", "dose": "500mg", "frequency": "BD", "duration_days": 30}]}
     assert client.post("/patients/p5/prescriptions", json=body, headers=login(client, "drrao")).status_code == 403
     out_of_scope = {"items": [{"medicine": "Nitrofurantoin", "dose": "100mg", "frequency": "BD", "duration_days": 5}]}
-    assert client.post("/patients/p7/prescriptions", json=out_of_scope, headers=login(client, "drrao")).status_code == 403
-    assert client.post("/patients/p7/prescriptions", json=body, headers=login(client, "meena")).status_code == 403
+    assert client.post("/patients/p8/prescriptions", json=out_of_scope, headers=login(client, "drrao")).status_code == 403
+    assert client.post("/patients/p8/prescriptions", json=body, headers=login(client, "meena")).status_code == 403
 
 
 def test_consult_records_cannot_be_changed_through_the_api(client):
     rao = login(client, "drrao")
-    rid = records(client, "p7", "drrao")[0]["id"]
+    rid = records(client, "p8", "drrao")[0]["id"]
     for method in ("put", "patch", "delete"):
         assert getattr(client, method)(f"/consult-records/{rid}", headers=rao).status_code == 405
 
 
 def test_verify_detects_a_manual_database_edit(client):
     rao = login(client, "drrao")
-    rid = records(client, "p7", "drrao")[0]["id"]
+    rid = records(client, "p8", "drrao")[0]["id"]
     assert client.get(f"/consult-records/{rid}/verify", headers=rao).json()["valid"] is True
     with get_conn() as conn:
         row = conn.execute("SELECT decision_json FROM consult_records WHERE id = ?", (rid,)).fetchone()
@@ -273,7 +273,7 @@ def test_verify_detects_a_manual_database_edit(client):
 
 
 def test_pdf_download_and_who_may_read(client):
-    rid = records(client, "p7", "drrao")[0]["id"]
+    rid = records(client, "p8", "drrao")[0]["id"]
     r = client.get(f"/consult-records/{rid}/pdf", headers=login(client, "drrao"))
     assert r.status_code == 200 and r.headers["content-type"] == "application/pdf" and r.content.startswith(b"%PDF")
     assert client.get(f"/consult-records/{rid}", headers=login(client, "meena")).status_code == 200
@@ -284,7 +284,7 @@ def test_pdf_download_and_who_may_read(client):
 
 def test_correction_is_a_new_record_and_the_original_is_kept(client):
     rao = login(client, "drrao")
-    original = records(client, "p7", "drrao")[0]
+    original = records(client, "p8", "drrao")[0]
     r = client.post(f"/consult-records/{original['id']}/corrections",
                     json={"note": "Approved for 30 days, not 60."}, headers=rao)
     assert r.status_code == 200

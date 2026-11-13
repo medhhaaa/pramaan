@@ -8,6 +8,7 @@ import Patients from './pages/Patients.jsx';
 import Brief from './pages/Brief.jsx';
 import Timeline from './pages/Timeline.jsx';
 import Medication from './pages/Medication.jsx';
+import Records from './pages/Records.jsx';
 import Flags from './pages/Flags.jsx';
 import Ask from './pages/Ask.jsx';
 import Upload from './pages/Upload.jsx';
@@ -64,6 +65,7 @@ function Shell() {
           <Route path="/claim-documents" element={<RoleRoute roles={['patient']}><ClaimDocuments /></RoleRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/medication" element={<Medication />} />
+          <Route path="/records" element={<RoleRoute roles={['doctor']}><Records /></RoleRoute>} />
           <Route path="/flags" element={<Flags />} />
           <Route path="/ask" element={<Ask />} />
           <Route path="/upload" element={<Upload />} />
