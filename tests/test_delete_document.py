@@ -11,7 +11,6 @@ from fastapi.testclient import TestClient
 from backend import seed, storage
 from backend.db import get_conn
 from backend.ingest import ingest_document
-from backend.routes import delete as delete_route
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAVED = {d["document_id"]: d for d in
@@ -31,15 +30,13 @@ def login(client, username, password):
 
 
 @pytest.fixture()
-def client(monkeypatch):
+def client():
     gc.collect()  # earlier test files leave sqlite connections open; Windows then can't reseed
     seed.seed(with_sample_facts=False)
     ids = {}
     for saved_id, name in FILES.items():  # ids follow upload order: d1, d2, d3, d4 here
         ids[saved_id] = ingest_document("p1", name, pdf(name), saved=SAVED[saved_id])["document_id"]
-    # uploads are stored under the test folder (conftest): delete files from there too
-    monkeypatch.setattr(delete_route, "ROOT", storage.ROOT)
-    monkeypatch.setattr(delete_route, "STORAGE_DIR", os.path.join(storage.ROOT, "storage"))
+    # uploads are stored under the test folder (conftest); delete.py reads storage.ROOT itself
     from backend.main import app
     c = TestClient(app)
     c.ids = ids

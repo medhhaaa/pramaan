@@ -155,6 +155,7 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `GET /patients/{id}/medications` | Per medicine: entries (date, dose, action, echo) + last_fresh_evidence_date | Deeksha |
 | `GET /patients/{id}/flags` | Flagged facts grouped by flag type | Deeksha |
 | `GET /documents/{id}` | PDF + line positions for highlighting | Core backend |
+| `GET /documents/{id}/original` | The photo as uploaded (photo uploads only; metadata removed, encrypted at rest, audited, not cached). `GET /documents/{id}` then has `original: {mime}` and each line a `box` on the photo | Core backend (Ashil: `pipeline/original_image.py`) |
 | `POST /facts/{id}/correct` | Correction, keeps original | Core backend |
 | `POST /patients/{id}/ask` | Q&A with citations or "not documented" | Medha |
 | `GET /patients/{id}/questions` | Things to Check / Open Questions | Medha |
@@ -187,7 +188,7 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 - `users` (id, username, password_hash, role `doctor`|`patient`)
 - `patients` (id, name, dob, sex, blood_group)
 - `user_patients` (user_id, patient_id)
-- `documents` (id, patient_id, filename, doc_type, document_date, file_path, held_back)
+- `documents` (id, patient_id, filename, doc_type, document_date, file_path, held_back, original_path, original_mime): `original_path` = a photo upload's original picture (`storage/<pid>/<doc>.original.<ext>.enc`), shown in Source
 - `facts` (all contract fields; `flags` stored as JSON text)
 - `corrections` (id, fact_id, field, old_value, new_value, corrected_by, role, created_at)
 - `audit_log` (id, user_id, action, patient_id, detail, created_at)
