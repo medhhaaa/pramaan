@@ -225,7 +225,7 @@
     "copy": "Copy of an older record",
     "source": "Open source"
   },
-  "assistant": {
+  "assistant": { "openFull": "Open as a full page",
     "clear": "Clear chat",
     "links": {"upload": "Upload a document", "claim_upload": "Upload what's missing for the claim"},
     "note": "Answers come only from the records, with sources. Not medical advice. Personal details are removed before anything reaches the AI.",
@@ -244,7 +244,7 @@
     "sendAnyway": "Send",
     "edit": "Edit",
     "send": "Send",
-    "doctor": {
+    "doctor": { "noPatient": "Open a patient first: scan their QR code or pick them from My patients. The assistant answers only from that patient's shared records.",
       "title": "Assistant",
       "empty": "Ask about this patient's records. Every answer cites its source.",
       "placeholder": "e.g. Any red flags? Can I give Augmentin?",
