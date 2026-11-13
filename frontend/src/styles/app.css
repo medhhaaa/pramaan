@@ -356,6 +356,16 @@ a { color: var(--brand); }
 .dropzone.disabled { opacity: 0.55; pointer-events: none; }
 .upload-item { margin-top: 14px; }
 .upload-item-head { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0 0 6px; overflow-wrap: anywhere; }
+/* delete a document (added twice by mistake) + the list of everything uploaded so far */
+.upload-item-actions { margin-top: 10px; }
+.doc-delete-confirm { margin-top: 6px; padding: 10px 12px; border: 1px solid var(--danger); border-radius: 10px; }
+.doc-delete-confirm p { margin: 0 0 8px; }
+.doc-delete-confirm .row, .record-card > .row { flex-wrap: wrap; align-items: center; }
+.all-docs { margin-top: 28px; }
+.all-docs h2 { margin-bottom: 4px; }
+.doc-name { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; overflow-wrap: anywhere; }
+.doc-rename { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin: 6px 0; }
+.doc-rename .input { flex: 1 1 220px; min-width: 0; }
 .spin { animation: spin 1s linear infinite; color: var(--brand); flex-shrink: 0; }
 @keyframes spin { to { transform: rotate(360deg); } }
 @media (prefers-reduced-motion: reduce) { .spin { animation: none; } }

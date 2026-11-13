@@ -372,6 +372,19 @@ export async function getAudit(pid) {
   return http('GET', `/patients/${pid}/audit`);
 }
 
+// One uploaded document (e.g. added twice by mistake), with its facts. Patient only.
+// -> {deleted: {document_id, facts, files}}
+export async function deleteDocument(did) {
+  if (USE_DUMMY) { await wait(); return { deleted: { document_id: did, facts: 0, files: 0 } }; }
+  return http('DELETE', `/documents/${did}`);
+}
+
+// Rename an uploaded document (display name only). Patient only. -> {id, filename}
+export async function renameDocument(did, filename) {
+  if (USE_DUMMY) { await wait(); return { id: did, filename: /\.[A-Za-z0-9]{1,5}$/.test(filename) ? filename : `${filename}.pdf` }; }
+  return http('PATCH', `/documents/${did}`, { filename });
+}
+
 export async function deletePatient(pid) {
   if (USE_DUMMY) { await wait(); return { ok: true, patient_id: pid }; }
   return http('DELETE', `/patients/${pid}`);

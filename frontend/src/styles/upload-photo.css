@@ -1,0 +1,16 @@
+/* Upload: "Is your name written on this photo?" before a photo uploads (Upload.jsx PhotoNameCheck). */
+.photo-check { margin-top: 16px; border: 1px solid color-mix(in srgb, var(--warn) 55%, var(--border));
+  background: color-mix(in srgb, var(--warn) 7%, var(--surface)); }
+.photo-check h2 { display: flex; align-items: center; gap: 8px; font-size: 1.1rem; margin: 0 0 8px; }
+/* focus is moved here so screen readers read the warning; it is not a control, so no ring */
+.photo-check h2:focus, .photo-check h2:focus-visible { outline: none; box-shadow: none; }
+.photo-check p { margin: 0 0 8px; max-width: 70ch; }
+.photo-check .muted svg { vertical-align: -2px; }
+.photo-check-list { display: flex; flex-wrap: wrap; gap: 12px; list-style: none; padding: 0; margin: 12px 0 16px; }
+.photo-check-list li { display: flex; flex-direction: column; gap: 4px; max-width: 220px; }
+.photo-check-list img { max-width: 220px; max-height: 220px; object-fit: contain; border-radius: 8px;
+  border: 1px solid var(--border); background: var(--surface-2); }
+.photo-check-list span { overflow-wrap: anywhere; color: var(--text-muted); }
+@media (max-width: 640px) {
+  .photo-check-list li, .photo-check-list img { max-width: 100%; }
+}
