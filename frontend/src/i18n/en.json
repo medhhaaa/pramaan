@@ -150,6 +150,8 @@
     "careTeamNote": "Your care-team access covers only part of the records. The patient can change it.",
     "ask": "Ask the patient to share more",
     "askAgain": "Ask again",
+    "careTeamWider": "{{doctor}} is also on your care team, so they already see more than this QR allows.",
+    "careTeamChange": "Change it in My care team",
     "noteLabel": "Why you need it (optional, the patient sees this)",
     "notePlaceholder": "e.g. Starting an antibiotic, need your current medicines",
     "send": "Send request",

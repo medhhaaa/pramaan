@@ -184,3 +184,24 @@ def test_stopping_the_share_removes_its_requests(client, nisha, doctor):
     client.delete(f"/share/{made['share_id']}", headers=nisha)
     assert client.get("/patients/p7/share-requests", headers=nisha).json() == []
     assert client.get("/patients/p7/hidden", headers=doctor).status_code == 403
+
+
+def test_share_list_tells_the_patient_when_the_care_team_sees_more(client, nisha, doctor):
+    """A care-team doctor (scope all) opens a diabetes-only QR: they keep seeing everything
+    (auth.py adds both scopes), so the patient's Share page must say so instead of "Diabetes"."""
+    from backend.db import get_conn
+
+    with get_conn() as conn:
+        doctor_id = conn.execute("SELECT id FROM users WHERE username = 'doctor'").fetchone()["id"]
+    entry = client.post("/patients/p7/care-team", json={"doctor_id": doctor_id, "scope": "all"}, headers=nisha)
+    assert entry.status_code == 200, entry.text
+    try:
+        share(client, nisha, doctor, ["diabetes"])
+        row = client.get("/patients/p7/shares", headers=nisha).json()[0]
+        assert row["scope"] == ["diabetes"] and row["care_team_scope"] == "all" and row["sees"] == "all"
+        assert "Augmentin" in medicines(client, doctor)
+        assert client.get("/patients/p7/hidden", headers=doctor).json() == {"partial": False}
+    finally:
+        client.post(f"/patients/p7/care-team/{entry.json()['id']}/revoke", headers=nisha)
+    row = client.get("/patients/p7/shares", headers=nisha).json()[0]
+    assert row["care_team_scope"] is None and row["sees"] == ["diabetes"]

@@ -14,7 +14,10 @@ POST   /patients/{id}/share   {"minutes": 15, "scope": "all" | ["diabetes", "oth
 POST   /share/open            {"code": "K7P3-QXM9"} or {"token": "..."}   (doctor only)
        -> {"share_id", "patient": {id, name, dob, sex, blood_group}, "expires_at", "seconds_left"}
 GET    /patients/{id}/shares  -> active shares: [{"share_id", "created_at", "expires_at",
-                                  "seconds_left", "opened_by", "opened_at", "scope"}]
+                                  "seconds_left", "opened_by", "opened_at", "scope",
+                                  "care_team_scope", "sees"}]
+          care_team_scope  the opening doctor's care-team scope, or null if not on the care team
+          sees             what that doctor really sees: scope + care_team_scope together
 DELETE /share/{share_id}      -> {"stopped": true}   (the patient stops sharing early)
 
 Safety:
@@ -36,7 +39,7 @@ from pydantic import BaseModel
 
 from backend.auth import get_current_user, has_full_access
 from backend.db import get_conn, log_action
-from backend.scope import SCOPE_NAMES, parse_scope, scope_text
+from backend.scope import SCOPE_NAMES, parse_scope, scope_text, union_scope
 
 router = APIRouter()
 
@@ -178,8 +181,10 @@ def list_shares(patient_id: str, user=Depends(get_current_user)):
             raise HTTPException(status_code=403, detail="No access to this patient")
         _delete_expired(conn)
         rows = conn.execute(
-            """SELECT s.*, u.username AS opened_by_name FROM share_links s
+            """SELECT s.*, u.username AS opened_by_name, c.scope AS care_team_scope FROM share_links s
                LEFT JOIN users u ON u.id = s.opened_by
+               LEFT JOIN care_team c ON c.doctor_id = s.opened_by AND c.patient_id = s.patient_id
+                                     AND c.status = 'active'
                WHERE s.patient_id = ? ORDER BY s.created_at DESC""",
             (patient_id,),
         ).fetchall()
@@ -193,6 +198,11 @@ def list_shares(patient_id: str, user=Depends(get_current_user)):
             "opened_by": r["opened_by_name"],
             "opened_at": _iso(r["opened_at"]),
             "scope": parse_scope(r["scope"]),
+            # the doctor who opened it is also on the care team: they see this too (auth.py adds
+            # both scopes), so the Share page must not claim the QR alone limits what they see
+            "care_team_scope": parse_scope(r["care_team_scope"]) if r["care_team_scope"] else None,
+            "sees": (union_scope(parse_scope(r["scope"]), parse_scope(r["care_team_scope"]))
+                     if r["care_team_scope"] else parse_scope(r["scope"])),
         }
         for r in rows
     ]
