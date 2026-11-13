@@ -1241,16 +1241,16 @@ P6 = {
 }
 
 # ---------------------------------------------------------------------------
-# Patient p7: Meena Shenoy, for the doctor features (care team, refill requests).
+# Patient p8: Meena Shenoy, for the doctor features (care team, refill requests).
 # Her current Metformin is an IN-APP prescription from Dr. Rao (backend/demo_care_team.py);
 # these PDFs give her history: type 2 diabetes and a sulfa allergy on record.
 # ---------------------------------------------------------------------------
 
-P7 = {
-    "patient_id": "p7",
+P8 = {
+    "patient_id": "p8",
     "patient": {"name": "Meena Shenoy", "dob": "1966-07-02", "sex": "F", "blood_group": "A+"},
     "traps": [
-        {"type": "refill_review", "documents": ["p7_d1", "p7_d2", "p7_d3"],
+        {"type": "refill_review", "documents": ["p8_d1", "p8_d2", "p8_d3"],
          "note": "Sulfa allergy documented in the 2024 discharge summary. A refill review re-runs "
                  "the allergy check, so a sulfonylurea (e.g. Glimepiride) would warn."},
     ],
@@ -1321,7 +1321,7 @@ P7 = {
     ],
 }
 
-PATIENTS = [P1, P2, P3, P4, P5, P6, P7]
+PATIENTS = [P1, P2, P3, P4, P5, P6, P8]
 
 
 # ---------------------------------------------------------------------------

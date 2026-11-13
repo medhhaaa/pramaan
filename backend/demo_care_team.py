@@ -5,7 +5,7 @@
 backend/load_demo.py runs this after loading the documents. Dr. Rao (drrao / drrao123) has
 5 care-team patients, one per My Patients tag, in this order:
 
-    Meena  (p7)  refill_request    Metformin 500mg BD, an in-app prescription from Dr. Rao.
+    Meena  (p8)  refill_request    Metformin 500mg BD, an in-app prescription from Dr. Rao.
                                    Evening doses: 8 of the last 14 taken (~55%), mornings all
                                    taken. Sulfa allergy on record. Pending refill request.
                                    Scope: diabetes only.
@@ -25,7 +25,7 @@ from datetime import date, datetime, timedelta, timezone
 from backend.db import get_conn
 from backend.prescriptions import create_prescription
 
-DEMO_PATIENTS = ["p1", "p2", "p3", "p4", "p7"]
+DEMO_PATIENTS = ["p1", "p2", "p3", "p4", "p8"]
 DEMO_DOCTORS = ["drrao", "drkotian"]
 
 
@@ -91,7 +91,7 @@ def build():
         rao, kotian = user_id(conn, "drrao"), user_id(conn, "drkotian")
         have = {r["id"] for r in conn.execute("SELECT id FROM patients")}
         if not rao or not kotian or not set(DEMO_PATIENTS) <= have:
-            print("demo_care_team: run python -m backend.seed first (needs drrao, drkotian and p1-p4, p7)")
+            print("demo_care_team: run python -m backend.seed first (needs drrao, drkotian and p1-p4, p8)")
             return
         clear(conn, [rao, kotian])
 
@@ -106,21 +106,21 @@ def build():
             conn.execute("UPDATE documents SET uploaded_at = ? WHERE id = ?", (at(1), latest["id"]))
 
         # Meena: refill request
-        add_team(conn, "p7", rao, '["diabetes"]', days_ago=90)
-        pres = create_prescription(conn, "p7", rao, [
+        add_team(conn, "p8", rao, '["diabetes"]', days_ago=90)
+        pres = create_prescription(conn, "p8", rao, [
             {"medicine": "Metformin", "dose": "500mg", "frequency": "BD", "duration_days": 30}],
             start_date=day(26), created_at=at(26))
         times = reminder_ids(conn, pres)
-        log_doses(conn, "p7", times["08:00"], 26, taken_days=range(1, 27))
+        log_doses(conn, "p8", times["08:00"], 26, taken_days=range(1, 27))
         evening_taken = {1, 2, 4, 5, 7, 9, 12, 13} | set(range(15, 27))   # 8 of the last 14
-        log_doses(conn, "p7", times["20:00"], 26, taken_days=evening_taken, skipped_days={3, 8, 10, 14})
+        log_doses(conn, "p8", times["20:00"], 26, taken_days=evening_taken, skipped_days={3, 8, 10, 14})
         item = conn.execute("SELECT id FROM prescription_items WHERE prescription_id = ?", (pres,)).fetchone()
         conn.execute(
             """INSERT INTO refill_requests (patient_id, doctor_id, prescription_item_id, status, patient_note, created_at)
-               VALUES ('p7', ?, ?, 'pending', 'My tablets finish in 4 days.', ?)""",
+               VALUES ('p8', ?, ?, 'pending', 'My tablets finish in 4 days.', ?)""",
             (rao, item["id"], at(0, 8)),
         )
-        viewed(conn, rao, "p7", 3)
+        viewed(conn, rao, "p8", 3)
 
         # Sunita: new report (Dr. Rao last looked 5 days ago; a report came in yesterday)
         add_team(conn, "p1", rao, "all", days_ago=120)

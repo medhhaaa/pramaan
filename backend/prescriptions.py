@@ -1,6 +1,6 @@
 """In-app prescriptions and the medicine reminders they create. (Medha)
 
-    create_prescription(conn, "p7", doctor_id, [{"medicine": "Metformin", "dose": "500mg",
+    create_prescription(conn, "p8", doctor_id, [{"medicine": "Metformin", "dose": "500mg",
                         "frequency": "BD", "duration_days": 30}], start_date=date(2026, 11, 1))
         -> prescription id. Each item gets reminders at its dose times from start to end date.
 

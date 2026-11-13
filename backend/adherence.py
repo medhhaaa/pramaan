@@ -3,8 +3,8 @@
 A dose is DUE for each reminder on each day between its start and end date. The window ends
 yesterday (today's doses may not be due yet). A due dose with no tap counts as missed.
 
-    adherence(conn, "p7", days=14)                    -> {"due", "taken", "skipped", "missed", "percent"}
-    adherence(conn, "p7", days=30, item_ids=[3, 9])   only these prescription items (one medicine)
+    adherence(conn, "p8", days=14)                    -> {"due", "taken", "skipped", "missed", "percent"}
+    adherence(conn, "p8", days=30, item_ids=[3, 9])   only these prescription items (one medicine)
 
 percent is None when nothing was due. Plain counting, no AI, no judgement: the app shows the
 number; what it means is the doctor's call.
