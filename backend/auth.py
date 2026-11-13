@@ -74,8 +74,9 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 # what a doctor may do during a share besides reading: questions to the records, and the
 # review work (correct a fact, resolve an open question). Nothing that adds or deletes data.
 SHARED_POSTS = ("/ask", "/check-medicine", "/correct", "/answer")
-# what a care-team doctor may also do: write a prescription, decide a refill, set a follow-up
-CARE_TEAM_POSTS = SHARED_POSTS + ("/prescriptions", "/decision", "/follow-up")
+# what a care-team doctor may also do: write a prescription, decide a refill, set a follow-up,
+# correct their own consult record (as a new record)
+CARE_TEAM_POSTS = SHARED_POSTS + ("/prescriptions", "/decision", "/follow-up", "/corrections")
 
 # method + path of the request being handled, saved by remember_request (main.py runs it
 # for every request) so require_patient_access knows whether the route reads or writes

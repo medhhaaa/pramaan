@@ -1,8 +1,9 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, Tablets, FileCheck } from 'lucide-react';
 import Logo from './Logo.jsx';
+import Notifications from './Notifications.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
 import { getTheme, toggleTheme } from '../lib/theme.js';
@@ -16,6 +17,7 @@ const DOCTOR_NAV = [
   { to: '/medication', key: 'nav.medication', icon: Pill, gated: true },
   { to: '/flags', key: 'nav.flags', icon: Flag, gated: true },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare, gated: true },
+  { to: '/consult-records', key: 'nav.consultRecords', icon: FileCheck, gated: true },
   // no upload / delete: a doctor's shared access is reading and reviewing only (backend/auth.py)
   { to: '/audit', key: 'nav.audit', icon: ShieldCheck, gated: true },
 ];
@@ -25,6 +27,7 @@ const PATIENT_NAV = [
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
+  { to: '/my-medicines', key: 'nav.myMedicines', icon: Tablets },
   { to: '/care-team', key: 'nav.careTeam', icon: Stethoscope },
   { to: '/things', key: 'nav.thingsToCheck', icon: ListChecks },
   { to: '/claim-documents', key: 'nav.claimDocuments', icon: ClipboardCheck },
@@ -113,6 +116,7 @@ export default function Layout() {
             <button className="icon-btn mobile-only" aria-label="Open menu" onClick={() => setDrawer(!drawer)}><Menu size={22} /></button>
             <div className="header-logo"><Logo compact /></div>
             <div className="header-right">
+              {user.role === 'patient' && <Notifications />}
               <ThemeToggle />
               <select className="lang-select" aria-label="Language" value={i18n.language} onChange={onLang}>
                 <option value="en">English</option>

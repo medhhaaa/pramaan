@@ -168,12 +168,16 @@ class CheckBody(BaseModel):
     drug: str = Field(min_length=1, max_length=100)
 
 
-@router.post("/patients/{patient_id}/check-medicine")
-def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_current_user)):
-    access = require_patient_access(user, patient_id)
-    lang = user_language(user)
+def medicine_warnings(patient_id, drug, access, lang="en", renewing_item=None):
+    """Allergy and duplicate warnings for one medicine, from the records (scoped to what this
+    user may see; allergies are always in scope) and from the patient's ACTIVE in-app
+    prescriptions. Used by check-medicine, prescribing and refill review (backend/routes/refills.py).
+
+    renewing_item: the prescription item being refilled; its own medicine isn't a duplicate of itself.
+    Returns (generic, drug_class, warnings). It never says whether a drug is safe.
+    """
     kn = lang == "kn"
-    drug = body.drug.strip()
+    drug = drug.strip()
     generic, drug_class = lookup(drug)
     typed_words = set(words(drug))
 
@@ -250,6 +254,53 @@ def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_curr
             text = (f"{drug} ಮತ್ತು ಪ್ರಸ್ತುತ ಔಷಧ {med['name']} {dose} ಒಂದೇ ಗುಂಪಿನವು ({label}) ({when})." if kn
                     else f"{drug} is in the same group ({label}) as current medicine {med['name']} {dose} ({when}).")
             warnings.append({"kind": "same_class", "text": text, "source": source_info(fresh, docs)})
+
+
+    warnings += in_app_duplicates(patient_id, drug, generic, drug_class, typed_words, lang, renewing_item)
+    if renewing_item:  # the medicine being renewed is listed in the records too: not a duplicate of itself
+        same = set(words(renewing_item["medicine"]))
+        warnings = [w for w in warnings if not (w["kind"] == "same_medicine" and same & set(words(w["text"])))]
+    return generic, drug_class, warnings
+
+
+def in_app_duplicates(patient_id, drug, generic, drug_class, typed_words, lang, renewing_item=None):
+    """Same medicine or same group among the patient's active in-app prescriptions."""
+    from backend.adherence import today_utc
+
+    with get_conn() as conn:
+        items = conn.execute(
+            """SELECT i.*, COALESCE(u.full_name, u.username) AS doctor_name, p.created_at AS prescribed_at
+               FROM prescription_items i JOIN prescriptions p ON p.id = i.prescription_id
+               JOIN users u ON u.id = p.doctor_id
+               WHERE i.patient_id = ? AND i.status = 'active' AND i.end_date >= ?""",
+            (patient_id, today_utc().isoformat()),
+        ).fetchall()
+    out = []
+    for item in items:
+        if renewing_item and item["id"] == renewing_item["id"]:
+            continue
+        i_generic, i_class = lookup(item["medicine"])
+        dose = " ".join(p for p in [item["dose"], item["frequency"]] if p)
+        source = {"prescription_item_id": item["id"], "doctor": item["doctor_name"], "prescribed_at": item["prescribed_at"]}
+        if (generic and i_generic == generic) or typed_words & set(words(item["medicine"])):
+            text = (f"{item['medicine']} {dose} ಈಗಾಗಲೇ Pramaan ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ನಲ್ಲಿದೆ ({item['doctor_name']}, {item['end_date']} ರವರೆಗೆ)." if lang == "kn"
+                    else f"{item['medicine']} {dose} is already on an active Pramaan prescription ({item['doctor_name']}, until {item['end_date']}).")
+            out.append({"kind": "same_medicine", "text": text, "source": source})
+        elif drug_class and i_class == drug_class:
+            label = class_label(drug_class, lang)
+            text = (f"{drug} ಮತ್ತು Pramaan ಪ್ರಿಸ್ಕ್ರಿಪ್ಷನ್‌ನ {item['medicine']} {dose} ಒಂದೇ ಗುಂಪಿನವು ({label})." if lang == "kn"
+                    else f"{drug} is in the same group ({label}) as {item['medicine']} {dose} on an active Pramaan prescription.")
+            out.append({"kind": "same_class", "text": text, "source": source})
+    return out
+
+
+@router.post("/patients/{patient_id}/check-medicine")
+def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_current_user)):
+    access = require_patient_access(user, patient_id)
+    lang = user_language(user)
+    kn = lang == "kn"
+    drug = body.drug.strip()
+    generic, drug_class, warnings = medicine_warnings(patient_id, drug, access, lang)
 
     log_action(user, "check_medicine", patient_id, f"{drug}: {len(warnings)} warning(s)")
     return {

@@ -136,6 +136,11 @@ export default function MyPatients() {
                 </div>
               </div>
               <div className="patient-row-side">
+                {r.refill_request_id && (
+                  <button className="btn btn-primary btn-sm" onClick={(e) => { e.stopPropagation(); navigate(`/refill/${r.refill_request_id}`); }}>
+                    {t('myPatients.reviewRefill')}
+                  </button>
+                )}
                 <span className="muted small">{t('myPatients.lastActivity')}: {ago(r.last_activity)}</span>
                 <FollowUp row={r} onSaved={load} />
               </div>

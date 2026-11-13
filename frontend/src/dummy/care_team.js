@@ -37,7 +37,7 @@ export const ACCESS_HISTORY = [
 
 export const MY_PATIENTS = [
   { patient_id: 'p7', name: 'Meena Shenoy', age: 60, sex: 'F', scope: ['diabetes'], conditions: ['Type 2 diabetes mellitus'],
-    tags: ['refill_request'], adherence_14d: 79, followup_on: null, last_activity: daysAgo(0, 8), last_viewed_at: daysAgo(3, 11) },
+    tags: ['refill_request'], refill_request_id: 1, adherence_14d: 79, followup_on: null, last_activity: daysAgo(0, 8), last_viewed_at: daysAgo(3, 11) },
   { patient_id: 'p1', name: 'Sunita Rao', age: 74, sex: 'F', scope: 'all', conditions: ['Type 2 diabetes mellitus', 'Hypertension'],
     tags: ['new_report'], adherence_14d: null, followup_on: null, last_activity: daysAgo(1), last_viewed_at: daysAgo(5, 11) },
   { patient_id: 'p2', name: 'Mohammed Iqbal', age: 60, sex: 'M', scope: ['hypertension'], conditions: ['Essential hypertension'],
