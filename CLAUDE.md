@@ -166,7 +166,12 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `GET /metrics` | Precision / recall results | Medha |
 | `GET /patients/{id}/audit` | Audit log | Medha |
 | `DELETE /patients/{id}` | Delete all patient data | Medha |
-| `POST /patients/{id}/share` | Patient makes a time-limited QR + code (P3) | Core backend |
+| `POST /patients/{id}/share` | Patient makes a time-limited QR + code (P3); `scope`: `"all"` or condition groups (+ `"other"`) the doctor may see | Core backend |
+| `GET /patients/{id}/share-options` | Groups the patient can pick before sharing (counts + examples) | Ashil |
+| `GET /patients/{id}/hidden` | Doctor: counts of what the patient did not share (never names) + request status | Ashil |
+| `POST /patients/{id}/share-requests` | Doctor asks the patient to share more (open partial share only) | Ashil |
+| `GET /patients/{id}/share-requests` | Patient: pending "share more" requests with the groups they could add | Ashil |
+| `POST /share-requests/{id}/answer` | Patient adds groups (`add`) or declines | Ashil |
 | `POST /share/open` | Doctor opens a share by QR token or code: read-only until it expires | Core backend |
 | `GET /patients/{id}/shares` | Patient's active shares (who opened, time left) | Core backend |
 | `DELETE /share/{id}` | Patient stops a share early | Core backend |
@@ -184,7 +189,8 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 - `corrections` (id, fact_id, field, old_value, new_value, corrected_by, role, created_at)
 - `audit_log` (id, user_id, action, patient_id, detail, created_at)
 - `questions` (id, patient_id, fact_ids, text, status `open`|`answered`|`sent_to_doctor`|`resolved`, answer, created_at)
-- `share_links` (id, patient_id, created_by, token_hash, code_hash, expires_at, opened_by, opened_at, created_at): QR / code sharing; only hashes stored; expired rows deleted
+- `share_links` (id, patient_id, created_by, token_hash, code_hash, expires_at, opened_by, opened_at, created_at, scope): QR / code sharing; only hashes stored; expired rows deleted; scope `all` or JSON list of condition groups (`backend/scope.py`)
+- `share_requests` (id, share_id, patient_id, doctor_id, note, status `pending`|`answered`|`declined`, added, created_at, answered_at): doctor asks to see more of a partial share; deleted with the share
 - `search_items` (patient_id, page, item_id, search_text (encrypted), names, synonyms, visits, text_hash, embedding): in-page search index, rebuilt by `recompute_patient`
 
 Seed users: patients `sunita` (p1), `iqbal` (p2), `lakshmi` (p3), `arjun` (p4), `gopal` (p5), `ravi` (p6), `nisha` (p7, pneumonia episode for the search), password = username + `123`; doctors `doctor` / `doctor123` and `guestdoctor` / `guest123`. **Only a patient has lasting access to their own records. A doctor sees a patient only while that patient's QR / code share is open** (reading + review: ask, check-medicine, correct, resolve open questions; never upload, delete or share).

@@ -32,7 +32,7 @@ def get_document(document_id: str, user=Depends(get_current_user)):
         with get_conn() as conn:
             facts = conn.execute("SELECT type, name FROM facts WHERE document_id = ?", (document_id,)).fetchall()
         if not document_in_scope([dict(f) for f in facts], scope):
-            raise HTTPException(status_code=403, detail="This document is outside your care-team scope")
+            raise HTTPException(status_code=403, detail="The patient has not shared this document with you")
 
     pdf_base64, lines = None, []
     if os.path.exists(abs_path(doc["file_path"])):
@@ -60,15 +60,29 @@ def get_document(document_id: str, user=Depends(get_current_user)):
 @router.get("/patients/{patient_id}/documents")
 def list_documents(patient_id: str, user=Depends(get_current_user)):
     """The patient's documents for the Records page, newest first:
-    [{"id", "filename", "doc_type", "document_date", "held_back", "facts"}]  (facts = how many)."""
-    require_patient_access(user, patient_id)
+    [{"id", "filename", "doc_type", "document_date", "held_back", "facts"}]  (facts = how many).
+    A scoped doctor (partial share or care-team scope) gets only documents they may open, and
+    counts only the facts they may see."""
+    from backend.scope import fact_in_scope
+
+    scope = access_scope(require_patient_access(user, patient_id))
     with get_conn() as conn:
         rows = conn.execute(
-            """SELECT d.id, d.filename, d.doc_type, d.document_date, d.held_back,
-                      (SELECT COUNT(*) FROM facts f WHERE f.document_id = d.id) AS facts
+            """SELECT d.id, d.filename, d.doc_type, d.document_date, d.held_back
                FROM documents d WHERE d.patient_id = ?
                ORDER BY d.document_date DESC, d.id DESC""",
             (patient_id,),
         ).fetchall()
+        facts = conn.execute("SELECT document_id, type, name FROM facts WHERE patient_id = ?", (patient_id,)).fetchall()
+    by_doc = {}
+    for f in facts:
+        by_doc.setdefault(f["document_id"], []).append(dict(f))
+    out = []
+    for r in rows:
+        doc_facts = by_doc.get(r["id"], [])
+        if not document_in_scope(doc_facts, scope):
+            continue
+        visible = [f for f in doc_facts if fact_in_scope(f, scope)]
+        out.append({**dict(r), "held_back": bool(r["held_back"]), "facts": len(visible)})
     log_action(user, "list_documents", patient_id)
-    return [{**dict(r), "held_back": bool(r["held_back"])} for r in rows]
+    return out

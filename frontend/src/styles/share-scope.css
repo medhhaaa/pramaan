@@ -1,0 +1,48 @@
+/* Partial sharing: what the doctor may see (GenerateQR.jsx) and the doctor's
+   "not everything is shared" notice (HiddenNotice.jsx). Uses the theme tokens only. */
+
+/* ---- patient: choose what to share ---- */
+.scope-pick { align-self: stretch; text-align: left; border: 0; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.scope-title { font-weight: 600; font-size: 0.95rem; margin: 4px 0 2px; padding: 0; }
+.scope-pick .radio-row { padding: 10px 12px; align-items: flex-start; }
+.scope-pick .radio-row input { margin-top: 3px; }
+.scope-option { display: flex; flex-direction: column; gap: 2px; }
+.scope-groups { display: flex; flex-direction: column; gap: 6px; padding-left: 4px; text-align: left; }
+.scope-group {
+  display: flex; gap: 10px; align-items: flex-start; padding: 8px 10px; cursor: pointer;
+  border: 1px solid var(--border); border-radius: 10px; background: var(--surface-2);
+}
+.scope-group.checked { border-color: var(--brand); background: var(--brand-soft); }
+.scope-group input { margin-top: 3px; }
+.scope-group > span { display: flex; flex-direction: column; gap: 1px; min-width: 0; }
+.scope-examples { overflow-wrap: anywhere; }
+.scope-line { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 500; }
+.share-who .muted.small + .muted.small { margin-top: 2px; }
+
+/* a doctor asked to see more */
+.share-request { border-color: var(--brand); display: flex; flex-direction: column; gap: 8px; }
+.share-request .share-h { margin: 0; }
+.share-request p { margin: 0; }
+.share-request-note { font-style: italic; }
+.share-request-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 4px; }
+
+/* ---- doctor: some records are hidden ---- */
+.hidden-notice {
+  display: flex; gap: 10px; align-items: flex-start; padding: 10px 20px;
+  background: var(--surface-2); border-bottom: 1px solid var(--border);
+}
+.hidden-notice > svg { flex: none; margin-top: 2px; color: var(--text-muted); }
+.hidden-notice-important > svg { color: var(--warn); }
+.hidden-notice-important { box-shadow: inset 4px 0 0 var(--warn); }
+.hidden-notice-body { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+.hidden-notice-body p { margin: 0; }
+.hidden-notice-body .btn { align-self: flex-start; margin-top: 2px; }
+.hidden-notice-form { display: flex; flex-direction: column; gap: 6px; max-width: 520px; }
+.hidden-notice-form textarea { resize: vertical; min-height: 56px; font: inherit; }
+.hidden-notice-ok { align-items: center; }
+.hidden-notice-ok > svg, .hidden-notice-ok-text { color: var(--verified); }
+.hidden-notice-ok p { margin: 0; flex: 1; }
+
+@media (max-width: 767px) {
+  .hidden-notice { padding: 10px 16px; }
+}

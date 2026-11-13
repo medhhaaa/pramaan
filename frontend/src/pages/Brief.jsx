@@ -64,7 +64,7 @@ export default function Brief() {
             <button className="btn btn-primary">{t('brief.check')}</button>
           </form>
           {result && (result.warning
-            ? <div className="alert alert-danger" role="alert"><p>{result.text}</p><button className="link-btn" onClick={() => setSrc(result.source)}>{t('doc.title')}</button></div>
+            ? <div className="alert alert-danger" role="alert"><p>{result.text}</p>{result.source && <button className="link-btn" onClick={() => setSrc(result.source)}>{t('doc.title')}</button>}</div>
             : <p className="muted small mt">{result.error || t('brief.noMatch')}</p>)}
         </div>
 

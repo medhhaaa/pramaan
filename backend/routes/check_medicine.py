@@ -17,7 +17,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from backend.auth import get_current_user, require_patient_access
-from backend.scope import scoped
+from backend.scope import access_scope, fact_in_scope, scoped
 from backend.db import get_conn
 from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import load_documents, load_facts, medication_summaries, source_info
@@ -255,12 +255,35 @@ def medicine_warnings(patient_id, drug, access, lang="en", renewing_item=None):
                     else f"{drug} is in the same group ({label}) as current medicine {med['name']} {dose} ({when}).")
             warnings.append({"kind": "same_class", "text": text, "source": source_info(fresh, docs)})
 
+    # 3. a partial share / care-team scope: say THAT a hidden current medicine matches, never which
+    if hidden_medicine_matches(patient_id, access, generic, drug_class, typed_words):
+        text = ("ರೋಗಿ ನಿಮಗೆ ಹಂಚಿಕೊಳ್ಳದ ದಾಖಲೆಗಳಲ್ಲಿ ಇದೇ ರೀತಿಯ ಪ್ರಸ್ತುತ ಔಷಧ ಇರಬಹುದು. ಮುಂದುವರಿಯುವ ಮೊದಲು ರೋಗಿಯನ್ನು ಕೇಳಿ." if kn
+                else "Records the patient has not shared with you may list a current medicine like this one. "
+                     "Ask the patient to share more before going ahead.")
+        warnings.append({"kind": "hidden_match", "text": text, "source": None})
 
     warnings += in_app_duplicates(patient_id, drug, generic, drug_class, typed_words, lang, renewing_item)
     if renewing_item:  # the medicine being renewed is listed in the records too: not a duplicate of itself
         same = set(words(renewing_item["medicine"]))
         warnings = [w for w in warnings if not (w["kind"] == "same_medicine" and same & set(words(w["text"])))]
     return generic, drug_class, warnings
+
+
+def hidden_medicine_matches(patient_id, access, generic, drug_class, typed_words):
+    """True if a current medicine OUTSIDE this user's scope is the same drug or group."""
+    scope = access_scope(access)
+    if scope == "all":
+        return False
+    with get_conn() as conn:
+        hidden = [f for f in load_facts(conn, patient_id) if not fact_in_scope(f, scope)]
+    for med in medication_summaries(hidden):
+        if not med["current"]:
+            continue
+        m_generic, m_class = lookup(med["name"])
+        if (generic and m_generic == generic) or typed_words & set(words(med["name"])) \
+                or (drug_class and m_class == drug_class):
+            return True
+    return False
 
 
 def in_app_duplicates(patient_id, drug, generic, drug_class, typed_words, lang, renewing_item=None):

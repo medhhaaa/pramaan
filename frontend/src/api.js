@@ -227,7 +227,9 @@ export async function checkMedicine(pid, name) {
   const res = await http('POST', `/patients/${pid}/check-medicine`, { drug: name });
   const warnings = res.warnings || [];
   if (!warnings.length) return { warning: false, text: null };
-  return { warning: true, text: warnings.map((w) => w.text).join(' '), source: warnings[0].source?.document_id };
+  // a "hidden_match" warning (records the patient hasn't shared) has no source to open
+  const withSource = warnings.find((w) => w.source?.document_id);
+  return { warning: true, text: warnings.map((w) => w.text).join(' '), source: withSource?.source.document_id || null };
 }
 
 export async function ask(pid, question) {
@@ -308,12 +310,13 @@ export async function deletePatient(pid) {
 // NEW ROUTES, not in CLAUDE.md yet. Agree with the core backend owner before merging.
 export const SHARE_MINUTES = 15; // how long one QR / code share lasts
 
-export async function createQR(pid) {
+// scope: 'all' or the groups the patient ticked, e.g. ['diabetes', 'other'] (see shareOptions)
+export async function createQR(pid, scope = 'all') {
   if (USE_DUMMY) {
     await wait(200);
-    return { token: `demo-${pid}-${Date.now()}`, expires_at: Date.now() + 10 * 60 * 1000 };
+    return { token: `demo-${pid}-${Date.now()}`, expires_at: Date.now() + 10 * 60 * 1000, scope };
   }
-  const res = await http('POST', `/patients/${pid}/share`, { minutes: SHARE_MINUTES });
+  const res = await http('POST', `/patients/${pid}/share`, { minutes: SHARE_MINUTES, scope });
   // the screens use expires_at as a millisecond timestamp
   return { ...res, expires_at: Date.parse(res.expires_at) };
 }
@@ -329,6 +332,51 @@ export async function listShares(pid) {
 export async function stopShare(shareId) {
   if (USE_DUMMY) { await wait(); return { stopped: true }; }
   return http('DELETE', `/share/${shareId}`);
+}
+
+// ---- Partial sharing (backend/routes/share_requests.py) ----
+// Patient: which groups their records have, to pick before making a QR.
+// -> {groups: [{tag, label, count, examples}], always: ['allergy', 'demographic']}
+export async function shareOptions(pid) {
+  if (USE_DUMMY) {
+    await wait();
+    return {
+      always: ['allergy', 'demographic'],
+      groups: [
+        { tag: 'diabetes', label: 'Diabetes', count: 4, examples: ['Type 2 diabetes', 'Metformin', 'HbA1c'] },
+        { tag: 'hypertension', label: 'High blood pressure', count: 2, examples: ['Atenolol', 'Amlodipine'] },
+        { tag: 'heart', label: 'Heart', count: 3, examples: ['Myocardial infarction', 'Chest pain', 'Atenolol'] },
+        { tag: 'other', label: 'Other records', count: 1, examples: ['PSA'] },
+      ],
+    };
+  }
+  return http('GET', `/patients/${pid}/share-options`);
+}
+
+// Patient: doctors asking to see more -> [{id, share_id, doctor, note, created_at, scope, options}]
+export async function listShareRequests(pid) {
+  if (USE_DUMMY) { await wait(); return []; }
+  return http('GET', `/patients/${pid}/share-requests`);
+}
+
+// Patient answers: add = 'all' | ['heart', ...], or decline = true -> {id, status, scope}
+export async function answerShareRequest(requestId, { add = null, decline = false }) {
+  if (USE_DUMMY) { await wait(); return { id: requestId, status: decline ? 'declined' : 'answered' }; }
+  return http('POST', `/share-requests/${requestId}/answer`, decline ? { decline: true } : { add });
+}
+
+// Doctor: is anything hidden from me? Counts only, never names.
+// -> {partial: false} | {partial: true, can_request, request: {status, ...} | null,
+//     hidden: {total, medicines, current_medicines, conditions, tests, events, documents, flagged, important}}
+export async function hiddenSummary(pid) {
+  if (USE_DUMMY) { await wait(); return { partial: false }; }
+  return http('GET', `/patients/${pid}/hidden`);
+}
+
+// Doctor: ask the patient to share more (only during a QR / code share)
+export async function requestMoreRecords(pid, note) {
+  if (USE_DUMMY) { await wait(); return { status: 'pending' }; }
+  return http('POST', `/patients/${pid}/share-requests`, { note: note || null });
 }
 
 export async function scanQR(code) {
