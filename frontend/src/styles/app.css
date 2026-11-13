@@ -339,9 +339,10 @@ a { color: var(--brand); }
 @media (max-width: 480px) {
   .user-chip { display: none; }
   /* keep the header on one row: menu, logo, theme, language, log out (icon only) */
-  .app-header { padding: 0 10px; gap: 6px; }
-  .header-right { flex-wrap: nowrap; gap: 6px; }
-  .app-header .lang-select { padding: 6px 4px; max-width: 96px; }
+  .app-header { padding: 0 8px; gap: 4px; }
+  .header-right { flex-wrap: nowrap; gap: 4px; }
+  .header-logo-img { height: 36px; } /* 44px on wider screens; the patient header also has the bell */
+  .app-header .lang-select { padding: 6px 2px; max-width: 84px; }
   .app-header .btn-ghost { padding: 8px 10px; min-width: 40px; }
   .btn-ghost .btn-label { display: none; }
   .content { padding: 14px 12px 28px; }

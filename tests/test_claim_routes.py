@@ -4,6 +4,7 @@ Ravi's 5 synthetic PDFs go through the same ingest_document() as an upload, usin
 pipeline output (data/extracted/p6.json), so no AI is called. The discharge summary opens
 his hospital stay automatically.
 """
+import gc
 import io
 import json
 import os
@@ -21,6 +22,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 
 @pytest.fixture(scope="module")
 def client():
+    gc.collect()  # close sqlite connections other test files left open (Windows file lock)
     seed.seed(with_sample_facts=False)
     with open(os.path.join(ROOT, "data", "extracted", "p6.json"), encoding="utf-8") as f:
         saved = {d["document_id"]: d for d in json.load(f)["documents"]}

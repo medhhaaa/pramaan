@@ -1,8 +1,8 @@
 """Reset the database with demo users and the 5 demo patients. (Core backend)
 
-    python -m backend.seed           users + patients p1-p6 + p1's SAMPLE facts
+    python -m backend.seed           users + patients p1-p8 + p1's SAMPLE facts
                                      (shared/sample_facts.json; no AI calls, for frontend work)
-    python -m backend.seed --empty   users + patients p1-p6, no documents or facts
+    python -m backend.seed --empty   users + patients p1-p8, no documents or facts
                                      (backend/load_demo.py uses this, then uploads the real PDFs)
 
 Patient details come from Ashil's answer keys (data/answer_keys/pN.json), so they always
@@ -21,7 +21,8 @@ SAMPLE_FACTS = os.path.join(ROOT, "shared", "sample_facts.json")
 ANSWER_KEYS = os.path.join(ROOT, "data", "answer_keys")
 # p6 (Ravi) has a hospital stay with bills, for the Claim Documents checklist
 # p7 (Nisha) has a pneumonia episode, for the in-page search
-PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5", "p6", "p7"]
+# p8 (Meena) is on Dr. Rao's care team with an in-app prescription (backend/demo_care_team.py)
+PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]
 
 # username, password, role, patients they can see
 # Only a patient's own account has lasting access. Doctors see a patient ONLY while a QR /
@@ -35,9 +36,22 @@ USERS = [
     ("gopal", "gopal123", "patient", ["p5"]),
     ("ravi", "ravi123", "patient", ["p6"]),
     ("nisha", "nisha123", "patient", ["p7"]),
+    ("meena", "meena123", "patient", ["p8"]),
     # a doctor at another clinic (same access as doctor: only through a share)
     ("guestdoctor", "guest123", "doctor", []),
+    # care-team doctors (backend/routes/care_team.py): lasting access only to patients who
+    # added them to their care team; demo care teams come from backend/demo_care_team.py
+    ("drrao", "drrao123", "doctor", []),
+    ("drkotian", "drkotian123", "doctor", []),
 ]
+
+# shown name and registration number (synthetic), so patients can find doctors by either
+DOCTOR_PROFILES = {
+    "doctor": ("Dr. Demo", "KMC 10001"),
+    "guestdoctor": ("Dr. Guest", "KMC 10002"),
+    "drrao": ("Dr. Rao", "KMC 63105"),
+    "drkotian": ("Dr. Suresh Kotian", "KMC 51907"),
+}
 
 
 def load_answer_key(patient_id):
@@ -63,9 +77,11 @@ def seed(with_sample_facts=True):
             )
 
         for username, password, role, patient_ids in USERS:
+            full_name, registration = DOCTOR_PROFILES.get(username, (None, None))
             cur = conn.execute(
-                "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
-                (username, hash_password(password), role),
+                "INSERT INTO users (username, password_hash, role, full_name, registration_number)"
+                " VALUES (?, ?, ?, ?, ?)",
+                (username, hash_password(password), role, full_name, registration),
             )
             for patient_id in patient_ids:
                 conn.execute("INSERT INTO user_patients VALUES (?, ?)", (cur.lastrowid, patient_id))

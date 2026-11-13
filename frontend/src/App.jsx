@@ -21,6 +21,11 @@ import Things from './pages/Things.jsx';
 import GenerateQR from './pages/GenerateQR.jsx';
 import Claim from './pages/Claim.jsx';
 import ClaimDocuments from './pages/ClaimDocuments.jsx';
+import MyPatients from './pages/MyPatients.jsx';
+import MyCareTeam from './pages/MyCareTeam.jsx';
+import MyMedicines from './pages/MyMedicines.jsx';
+import RefillReview from './pages/RefillReview.jsx';
+import ConsultRecords from './pages/ConsultRecords.jsx';
 import PatientGate from './components/PatientGate.jsx';
 
 const CLAIM_ON = import.meta.env.VITE_ENABLE_CLAIM_READY === 'true';
@@ -35,7 +40,7 @@ function RequireLogin({ children }) {
 // Doctor-only and patient-only routes. Other roles go to their home.
 function RoleRoute({ roles, children }) {
   const { user } = useApp();
-  if (!roles.includes(user.role)) return <Navigate to={user.role === 'doctor' ? '/patients' : '/my-records'} replace />;
+  if (!roles.includes(user.role)) return <Navigate to={user.role === 'doctor' ? '/my-patients' : '/my-records'} replace />;
   return children;
 }
 
@@ -46,7 +51,12 @@ function Shell() {
       {!user.language && <LanguagePopup username={user.username} onDone={(language) => setUser({ ...user, language })} />}
       <Routes>
         <Route element={<RequireLogin><Layout /></RequireLogin>}>
-          <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/patients' : '/my-records'} replace />} />
+          <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/my-patients' : '/my-records'} replace />} />
+          <Route path="/my-patients" element={<RoleRoute roles={['doctor']}><MyPatients /></RoleRoute>} />
+          <Route path="/care-team" element={<RoleRoute roles={['patient']}><MyCareTeam /></RoleRoute>} />
+          <Route path="/my-medicines" element={<RoleRoute roles={['patient']}><MyMedicines /></RoleRoute>} />
+          <Route path="/refill/:id" element={<RoleRoute roles={['doctor']}><RefillReview /></RoleRoute>} />
+          <Route path="/consult-records" element={<RoleRoute roles={['doctor']}><PatientGate><ConsultRecords /></PatientGate></RoleRoute>} />
           <Route path="/patients" element={<RoleRoute roles={['doctor']}><Patients /></RoleRoute>} />
           <Route path="/accuracy" element={<RoleRoute roles={['doctor']}><Accuracy /></RoleRoute>} />
           <Route path="/brief" element={<RoleRoute roles={['doctor']}><PatientGate><Brief /></PatientGate></RoleRoute>} />

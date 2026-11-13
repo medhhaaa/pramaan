@@ -1346,7 +1346,88 @@ P7 = {
     ],
 }
 
-PATIENTS = [P1, P2, P3, P4, P5, P6, P7]
+# ---------------------------------------------------------------------------
+# Patient p8: Meena Shenoy, for the doctor features (care team, refill requests).
+# Her current Metformin is an IN-APP prescription from Dr. Rao (backend/demo_care_team.py);
+# these PDFs give her history: type 2 diabetes and a sulfa allergy on record.
+# ---------------------------------------------------------------------------
+
+P8 = {
+    "patient_id": "p8",
+    "patient": {"name": "Meena Shenoy", "dob": "1966-07-02", "sex": "F", "blood_group": "A+"},
+    "traps": [
+        {"type": "refill_review", "documents": ["p8_d1", "p8_d2", "p8_d3"],
+         "note": "Sulfa allergy documented in the 2024 discharge summary. Prescribing or refill "
+                 "review re-runs the allergy check, so a sulfa drug (e.g. co-trimoxazole) warns."},
+    ],
+    "documents": [
+        {
+            "key": "d1", "filename": "d1_discharge_2024.pdf", "doc_type": "discharge_summary",
+            "date": "2024-02-14", "date_raw": "14/02/2024", "hospital": "netravati",
+            "title": "DISCHARGE SUMMARY",
+            "lines": [
+                row("Patient: Mrs. Meena Shenoy", "IP No: NMH/24/02231",
+                    demographic("patient_name", "Mrs. Meena Shenoy")),
+                row("Sex: Female", "Age: 57 years", demographic("sex", "Female")),
+                row("DOB: 02-07-1966", "Blood group: A+", demographic("dob", "02-07-1966"),
+                    demographic("blood_group", "A+", quote="Blood group: A+")),
+                row("Date of admission: 11/02/2024", "Date of discharge: 14/02/2024"),
+                RULE,
+                heading("Reason for admission"),
+                text("Admitted with urinary tract infection and high blood sugar",
+                     event("Admission for urinary tract infection", event_date="2024-02-11",
+                           date_raw="11/02/2024")),
+                heading("Diagnosis"),
+                text("Type 2 diabetes mellitus", condition("Type 2 diabetes mellitus")),
+                text("Urinary tract infection", condition("Urinary tract infection")),
+                heading("Allergies"),
+                text("Allergy: Sulfa drugs (skin rash on co-trimoxazole)", allergy("Sulfa drugs")),
+                heading("Discharge medications"),
+                text("Tab. Metformin 500mg BD", med("Metformin", "500mg", "BD", "started")),
+                text("Tab. Nitrofurantoin 100mg BD for 5 days", med("Nitrofurantoin", "100mg", "BD", "started")),
+                GAP,
+                text("Follow-up: Diabetes clinic after 1 month."),
+            ],
+        },
+        {
+            "key": "d2", "filename": "d2_lab_2026.pdf", "doc_type": "lab_report",
+            "date": "2026-08-20", "date_raw": "20/08/2026", "hospital": "bluewave",
+            "title": "LABORATORY REPORT",
+            "lines": [
+                row("Patient: Mrs. Meena Shenoy", "Sample ID: BW/26/31877",
+                    demographic("patient_name", "Mrs. Meena Shenoy")),
+                row("Sex: Female", "Age: 60 years", demographic("sex", "Female")),
+                row("Collected: 20/08/2026", "Reported: 20/08/2026"),
+                RULE,
+                row("Test / Result", "Reference range"),
+                row("HbA1c 7.4 %", "4.0 - 5.6 %", lab("HbA1c", "7.4", "%")),
+                row("Fasting blood sugar 142 mg/dL", "70 - 100 mg/dL", lab("Fasting blood sugar", "142", "mg/dL")),
+                row("Serum creatinine 0.9 mg/dL", "0.6 - 1.1 mg/dL", lab("Serum creatinine", "0.9", "mg/dL")),
+                text("Blood group: A+", demographic("blood_group", "A+")),
+                GAP,
+                text("*** End of report ***"),
+            ],
+        },
+        {
+            "key": "d3", "filename": "d3_prescription_2026.pdf", "doc_type": "prescription",
+            "date": "2026-08-22", "date_raw": "22/08/2026", "hospital": "karavali",
+            "title": "PRESCRIPTION",
+            "lines": [
+                row("Patient: Meena Shenoy", "Date: 22/08/2026", demographic("patient_name", "Meena Shenoy")),
+                row("Sex: Female", "Age: 60 years", demographic("sex", "Female")),
+                RULE,
+                text("Diagnosis: Type 2 diabetes mellitus", condition("Type 2 diabetes mellitus")),
+                text("Known allergy: Sulfa drugs", allergy("Sulfa drugs")),
+                heading("Rx"),
+                text("Tab. Metformin 500mg BD - continue", med("Metformin", "500mg", "BD", "continued")),
+                GAP,
+                text("Advice: Diet control, walk 30 minutes daily. Review with HbA1c in 3 months."),
+            ],
+        },
+    ],
+}
+
+PATIENTS = [P1, P2, P3, P4, P5, P6, P7, P8]
 
 
 # ---------------------------------------------------------------------------

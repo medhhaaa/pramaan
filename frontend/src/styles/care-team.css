@@ -1,0 +1,20 @@
+/* My Patients (doctor) and My Care Team (patient) */
+.review-banner { border-left: 4px solid var(--warn); background: rgba(245, 185, 74, 0.12); }
+.filter-row { margin: 12px 0; flex-wrap: wrap; }
+.patient-rows { display: flex; flex-direction: column; gap: 10px; padding: 0; list-style: none; }
+.patient-row { display: flex; justify-content: space-between; gap: 16px; cursor: pointer; align-items: flex-start; }
+.patient-row:focus-visible { outline: 2px solid var(--info); outline-offset: 2px; }
+.patient-row-main { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+.patient-row-side { display: flex; flex-direction: column; align-items: flex-end; gap: 6px; flex-shrink: 0; }
+.followup { display: flex; flex-direction: column; gap: 2px; cursor: default; }
+.followup .input { padding: 4px 8px; width: auto; }
+.team-row { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+.doctor-results { padding: 0; list-style: none; }
+.doctor-results li { padding: 6px 0; }
+.access-history { padding-left: 18px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+
+@media (max-width: 640px) {
+  .patient-row, .team-row { flex-direction: column; align-items: stretch; }
+  .patient-row-side { align-items: flex-start; }
+}
