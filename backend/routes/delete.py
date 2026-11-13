@@ -91,7 +91,7 @@ PROFILE_DOC_TYPE = "patient_profile"  # backend/routes/profile.py: answers typed
 def own_uploaded_document(user, document_id, verb):
     """The document row, if this user is the patient it belongs to and it is a real upload."""
     with get_conn() as conn:
-        doc = conn.execute("SELECT id, patient_id, filename, doc_type, file_path FROM documents WHERE id = ?",
+        doc = conn.execute("SELECT id, patient_id, filename, doc_type, file_path, original_path FROM documents WHERE id = ?",
                            (document_id,)).fetchone()
     if doc is None:
         raise HTTPException(status_code=404, detail="Document not found")
@@ -122,7 +122,8 @@ def delete_document_route(document_id: str, user=Depends(get_current_user)):
                      (document_id,))
         conn.execute("DELETE FROM documents WHERE id = ?", (document_id,))
 
-    files = int(remove_stored_file(doc["file_path"]))  # after the rows are gone
+    # after the rows are gone: the PDF and, for a photo upload, the original photo
+    files = sum(remove_stored_file(p) for p in (doc["file_path"], doc["original_path"]) if p)
     recompute_patient(patient_id)  # echoes, flags, badges and search without this document
     with get_conn() as conn:
         sync_questions(conn, patient_id)  # questions about its facts are retired

@@ -171,6 +171,24 @@ def test_a_pdf_upload_has_no_photo(client, uploaded):
     assert client.get(f"/documents/{pdf_doc['document_id']}/original", headers=sunita).status_code == 404
 
 
+def test_deleting_one_photo_document_removes_its_photo(client):
+    from backend.routes import upload as upload_route
+
+    sunita = login(client, "sunita")
+    mp = pytest.MonkeyPatch()
+    mp.setattr(upload_route, "prepare_document", searchable_pdf)
+    mp.setattr(upload_route, "_ingest_one", lambda pid, name, data, doc_type, original=None: ingest_document(
+        pid, name, data, doc_type, saved=SAVED["p1_d1"], original=original))
+    r = client.post("/patients/p1/upload", headers=sunita, files={"file": ("again.jpg", phone_photo(), "image/jpeg")})
+    mp.undo()
+    doc_id = r.json()["document_id"]
+    with get_conn() as conn:
+        path = conn.execute("SELECT original_path FROM documents WHERE id = ?", (doc_id,)).fetchone()[0]
+    assert os.path.exists(storage.abs_path(path))
+    assert client.delete(f"/documents/{doc_id}", headers=sunita).status_code == 200
+    assert not os.path.exists(storage.abs_path(path))
+
+
 def test_delete_my_data_removes_the_photo_too(client, uploaded):
     with get_conn() as conn:
         path = conn.execute("SELECT original_path FROM documents WHERE id = ?", (uploaded["id"],)).fetchone()[0]
