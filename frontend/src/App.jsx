@@ -3,6 +3,7 @@ import { AppProvider, useApp } from './context/AppContext.jsx';
 import Layout from './components/Layout.jsx';
 import LanguagePopup from './components/LanguagePopup.jsx';
 import ScanModal from './components/ScanModal.jsx';
+import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
 import Patients from './pages/Patients.jsx';
 import Brief from './pages/Brief.jsx';
@@ -73,6 +74,7 @@ function Root() {
   if (user) return <Shell />;
   return (
     <Routes>
+      <Route path="/" element={<Landing />} />
       <Route path="/login" element={<Login />} />
       <Route path="*" element={<Navigate to="/login" replace />} />
     </Routes>

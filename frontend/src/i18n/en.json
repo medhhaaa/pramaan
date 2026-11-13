@@ -202,5 +202,77 @@
       "implant_invoice": "Implant invoice and sticker",
       "fir_or_mlc": "FIR or MLC copy"
     }
+  },
+  "landing": {
+    "navLogin": "Log in",
+    "langLabel": "Language",
+    "eyebrow": "For patients and doctors",
+    "title": "Other apps summarise your records.",
+    "titleAccent": "Pramaan knows what it doesn't know.",
+    "lead": "Pramaan turns scattered prescriptions, lab reports and discharge summaries into one dated health timeline. Every fact links to the exact line it came from. Gaps, contradictions and copies are shown, never hidden.",
+    "ctaStart": "Log in to Pramaan",
+    "ctaHow": "See how it works",
+    "demo": {
+      "label": "From the timeline",
+      "fact": "Atenolol 50mg once daily",
+      "echo": "Copy of the 2019 record",
+      "source": "2022 discharge summary · page 1, line 14",
+      "quote": "Tab. Atenolol 50mg OD",
+      "note": "Mentioned in 3 documents. 2 are copies. Last real evidence: 2019.",
+      "gap": "Allergies: not documented",
+      "gapNote": "Not written anywhere does not mean \"no allergies\"."
+    },
+    "featuresTitle": "Built to be checked, not just trusted",
+    "features": {
+      "proof": {
+        "title": "Click to proof",
+        "text": "Open any fact and see the source document with the exact line highlighted."
+      },
+      "quote": {
+        "title": "No quote, no fact",
+        "text": "A fact is kept only if its words are found in the document. Nothing is made up."
+      },
+      "echo": {
+        "title": "Copies spotted",
+        "text": "A medicine list copied from an old record counts as one piece of evidence, not four."
+      },
+      "gaps": {
+        "title": "Gaps shown",
+        "text": "\"Not documented\" is never treated as \"does not have\". Missing items become questions."
+      },
+      "wrong": {
+        "title": "Wrong-patient check",
+        "text": "A report whose blood group or sex doesn't match is held back until someone checks it."
+      },
+      "ask": {
+        "title": "Ask my records",
+        "text": "Answers come only from your records, with sources. Otherwise: \"The records don't mention this.\""
+      }
+    },
+    "howTitle": "How it works",
+    "steps": {
+      "upload": {
+        "title": "Upload",
+        "text": "Add your prescriptions, lab reports and discharge summaries as PDFs."
+      },
+      "verify": {
+        "title": "Verify",
+        "text": "Names and IDs are hidden before any AI reads them. Every fact is checked against its source line."
+      },
+      "review": {
+        "title": "Review",
+        "text": "See a dated timeline with flags and trust badges. Answer open questions; your doctor confirms."
+      }
+    },
+    "privacyTitle": "Your data stays yours",
+    "privacyLead": "Built following the safeguards of GDPR, the EU AI Act and India's DPDP Act.",
+    "privacy": {
+      "deid": "Names, phone numbers and IDs removed before any AI call",
+      "encrypted": "Encrypted file storage",
+      "audit": "Audit log of who saw what",
+      "delete": "Delete all your data at any time"
+    },
+    "closing": "A fluent summary asks you to trust it. Pramaan gives you a history you can verify.",
+    "footerDemo": "Demo with synthetic patient data only."
   }
 }
