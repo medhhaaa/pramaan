@@ -108,6 +108,29 @@ export async function login(username, password) {
   return { ...data, name, patientId };
 }
 
+// New account next to the demo ones. role: 'patient' (gets an empty record of their own) or
+// 'doctor' (needs registration_number). Logs the new user in: same shape as login().
+export async function signup({ username, password, role, fullName, registrationNumber }) {
+  if (USE_DUMMY) {
+    await wait();
+    if (USERS[username]) { const err = new Error('This username is taken'); err.status = 409; throw err; }
+    const patientId = role === 'patient' ? `p${100 + Object.keys(USERS).length}` : null;
+    USERS[username] = { password, role, name: fullName, patientId };
+    token = `dummy-${username}`;
+    return { token, role, name: fullName, username, patientId, language: null };
+  }
+  const data = await http('POST', '/signup', {
+    username, password, role, full_name: fullName, registration_number: registrationNumber || null,
+  });
+  setToken(data.token);
+  let patientId = null;
+  if (data.role === 'patient') {
+    const [own] = await http('GET', '/patients');
+    if (own) patientId = own.id;
+  }
+  return { ...data, name: fullName, patientId };
+}
+
 // Saves the user's language (en | kn | hi) to their account, so it follows them to any device.
 export async function saveLanguage(username, language) {
   if (USE_DUMMY) { localStorage.setItem(`pramaan_lang:${username}`, language); return { language }; }
