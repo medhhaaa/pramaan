@@ -4,6 +4,10 @@ import { getTimeline, getFlags } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
 import { StatusChip, BadgeChip, FlagChip, CopyChip, ConfidenceChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
+import { EditFact, NeedsReading, Unsure } from '../components/HandwritingReview.jsx';
+
+// a fact read from handwriting that a person should check: low score or best-guess words
+const needsCheck = (f) => f.confidence != null && (f.confidence < 85 || (f.unsure || []).length > 0);
 import PatientGate from '../components/PatientGate.jsx';
 import { fmtDate, yearOf } from '../lib/format.js';
 
@@ -16,7 +20,10 @@ function TimelineInner() {
   const [src, setSrc] = useState(null);
   const [hl, setHl] = useState(null);
 
-  useEffect(() => { getTimeline(pid).then(setFacts); }, [pid]);
+  const [refresh, setRefresh] = useState(0);
+  const reload = () => setRefresh((n) => n + 1);
+
+  useEffect(() => { getTimeline(pid).then(setFacts); }, [pid, refresh]);
 
   const rows = useMemo(() => facts.filter((f) => !(hideCopies && f.echo_of)), [facts, hideCopies]);
   const years = useMemo(() => {
@@ -54,6 +61,8 @@ function TimelineInner() {
         </div>
       )}
 
+      <NeedsReading pid={pid} refreshKey={refresh} onChanged={reload} onView={(id) => { setHl(null); setSrc(id); }} />
+
       {rows.length === 0 && <div className="empty-state card"><p>{t('timeline.empty')}</p></div>}
 
       {years.map(([year, list]) => (
@@ -75,17 +84,19 @@ function TimelineInner() {
               </thead>
               <tbody>
                 {list.map((f) => (
-                  <tr key={f.fact_id} className={f.echo_of ? 'row-echo' : ''}>
+                  <tr key={f.fact_id} className={`${f.echo_of ? 'row-echo' : ''} ${needsCheck(f) ? 'row-check' : ''}`}>
                     <td>
                       <div>{fmtDate(f.event_date, i18n.language)}</div>
                       <div className="muted small mono">{f.date_raw}</div>
                     </td>
                     <td>{f.type}</td>
                     <td>
-                      {f.name}
+                      <Unsure text={f.name} words={f.unsure} />
                       {f.echo_of && <div><CopyChip docName={docName(f.echo_of)} /></div>}
                     </td>
-                    <td className="mono">{[f.dose, f.frequency].filter(Boolean).join(' ') || `${f.value ?? ''} ${f.unit ?? ''}`.trim()}</td>
+                    <td className="mono">
+                      <Unsure text={[f.dose, f.frequency].filter(Boolean).join(' ') || `${f.value ?? ''} ${f.unit ?? ''}`.trim()} words={f.unsure} />
+                    </td>
                     <td><StatusChip status={f.status} /></td>
                     <td><BadgeChip badge={f.badge} /></td>
                     <td className="chip-stack">{f.flags.map((fl) => <FlagChip key={fl} flag={fl} />)}<ConfidenceChip value={f.confidence} /></td>
@@ -93,6 +104,7 @@ function TimelineInner() {
                       <button className="link-btn" onClick={() => { setHl(f.line); setSrc(f.document_id); }}>
                         p{f.page} · l{f.line}
                       </button>
+                      {f.flags.includes('handwriting') && <div><EditFact fact={f} low={needsCheck(f)} onSaved={reload} /></div>}
                     </td>
                   </tr>
                 ))}

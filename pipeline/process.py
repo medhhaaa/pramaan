@@ -28,7 +28,7 @@ from pipeline.doc_type import UNKNOWN, classify_document, date_written_in, stay_
 from pipeline.extract import extract_document
 from rapidfuzz import fuzz
 
-from pipeline.ocr import handwriting_confidences, handwritten_pages
+from pipeline.ocr import handwriting_confidences, handwritten_pages, unread_pages
 from pipeline.plausibility import check_plausibility
 from pipeline.read_pdf import read_pdf
 from pipeline.verify import verify_facts
@@ -71,6 +71,7 @@ def _contract_fact(fact, number, patient_id, document_id, document_date, documen
         "flags": [],       # set later by backend/logic/flags.py (plus our plausibility guard)
         "corrected": False,
         "confidence": None,  # 0-100, only for facts read from handwriting
+        "unsure": [],        # words the reader marked as a best guess (shown highlighted)
     }
 
 
@@ -110,12 +111,18 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
             if rows:
                 best = max(rows, key=lambda r: fuzz.partial_ratio(fact["quote"].lower(), r[0].lower()))
                 fact["confidence"] = best[1]
+                # best-guess words that ended up in this fact's own fields: highlight + lower the score
+                fields = " ".join(str(fact.get(k) or "") for k in ("name", "dose", "frequency", "value", "unit")).lower()
+                fact["unsure"] = [w for w in (best[2] if len(best) > 2 else []) if w.lower() in fields]
+                if fact["unsure"]:
+                    fact["confidence"] = min(fact["confidence"], 50)
     facts = check_plausibility(facts)
     # medical lines no verified fact quotes: shown on the upload screen as "not captured"
     not_captured = [{"page": c["page"], "line": c["line"], "text": c["text"]}
                     for c in coverage(lines, facts) if c["medical"] and not c["covered"]]
     return {
         "facts": facts,
+        "unread_pages": unread_pages(pdf_path),
         "dropped": dropped,
         "not_captured": not_captured,
         "document_date": document_date,

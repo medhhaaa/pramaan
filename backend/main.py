@@ -17,7 +17,7 @@ from backend import auth  # noqa: E402
 from backend.db import init_db  # noqa: E402
 from backend.routes import (  # noqa: E402
     ask, audit, brief, check_medicine, claims, corrections, delete, documents, flags,
-    language, medications, metrics, patients, questions, share, timeline, upload,
+    language, medications, metrics, patients, questions, reading, share, timeline, upload,
 )
 
 # remember_request runs first on every request so shared (QR) access can be kept read-only
@@ -41,7 +41,7 @@ if os.getenv("OCR_ENGINE", "").lower() == "paddleocr":
 for module in [
     auth,
     # core backend
-    patients, upload, timeline, medications, flags, documents, corrections, share,
+    patients, upload, timeline, medications, flags, documents, corrections, share, reading,
     # Medha
     ask, questions, brief, check_medicine, metrics, audit, delete, language, claims,
 ]:

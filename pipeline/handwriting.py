@@ -34,7 +34,8 @@ place_lines(texts, lines) -> [{"text", "rect", "confidence"}]  each copied line 
 
 Confidence of a handwritten line: two independent readers, the vision model and Tesseract,
 read the same line. How closely they agree (rapidfuzz, 0-100) is the confidence. A line
-Tesseract couldn't match at all scores 0; a word the model marked [?] caps it at 40.
+Tesseract couldn't match at all (messy real handwriting) scores 70 ("one reader only");
+a best guess the model marked [[like this]] caps it at 50, and [?] (unreadable) at 40.
 
 Settings (.env): VISION_MODEL (cloud, optional), HANDWRITING_MODEL (local, default
 qwen2.5vl:7b), OLLAMA_URL, HANDWRITING=off
@@ -66,7 +67,9 @@ PROMPT = """You are copying a medical document that may be handwritten.
 Write out ALL of its text exactly as written, top to bottom, one line of the document per line of output.
 Rules:
 - Copy spelling, numbers, units, doses and abbreviations exactly. Do not correct, expand or translate anything.
-- If a word cannot be read, write [?] in its place. Never guess a medicine name or a number.
+- If you are not sure of a word or number, still write your best reading, but wrap it in double
+  square brackets, e.g. Tab. [[Amoxyclav]] [[625]]mg BD. Do this for every uncertain word.
+- Only if a word is completely unreadable, write [?] in its place.
 - Output only the copied text, nothing else."""
 
 
@@ -106,7 +109,7 @@ def tesseract_lines(page):
     png = os.path.join(tempfile.gettempdir(), f"pramaan_tess_{os.getpid()}.png")
     page.get_pixmap(dpi=TESS_DPI).save(png)
     try:
-        tsv = subprocess.run([TESSERACT, png, "stdout", "tsv"], capture_output=True, text=True,
+        tsv = subprocess.run([TESSERACT, png, "stdout", "tsv"], capture_output=True, text=True, encoding="utf-8", errors="replace",
                              check=True).stdout
     finally:
         os.remove(png)
@@ -158,6 +161,9 @@ def vision_available():
 # labels whose VALUE identifies the patient: blacked out before a page goes to a cloud model
 PERSONAL_LABELS = {"patient", "name", "pt", "uhid", "mrn", "reg", "ip", "op", "mobile", "mob",
                    "phone", "ph", "tel", "contact", "address", "addr", "aadhaar", "aadhar", "abha"}
+# a page goes to a cloud model ONLY if one of these is found (so the patient's own name/ID is
+# what gets blacked out). A clinic phone or address in the letterhead is not enough.
+PATIENT_LABELS = {"patient", "name", "pt", "uhid", "mrn", "reg", "ip", "op"}
 # other labels: the blacked-out area stops here ("Patient: Sunita Rao   Date: 12/03/2019")
 OTHER_LABELS = {"date", "sex", "gender", "dob", "age", "blood", "diagnosis", "rx", "weight", "bp"}
 MASK_PAD = 2  # points around each blacked-out box
@@ -177,13 +183,15 @@ def _label(word):
 def personal_boxes(page, lines):
     """Boxes (PDF points) to black out: personal values next to their labels, the letterhead
     above the first patient label, and the doctor's signature line ("Dr. ...") below it.
-    Empty list = no patient label found, so the page must not go to a cloud model."""
-    boxes, first_label_y = [], None
+    Empty list = no PATIENT label (name/ID) found, so the page must not go to a cloud model."""
+    boxes, first_label_y, found_patient_label = [], None, False
     for line in lines:
         words, rects = line["words"], line["boxes"]
         for i, word in enumerate(words):
-            if _label(word) not in PERSONAL_LABELS:
+            label = _label(word)
+            if label not in PERSONAL_LABELS:
                 continue
+            found_patient_label = found_patient_label or label in PATIENT_LABELS
             y = line["rect"].y0
             first_label_y = y if first_label_y is None else min(first_label_y, y)
             end = page.rect.width  # the value runs to the next label on the line, or to the edge
@@ -192,7 +200,7 @@ def personal_boxes(page, lines):
                     end = later_rect.x0 - MASK_PAD
                     break
             boxes.append(pymupdf.Rect(rects[i].x1, line["rect"].y0, end, line["rect"].y1))
-    if first_label_y is None:
+    if first_label_y is None or not found_patient_label:
         return []
     for line in lines:
         first = re.sub(r"[^a-z]", "", line["text"].split()[0].lower())
@@ -260,10 +268,25 @@ def _similarity(a, b):
 
 
 UNREADABLE_CAP = 40  # the model itself said a word was unreadable
+UNSURE_CAP = 50      # the model marked a best guess as uncertain: [[word]]
+ONE_READER = 70      # Tesseract couldn't read the line at all (real handwriting): only the model read it
 
 
-def _confidence(text, agreement):
+def split_unsure(texts):
+    """['Tab. [[Amoxyclav]] 625mg'] -> (['Tab. Amoxyclav 625mg'], [['Amoxyclav']]).
+    The marks come off the text (so quotes still match); the unsure words are kept per line."""
+    clean, unsure = [], []
+    for text in texts:
+        words = re.findall(r"\[\[(.+?)\]\]", text)
+        clean.append(re.sub(r"\[\[(.+?)\]\]", r"\1", text))
+        unsure.append(words)
+    return clean, unsure
+
+
+def _confidence(text, agreement, unsure_words=()):
     score = round(agreement)
+    if unsure_words:
+        score = min(score, UNSURE_CAP)
     return min(score, UNREADABLE_CAP) if "[?]" in text else score
 
 
@@ -291,6 +314,6 @@ def place_lines(texts, lines):
         else:  # no matching Tesseract line: put it under the previous one
             prev = placed[-1]["rect"] if placed else pymupdf.Rect(40, 40, 400, 52)
             placed.append({"text": texts[i], "rect": pymupdf.Rect(prev.x0, prev.y1 + 2, prev.x1, prev.y1 + 2 + prev.height),
-                           "confidence": 0})
+                           "confidence": ONE_READER})
             i += 1
     return placed
