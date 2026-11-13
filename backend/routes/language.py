@@ -70,12 +70,44 @@ GAP_NAME_KN = {
 }
 
 
+# ---------- Hindi words for the question templates (backend/routes/questions.py) ----------
+
+DOC_TYPE_HI = {
+    "prescription": "पर्चा",
+    "lab_report": "लैब रिपोर्ट",
+    "discharge_summary": "डिस्चार्ज सारांश",
+    "final_bill": "अस्पताल का बिल",
+    "pharmacy_bill": "दवा का बिल",
+}
+GAP_NAME_HI = {
+    "blood group": "ब्लड ग्रुप",
+    "allergy": "एलर्जी",
+    "allergies": "एलर्जी",
+    "sex": "लिंग",
+    "dob": "जन्म तिथि",
+    "date of birth": "जन्म तिथि",
+}
+
+
 def doc_type_label(doc_type, lang):
     if lang == "kn":
         return DOC_TYPE_KN.get(doc_type, "ದಾಖಲೆ")
+    if lang == "hi":
+        return DOC_TYPE_HI.get(doc_type, "दस्तावेज़")
     return (doc_type or "document").replace("_", " ")
 
 
 def gap_name(name, lang):
     what = (name or "").replace("_", " ").lower()
-    return GAP_NAME_KN.get(what, what) if lang == "kn" else what
+    if lang == "kn":
+        return GAP_NAME_KN.get(what, what)
+    if lang == "hi":
+        return GAP_NAME_HI.get(what, what)
+    return what
+
+
+def question_language(user):
+    """'en', 'kn' or 'hi': questions have Hindi text too (other routes still use user_language)."""
+    with get_conn() as conn:
+        row = conn.execute("SELECT language FROM users WHERE id = ?", (user["id"],)).fetchone()
+    return row["language"] if row and row["language"] in ("en", "kn", "hi") else "en"

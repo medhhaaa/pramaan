@@ -753,3 +753,18 @@ export async function getScorecard(runTests = false) {
 export async function getAiView(docId) {
   return http('GET', `/documents/${docId}/ai-view`);
 }
+
+// ---------- document agent (core backend: backend/routes/agent.py) ----------
+// -> {document_id, filename, steps: [{step, status: ok|warn|blocked|retry, detail, ms, created_at}]}
+export async function getAgentSteps(docId) {
+  return http('GET', `/documents/${docId}/agent-steps`);
+}
+// "App not sure": facts the agent couldn't prove even after retrying (backend/routes/not_sure.py)
+// -> [{id, document_id, filename, fact: {type, name, dose, frequency, value, unit, quote}, reason, attempts}]
+export async function getNotSure(pid) {
+  if (USE_DUMMY) return [];
+  return http('GET', `/patients/${pid}/not-sure`);
+}
+export async function resolveNotSure(itemId, action) {  // action: 'accept' | 'reject'
+  return http('POST', `/not-sure/${itemId}/resolve`, { action });
+}

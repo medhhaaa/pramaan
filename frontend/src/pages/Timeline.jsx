@@ -5,6 +5,7 @@ import { useActivePatientId } from '../context/AppContext.jsx';
 import { StatusChip, BadgeChip, FlagChip, CopyChip, ConfidenceChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
 import { EditFact, NeedsReading, Unsure } from '../components/HandwritingReview.jsx';
+import NotSure from '../components/NotSure.jsx';
 
 // a fact read from handwriting that a person should check: low score or best-guess words
 const needsCheck = (f) => f.confidence != null && (f.confidence < 85 || (f.unsure || []).length > 0);
@@ -66,6 +67,7 @@ function TimelineInner() {
       )}
 
       <NeedsReading pid={pid} refreshKey={refresh} onChanged={reload} onView={(id) => { setHl(null); setSrc(id); }} />
+      <NotSure pid={pid} refreshKey={refresh} onChanged={reload} onView={(id) => { setHl(null); setSrc(id); }} />
 
       {rows.length === 0 && <div className="empty-state card"><p>{t('timeline.empty')}</p></div>}
 

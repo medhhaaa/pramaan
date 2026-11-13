@@ -22,6 +22,8 @@ process_document_full(...) -> {"facts", "dropped", "document_date", "document_da
 
 Try it:  python -m pipeline.process data/patients/p1/d1_prescription_2019.pdf p1 p1_d1 "Sunita Rao"
 """
+import time
+
 from pipeline.coverage import coverage
 from pipeline.deidentify import deidentify, reidentify
 from pipeline.doc_type import UNKNOWN, classify_document, date_written_in, stay_dates
@@ -30,6 +32,7 @@ from rapidfuzz import fuzz
 
 from pipeline.ocr import handwriting_confidences, handwritten_pages, unread_pages
 from pipeline.privacy_layer import PrivacyBlocked, protect
+from pipeline.self_check import retry_dropped
 from pipeline.plausibility import check_plausibility
 from pipeline.read_pdf import read_pdf
 from pipeline.verify import verify_facts
@@ -76,12 +79,26 @@ def _contract_fact(fact, number, patient_id, document_id, document_date, documen
     }
 
 
+def _step(trace, name, started, detail, status="ok"):
+    """One line of "What the agent did" (saved by backend/ingest.py into agent_steps)."""
+    trace.append({"step": name, "status": status, "detail": detail,
+                  "ms": int((time.perf_counter() - started) * 1000)})
+    return time.perf_counter()
+
+
 def process_document_full(pdf_path, patient_id, document_id, known_names=(), document_date=None, identity=None):
+    trace = []
+    t = time.perf_counter()
     lines = read_pdf(pdf_path)
+    hand, unread = handwritten_pages(pdf_path), unread_pages(pdf_path)
+    t = _step(trace, "read", t, f"{len(lines)} text lines"
+              + (f"; handwriting read by the vision model on page(s) {sorted(hand)}" if hand else "")
+              + (f"; page(s) {unread} kept for a person (not sent to any AI)" if unread else ""))
     if not lines:  # scanned image PDF: we do no OCR for the demo
         return {"facts": [], "dropped": [], "not_captured": [], "document_date": document_date,
                 "document_date_raw": None, "document_date_verified": False, **UNKNOWN,
-                "stay_dates": {"admitted_on": None, "discharged_on": None}, "redactions": 0}
+                "stay_dates": {"admitted_on": None, "discharged_on": None}, "redactions": 0,
+                "unread_pages": unread, "trace": trace}
 
     original_text = "\n".join(line["text"] for line in lines)
     clean_text, mapping = deidentify(original_text, known_names)
@@ -91,23 +108,39 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
         receipt = protect(clean_text, identity, mapping)
     except PrivacyBlocked as blocked:
         # something identifying is still there: never send it; keep the document for a person
+        _step(trace, "protect", t, "personal details still found after redaction: NOT sent to the AI, "
+              "kept for a person", "blocked")
         return {"facts": [], "dropped": [], "not_captured": [], "document_date": document_date,
                 "document_date_raw": None, "document_date_verified": False, **UNKNOWN,
                 "stay_dates": {"admitted_on": None, "discharged_on": None}, "redactions": len(mapping),
-                "unread_pages": [], "privacy_blocked": [{"kind": f.kind, "text": f.text} for f in blocked.findings]}
+                "unread_pages": [], "privacy_blocked": [{"kind": f.kind, "text": f.text} for f in blocked.findings],
+                "trace": trace}
     clean_text, mapping = receipt.text, receipt.mapping
+    t = _step(trace, "protect", t, f"{len(mapping)} personal details replaced by tokens; second check found nothing")
 
     result = extract_document(clean_text, receipt)  # the only step that talks to the AI
+    t = _step(trace, "extract", t, f"AI returned {len(result['facts'])} facts")
 
     facts = [_reidentify_fact(f, mapping) for f in result["facts"]]
     dropped = []
     verified = verify_facts(facts, lines, dropped)
+    t = _step(trace, "check", t, f"{len(verified)} quotes found in the document, {len(dropped)} not found",
+              "warn" if dropped else "ok")
+    # the agent checks its own work: re-read OCR pages, then a stronger model, then "App not sure"
+    recovered, dropped, retry_trace = retry_dropped(dropped, lines, pdf_path, clean_text, receipt, mapping,
+                                                    _reidentify_fact)
+    verified += recovered
+    trace += retry_trace
+    t = time.perf_counter()
 
     document_date = document_date or result["document_date"]
     document_date_raw = result["document_date_raw"]
     # the quote comes back de-identified; put real names back before checking it
     doc_type = classify_document(result["doc_type"], reidentify(result["doc_type_quote"] or "", mapping),
                                  result["doc_type_confidence"], lines)
+    t = _step(trace, "classify", t, f"{doc_type['doc_type']}"
+              + (f' (evidence: "{doc_type["doc_type_quote"]}")' if doc_type.get("doc_type_quote") else " (no evidence line)"),
+              "ok" if doc_type["doc_type"] != "unknown" else "warn")
     facts = [
         _contract_fact(f, n, patient_id, document_id, document_date, document_date_raw)
         for n, f in enumerate(verified, start=1)
@@ -143,6 +176,7 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
         **doc_type,
         "stay_dates": stay_dates(doc_type["doc_type"], facts, document_date, document_date_raw, lines),
         "redactions": len(mapping),
+        "trace": trace,
     }
 
 

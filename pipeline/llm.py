@@ -9,6 +9,7 @@ Rule: only ever pass DE-IDENTIFIED text into this function.
 Quick test:  python -m pipeline.llm
 """
 import os
+from contextvars import ContextVar
 
 from dotenv import load_dotenv
 
@@ -28,8 +29,11 @@ SYSTEM_PROMPT = (
 )
 
 
+_MODEL_OVERRIDE = ContextVar("model_override", default=None)  # set by call_llm(model=...)
+
+
 def _model(provider):
-    return os.getenv("LLM_MODEL") or DEFAULT_MODELS.get(provider)
+    return _MODEL_OVERRIDE.get() or os.getenv("LLM_MODEL") or DEFAULT_MODELS.get(provider)
 
 
 def _call_anthropic(prompt):
@@ -98,7 +102,7 @@ class PrivacyRequired(RuntimeError):
     """call_llm was called without text that went through pipeline/privacy_layer.protect()."""
 
 
-def call_llm(prompt: str, receipts=None) -> str:
+def call_llm(prompt: str, receipts=None, model=None) -> str:
     """receipts: the Redaction result(s) of privacy_layer.protect() for the patient text inside this
     prompt. No receipt, or a receipt whose redacted text is not in the prompt -> refused. As a last
     net, the whole prompt is scanned for phone, Aadhaar, ABHA, PAN, email, PIN and ID patterns."""
@@ -111,13 +115,17 @@ def call_llm(prompt: str, receipts=None) -> str:
     if leftovers:
         raise privacy_layer.PrivacyBlocked(leftovers, prompt)
     provider = _provider()
-    if provider == "anthropic":
-        return _call_anthropic(prompt)
-    if provider in ("openai", "groq"):
-        return _call_openai(prompt, provider)
-    if provider == "ollama":
-        return _call_ollama(prompt)
-    raise ValueError(f"Unknown LLM_PROVIDER: {provider}")
+    token = _MODEL_OVERRIDE.set(model)  # model=None keeps LLM_MODEL
+    try:
+        if provider == "anthropic":
+            return _call_anthropic(prompt)
+        if provider in ("openai", "groq"):
+            return _call_openai(prompt, provider)
+        if provider == "ollama":
+            return _call_ollama(prompt)
+        raise ValueError(f"Unknown LLM_PROVIDER: {provider}")
+    finally:
+        _MODEL_OVERRIDE.reset(token)
 
 
 # ---------- vision: reading handwritten pages (pipeline/handwriting.py) ----------

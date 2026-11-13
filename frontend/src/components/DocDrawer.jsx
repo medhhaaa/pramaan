@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { getDocument } from '../api.js';
+import AgentSteps from './AgentSteps.jsx';
 
 // Click-to-proof. Shows the source lines and highlights the quoted line.
 // When the backend returns pdf_base64, render it with react-pdf here (see README note).
@@ -41,6 +42,7 @@ export default function DocDrawer({ docId, highlightLine, onClose }) {
           </div>
           <button className="icon-btn" aria-label={t('doc.close')} onClick={onClose}><X size={20} /></button>
         </div>
+        {doc && <AgentSteps docId={docId} />}
         <div className="doc-lines">
           {doc && doc.lines.map((l) => (
             <div key={`${l.page}-${l.line}`} className={`doc-line ${l.line === highlightLine ? 'hit' : ''}`}>
