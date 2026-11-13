@@ -30,7 +30,6 @@ const DOCTOR_NAV = [
 const PATIENT_NAV = [
   // Things to check opens from My Records (its button shows the open count), so My Records stays lit there
   { to: '/my-records', key: 'nav.myRecords', icon: FileText, also: ['/things'] },
-  { to: '/health-profile', key: 'nav.healthProfile', icon: HeartPulse },
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
@@ -151,7 +150,16 @@ export default function Layout() {
                 <option value="hi">हिंदी</option>
                 <option value="kn">ಕನ್ನಡ</option>
               </select>
-              <span className="user-chip">{user.name} ({user.role})</span>
+              {user.role === 'patient' ? (
+                // the patient's name opens their health profile (it is not a sidebar entry)
+                <NavLink to="/health-profile" className="user-chip user-chip-link"
+                  title={t('nav.healthProfile')} aria-label={`${user.name} (${user.role}): ${t('nav.healthProfile')}`}>
+                  <HeartPulse size={16} aria-hidden="true" />
+                  <span className="user-chip-text">{user.name} ({user.role})</span>
+                </NavLink>
+              ) : (
+                <span className="user-chip">{user.name} ({user.role})</span>
+              )}
               <button className="btn btn-ghost" onClick={handleLogout} aria-label={t('auth.logout')}>
                 <LogOut size={16} /><span className="btn-label">{t('auth.logout')}</span>
               </button>
