@@ -55,3 +55,20 @@ def get_document(document_id: str, user=Depends(get_current_user)):
         "pdf_base64": pdf_base64,
         "lines": lines,
     }
+
+
+@router.get("/patients/{patient_id}/documents")
+def list_documents(patient_id: str, user=Depends(get_current_user)):
+    """The patient's documents for the Records page, newest first:
+    [{"id", "filename", "doc_type", "document_date", "held_back", "facts"}]  (facts = how many)."""
+    require_patient_access(user, patient_id)
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT d.id, d.filename, d.doc_type, d.document_date, d.held_back,
+                      (SELECT COUNT(*) FROM facts f WHERE f.document_id = d.id) AS facts
+               FROM documents d WHERE d.patient_id = ?
+               ORDER BY d.document_date DESC, d.id DESC""",
+            (patient_id,),
+        ).fetchall()
+    log_action(user, "list_documents", patient_id)
+    return [{**dict(r), "held_back": bool(r["held_back"])} for r in rows]

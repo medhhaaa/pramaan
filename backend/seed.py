@@ -20,8 +20,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SAMPLE_FACTS = os.path.join(ROOT, "shared", "sample_facts.json")
 ANSWER_KEYS = os.path.join(ROOT, "data", "answer_keys")
 # p6 (Ravi) has a hospital stay with bills, for the Claim Documents checklist
+# p7 (Nisha) has a pneumonia episode, for the in-page search
 # p8 (Meena) is on Dr. Rao's care team with an in-app prescription (backend/demo_care_team.py)
-PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5", "p6", "p8"]
+PATIENT_IDS = ["p1", "p2", "p3", "p4", "p5", "p6", "p7", "p8"]
 
 # username, password, role, patients they can see
 # Only a patient's own account has lasting access. Doctors see a patient ONLY while a QR /
@@ -34,6 +35,7 @@ USERS = [
     ("arjun", "arjun123", "patient", ["p4"]),
     ("gopal", "gopal123", "patient", ["p5"]),
     ("ravi", "ravi123", "patient", ["p6"]),
+    ("nisha", "nisha123", "patient", ["p7"]),
     ("meena", "meena123", "patient", ["p8"]),
     # a doctor at another clinic (same access as doctor: only through a share)
     ("guestdoctor", "guest123", "doctor", []),

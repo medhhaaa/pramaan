@@ -8,7 +8,7 @@
   "translatedNote": "Medicine names, doses and values are shown as written in the original.",
   "nav": {
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
-    "medication": "Medication", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
+    "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
     "audit": "Audit log", "delete": "Delete data", "myRecords": "My Records",
     "thingsToCheck": "Things to check", "generateQr": "Share with doctor",
     "claimDocuments": "Claim documents", "myPatients": "My patients", "careTeam": "My care team"
@@ -134,6 +134,8 @@
     "pedTitle": "Pre-existing condition check", "policyStart": "Policy start date", "check": "Check",
     "scamTitle": "Scam shield", "scam": "Verify any agent or insurer on the IRDAI website. Never share OTPs or card details with someone who called you first. Genuine policies come with official policy documents. IRDAI helpline 155255 or policyholder.gov.in."
   },
+  "search": {"placeholderMeds": "Search medicines, e.g. pneumonia or Glycomet", "placeholderRecords": "Search records, e.g. pneumonia, X-ray or CRP", "clear": "Clear search", "related": "Related to “{{q}}” ({{n}})", "other": "Other", "none": "Nothing in these records is related to “{{q}}”. The list is unchanged.", "reason": {"mentioned": "Mentioned with it", "same_visit": "Same visit", "similar": "Similar meaning"}, "tipMentioned": "Source: “{{text}}” (page {{page}}, line {{line}})", "tipSameVisit": "Same document, day or hospital stay as {{item}}, which mentions it", "tipSimilar": "Close in meaning to your search. It does not use the same words: check the source."},
+  "records": {"title": "Records", "count_one": "{{count}} document", "count_other": "{{count}} documents", "facts_one": "{{count}} fact", "facts_other": "{{count}} facts", "open": "Open source", "noDate": "Date not known", "empty": "No documents yet.", "types": {"prescription": "Prescription", "lab_report": "Lab / scan report", "discharge_summary": "Discharge summary", "final_bill": "Final bill", "pharmacy_bill": "Pharmacy bill", "payment_receipt": "Payment receipt", "operation_notes": "Operation notes", "implant_invoice": "Implant invoice", "fir_or_mlc": "FIR / MLC", "other": "Other document", "unknown": "Document"}},
   "common": { "back": "Back", "close": "Close", "loading": "Loading…", "error": "Something went wrong. Please try again." },
   "claimDocs": {
     "uploadHere": "Upload it here",

@@ -1241,6 +1241,112 @@ P6 = {
 }
 
 # ---------------------------------------------------------------------------
+# Patient p7: Nisha Pai. Community-acquired pneumonia (in-page search tests)
+# ---------------------------------------------------------------------------
+
+CHEST_SIGNATURE = ["Dr. Fathima Rizwana", "MD (Pulmonary Medicine)", "KMC Reg. No. 57341"]
+RADIOLOGY_SIGNATURE = ["Dr. Arvind Hegde", "MD (Radiodiagnosis)", "Consultant Radiologist"]
+
+P7 = {
+    "patient_id": "p7",
+    "patient": {"name": "Nisha Pai", "dob": "1971-09-02", "sex": "F", "blood_group": "A+"},
+    "traps": [
+        {"type": "search", "documents": ["p7_d3", "p7_d4", "p7_d5"],
+         "note": "Search 'pneumonia': only the Augmentin line and the X-ray impression name it. "
+                 "Azithromycin and Paracetamol are on the same prescription and the CRP report is "
+                 "from the same day: found as 'same visit'. The 2024 diabetes visit is unrelated. "
+                 "'Glycomet' is a brand of Metformin (d1)."},
+    ],
+    "documents": [
+        {
+            "key": "d1", "filename": "d1_prescription_2024.pdf", "doc_type": "prescription",
+            "date": "2024-05-20", "date_raw": "20/05/2024", "hospital": "paduva",
+            "title": "PRESCRIPTION",
+            "lines": [
+                row("Patient: Mrs. Nisha Pai", "Date: 20/05/2024", demographic("patient_name", "Mrs. Nisha Pai")),
+                row("Sex: Female", "Age: 52 years", demographic("sex", "Female")),
+                text("Blood group: A+", demographic("blood_group", "A+")),
+                RULE,
+                heading("Diagnosis"),
+                text("Type 2 diabetes mellitus", condition("Type 2 diabetes mellitus")),
+                heading("Rx"),
+                text("Tab. Metformin 500mg BD", med("Metformin", "500mg", "BD", "started")),
+                text("Tab. Atorvastatin 10mg HS", med("Atorvastatin", "10mg", "HS", "started")),
+                GAP,
+                text("Advice: Diet control, walk 30 minutes daily. Review after 3 months."),
+            ],
+        },
+        {
+            "key": "d2", "filename": "d2_lab_2024.pdf", "doc_type": "lab_report",
+            "date": "2024-05-20", "date_raw": "20/05/2024", "hospital": "coastline",
+            "title": "LABORATORY REPORT",
+            "lines": [
+                row("Patient: Mrs. Nisha Pai", "Sample ID: CD/24/05311", demographic("patient_name", "Mrs. Nisha Pai")),
+                row("Sex: Female", "Report date: 20/05/2024", demographic("sex", "Female")),
+                RULE,
+                row("Test / Result", "Reference range"),
+                row("HbA1c 7.6 %", "4.0 - 5.6 %", lab("HbA1c", "7.6", "%")),
+                row("Fasting glucose 142 mg/dL", "70 - 100 mg/dL", lab("Fasting glucose", "142", "mg/dL")),
+                GAP,
+                text("*** End of report ***"),
+            ],
+        },
+        {
+            "key": "d3", "filename": "d3_prescription_2025.pdf", "doc_type": "prescription",
+            "date": "2025-11-03", "date_raw": "03/11/2025", "hospital": "seabreeze",
+            "title": "PRESCRIPTION", "signature": CHEST_SIGNATURE,
+            "lines": [
+                row("Patient: Mrs. Nisha Pai", "Date: 03/11/2025", demographic("patient_name", "Mrs. Nisha Pai")),
+                row("Sex: Female", "Age: 54 years", demographic("sex", "Female")),
+                RULE,
+                heading("Diagnosis"),
+                text("Community-acquired pneumonia (right lower lobe)",
+                     condition("Community-acquired pneumonia (right lower lobe)")),
+                heading("Rx"),
+                text("Tab. Augmentin 625mg BD x 7 days - for pneumonia", med("Augmentin", "625mg", "BD", "started")),
+                text("Tab. Azithromycin 500mg OD x 3 days", med("Azithromycin", "500mg", "OD", "started")),
+                text("Tab. Paracetamol 650mg SOS for fever", med("Paracetamol", "650mg", "SOS", "started")),
+                GAP,
+                text("Advice: Blood tests and X-ray today. Review after 3 days."),
+            ],
+        },
+        {
+            "key": "d4", "filename": "d4_lab_crp_2025.pdf", "doc_type": "lab_report",
+            "date": "2025-11-03", "date_raw": "03/11/2025", "hospital": "coastline",
+            "title": "LABORATORY REPORT",
+            "lines": [
+                row("Patient: Mrs. Nisha Pai", "Sample ID: CD/25/11042", demographic("patient_name", "Mrs. Nisha Pai")),
+                row("Sex: Female", "Report date: 03/11/2025", demographic("sex", "Female")),
+                RULE,
+                row("Test / Result", "Reference range"),
+                row("C-reactive protein (CRP) 86 mg/L", "< 6 mg/L", lab("C-reactive protein (CRP)", "86", "mg/L")),
+                row("Total WBC count 14,200 cells/cumm", "4,000 - 11,000 cells/cumm",
+                    lab("Total WBC count", "14,200", "cells/cumm")),
+                row("Neutrophils 82 %", "40 - 75 %", lab("Neutrophils", "82", "%")),
+                GAP,
+                text("*** End of report ***"),
+            ],
+        },
+        {
+            "key": "d5", "filename": "d5_chest_xray_2025.pdf", "doc_type": "lab_report",
+            "date": "2025-11-03", "date_raw": "03/11/2025", "hospital": "coastline",
+            "title": "RADIOLOGY REPORT", "signature": RADIOLOGY_SIGNATURE,
+            "lines": [
+                row("Patient: Mrs. Nisha Pai", "Ref. by: Dr. Fathima Rizwana", demographic("patient_name", "Mrs. Nisha Pai")),
+                row("Sex: Female", "Date: 03/11/2025", demographic("sex", "Female")),
+                RULE,
+                heading("Chest X-ray (PA view)"),
+                text("Findings: Patchy consolidation in the right lower zone",
+                     lab("Chest X-ray", "Patchy consolidation in the right lower zone", None)),
+                text("Costophrenic angles clear. Heart size normal."),
+                heading("Impression"),
+                text("Right lower lobe pneumonia", condition("Right lower lobe pneumonia")),
+            ],
+        },
+    ],
+}
+
+# ---------------------------------------------------------------------------
 # Patient p8: Meena Shenoy, for the doctor features (care team, refill requests).
 # Her current Metformin is an IN-APP prescription from Dr. Rao (backend/demo_care_team.py);
 # these PDFs give her history: type 2 diabetes and a sulfa allergy on record.
@@ -1321,7 +1427,7 @@ P8 = {
     ],
 }
 
-PATIENTS = [P1, P2, P3, P4, P5, P6, P8]
+PATIENTS = [P1, P2, P3, P4, P5, P6, P7, P8]
 
 
 # ---------------------------------------------------------------------------

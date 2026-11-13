@@ -125,6 +125,26 @@ export async function getMedications(pid) {
   return http('GET', `/patients/${pid}/medications`);
 }
 
+// The patient's documents for the Records page (newest first)
+// -> [{id, filename, doc_type, document_date, held_back, facts}]
+export async function listDocuments(pid) {
+  if (USE_DUMMY) {
+    await wait();
+    return Object.values(DOCUMENTS).filter((d) => d.patient_id === pid)
+      .map((d) => ({ id: d.id, filename: d.filename, doc_type: d.doc_type, document_date: d.document_date,
+        held_back: Boolean(d.held_back), facts: facts(pid).filter((f) => f.document_id === d.id).length }))
+      .sort((a, b) => (b.document_date || '').localeCompare(a.document_date || ''));
+  }
+  return http('GET', `/patients/${pid}/documents`);
+}
+
+// In-page search (backend/search.py): matches only, best first
+// -> [{item_id, score, reason: mentioned|same_visit|similar, matched_terms, source, via}]
+export async function searchRecords(pid, q, page) {
+  if (USE_DUMMY) { await wait(); return []; } // the real search needs the backend's index
+  return http('GET', `/patients/${pid}/search?q=${encodeURIComponent(q)}&page=${page}`);
+}
+
 export async function getFlags(pid) {
   if (USE_DUMMY) { await wait(); return groupFlags(pid); }
   return http('GET', `/patients/${pid}/flags`);

@@ -1,0 +1,19 @@
+{
+  "_about": "In-page search (backend/search.py): a query that is any term of a group also finds the group's other terms. Terms are matched as whole words, case-insensitive. Medicines use the brand <-> generic table in backend/routes/check_medicine.py instead. Do not add 'cap' (capsule) or other words that are also prescription shorthand.",
+  "pneumonia": ["pneumonia", "lrti", "lower respiratory tract infection", "chest infection", "lung infection", "consolidation", "community-acquired pneumonia", "bronchopneumonia"],
+  "diabetes": ["diabetes", "diabetes mellitus", "dm", "t2dm", "t1dm", "type 2 diabetes", "type 1 diabetes", "high sugar", "high blood sugar", "hyperglycaemia", "hyperglycemia"],
+  "hypertension": ["hypertension", "htn", "high bp", "high blood pressure", "raised bp", "elevated blood pressure"],
+  "hypothyroidism": ["hypothyroidism", "hypothyroid", "underactive thyroid", "low thyroid"],
+  "asthma": ["asthma", "bronchial asthma", "wheeze", "wheezing", "reactive airway disease"],
+  "chronic kidney disease": ["chronic kidney disease", "ckd", "kidney disease", "renal impairment", "renal failure", "kidney failure"],
+  "myocardial infarction": ["myocardial infarction", "mi", "heart attack", "stemi", "nstemi"],
+  "coronary artery disease": ["coronary artery disease", "cad", "ihd", "ischaemic heart disease", "ischemic heart disease", "angina"],
+  "dyslipidaemia": ["dyslipidaemia", "dyslipidemia", "high cholesterol", "hyperlipidaemia", "hyperlipidemia"],
+  "copd": ["copd", "chronic obstructive pulmonary disease", "emphysema", "chronic bronchitis"],
+  "urinary tract infection": ["urinary tract infection", "uti", "urine infection", "cystitis"],
+  "tuberculosis": ["tuberculosis", "tb", "pulmonary tb", "koch's"],
+  "heart failure": ["heart failure", "ccf", "chf", "congestive cardiac failure", "congestive heart failure"],
+  "stroke": ["stroke", "cva", "cerebrovascular accident"],
+  "anaemia": ["anaemia", "anemia", "low haemoglobin", "low hemoglobin", "low hb"],
+  "osteoarthritis": ["osteoarthritis", "oa", "degenerative joint disease"]
+}
