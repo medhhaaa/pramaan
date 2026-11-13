@@ -65,7 +65,7 @@
     "implausible_value": "This value looks impossible. It may be a typing or scanning error. The original is unchanged.",
     "gap": "Not in your records. This does not mean you don't have it."
   },
-  "timeline": { "title": "Timeline", "hideCopies": "Hide copies", "copyOf": "Copy of {{doc}}", "legend": "What the labels mean", "date": "Date", "type": "Type", "name": "Name", "doseValue": "Dose / value", "status": "Status", "badge": "Badge", "flags": "Flags", "source": "Source", "empty": "No facts yet." },
+  "timeline": { "title": "Timeline", "hideCopies": "Hide copies", "copyOf": "Copy of {{doc}}", "legend": "What the labels mean", "date": "Date", "type": "Type", "name": "Name", "doseValue": "Dose / value", "reaction": "Reaction", "status": "Status", "badge": "Badge", "flags": "Flags", "source": "Source", "empty": "No facts yet." },
   "medication": { "title": "Medication", "current": "Current", "stopped": "Stopped", "summary": "{{mentions}} mentions · {{copies}} copies · last real evidence {{date}}", "empty": "No medicines documented yet." },
   "flagsPage": { "title": "Flags", "allergen": "Allergen", "details": "Details", "held": "Held back, waiting for review" },
   "ask": { "title": "Ask my records", "placeholder": "Ask about your records", "send": "Ask", "footer": "Answers come only from your stored records.", "notMentioned": "The records don't mention this." },

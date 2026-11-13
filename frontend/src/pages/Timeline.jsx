@@ -9,6 +9,14 @@ import NotSure from '../components/NotSure.jsx';
 
 // a fact read from handwriting that a person should check: low score or best-guess words
 const needsCheck = (f) => f.confidence != null && (f.confidence < 85 || (f.unsure || []).length > 0);
+
+// "Dose / value" column: dose + frequency for medicines, value + unit for lab tests only.
+// Allergies keep their reaction and demographics their value in `value`; those are shown under the name.
+const doseOrValue = (f) => {
+  if (f.type === 'medication') return [f.dose, f.frequency].filter(Boolean).join(' ');
+  if (f.type === 'lab_test') return [f.value, f.unit].filter((x) => x != null && x !== '').join(' ');
+  return '';
+};
 import PatientGate from '../components/PatientGate.jsx';
 import LoadError from '../components/LoadError.jsx';
 import { fmtDate, yearOf } from '../lib/format.js';
@@ -98,10 +106,14 @@ function TimelineInner() {
                     <td>{f.type}</td>
                     <td>
                       <Unsure text={f.name} words={f.unsure} />
+                      {f.type === 'allergy' && f.value && (
+                        <div className="muted small">{t('timeline.reaction')}: {f.value}</div>
+                      )}
+                      {f.type === 'demographic' && f.value && <div className="mono">{f.value}</div>}
                       {f.echo_of && <div><CopyChip docName={docName(f.echo_of)} /></div>}
                     </td>
                     <td className="mono">
-                      <Unsure text={[f.dose, f.frequency].filter(Boolean).join(' ') || `${f.value ?? ''} ${f.unit ?? ''}`.trim()} words={f.unsure} />
+                      {doseOrValue(f) ? <Unsure text={doseOrValue(f)} words={f.unsure} /> : <span className="muted">—</span>}
                     </td>
                     <td><StatusChip status={f.status} /></td>
                     <td><BadgeChip badge={f.badge} /></td>
