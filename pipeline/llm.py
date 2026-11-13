@@ -105,6 +105,91 @@ def call_llm(prompt: str) -> str:
     raise ValueError(f"Unknown LLM_PROVIDER: {provider}")
 
 
+# ---------- vision: reading handwritten pages (pipeline/handwriting.py) ----------
+# Optional. handwriting.py only ever sends a page AFTER blacking out the patient's personal details.
+# VISION_PROVIDER in .env picks the service:
+#   (empty)  default: the text provider's API (free.ai) with VISION_MODEL, e.g. qwen-vl
+#   github   GitHub Models, key GITHUB_TOKEN, model GITHUB_VISION_MODEL (default openai/gpt-4o)
+#   gemini   Google AI Studio, key GEMINI_API_KEY, model GEMINI_VISION_MODEL (default gemini-3-flash-preview;
+#            gemini-2.5-flash is closed to new accounts)
+#   anthropic  key LLM_API_KEY, model VISION_MODEL
+# github and gemini both speak the OpenAI API, so they share the code below.
+
+VISION_SERVICES = {
+    "github": {"base_url": "https://models.github.ai/inference", "key": "GITHUB_TOKEN",
+               "model": "GITHUB_VISION_MODEL", "default_model": "openai/gpt-4o"},
+    "gemini": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "key": "GEMINI_API_KEY",
+               "model": "GEMINI_VISION_MODEL", "default_model": "gemini-3-flash-preview"},
+}
+
+
+def _vision_provider():
+    return os.getenv("VISION_PROVIDER", "").lower()
+
+
+def vision_enabled(provider=None):
+    provider = provider or _vision_provider()
+    if provider in VISION_SERVICES:
+        return bool(os.getenv(VISION_SERVICES[provider]["key"]))
+    return bool(os.getenv("VISION_MODEL"))
+
+
+def call_vision(prompt: str, png: bytes, provider: str | None = None) -> str:
+    """Send one prompt + one PNG image, return the model's text reply.
+    provider overrides VISION_PROVIDER (used to compare services, or to read a page twice)."""
+    import base64
+
+    provider = (provider or _vision_provider()).lower()
+    if provider == "default":  # explicitly the default service, whatever VISION_PROVIDER says
+        provider = ""
+    data = base64.b64encode(png).decode()
+    if provider in VISION_SERVICES:
+        service = VISION_SERVICES[provider]
+        return _openai_vision(prompt, data, os.getenv(service["model"]) or service["default_model"],
+                              api_key=os.getenv(service["key"]), base_url=service["base_url"])
+
+    provider = provider or _provider()
+    model = os.getenv("VISION_MODEL")
+    if provider == "anthropic":
+        import anthropic
+
+        client = anthropic.Anthropic(api_key=os.getenv("LLM_API_KEY") or None)
+        response = client.messages.create(
+            model=model,
+            max_tokens=4000,
+            system=SYSTEM_PROMPT,
+            messages=[{"role": "user", "content": [
+                {"type": "image", "source": {"type": "base64", "media_type": "image/png", "data": data}},
+                {"type": "text", "text": prompt},
+            ]}],
+        )
+        return "".join(block.text for block in response.content if block.type == "text")
+
+    # default: same OpenAI-style API as the text model (free.ai via OPENAI_BASE_URL, or Groq)
+    return _openai_vision(prompt, data, model, api_key=os.getenv("LLM_API_KEY"),
+                          base_url=GROQ_URL if provider == "groq" else None)
+
+
+def _openai_vision(prompt, data, model, api_key, base_url):
+    from openai import OpenAI
+
+    client = OpenAI(api_key=api_key, base_url=base_url, max_retries=3)
+    response = client.chat.completions.create(
+        model=model,
+        temperature=0,
+        messages=[
+            {"role": "system", "content": SYSTEM_PROMPT},
+            {"role": "user", "content": [
+                {"type": "text", "text": prompt},
+                {"type": "image_url", "image_url": {"url": "data:image/png;base64," + data}},
+            ]},
+        ],
+    )
+    if isinstance(response, str):  # not an API reply (seen: GitHub Models answering a bare "OK")
+        raise RuntimeError(f"{base_url or 'vision API'} did not return a chat completion: {response[:60]!r}")
+    return response.choices[0].message.content
+
+
 if __name__ == "__main__":
     provider = _provider()
     print(f"Provider: {provider}, model: {_model(provider) or os.getenv('OLLAMA_MODEL')}")

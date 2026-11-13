@@ -25,6 +25,7 @@ de-identification check is run on OCR output too.
 Needs Tesseract installed (Windows: winget install UB-Mannheim.TesseractOCR).
 """
 import io
+import json
 
 import pymupdf
 from PIL import Image, ImageOps, UnidentifiedImageError
@@ -32,6 +33,8 @@ from PIL import Image, ImageOps, UnidentifiedImageError
 from pipeline import handwriting
 
 HANDWRITING_MARK = "pramaan:handwriting-pages="
+CONFIDENCE_MARK = "pramaan:handwriting-confidence="
+UNREAD_MARK = "pramaan:unread-pages="
 OCR_DPI = 300      # Tesseract reads small print best at about 300 dpi
 LANGUAGE = "eng"   # add "+kan" for Kannada once its language pack is installed
 PAGE_WIDTH = 595   # A4 width in points; a photo's page gets its own height
@@ -62,18 +65,46 @@ def make_searchable(pdf_bytes):
 
     out = pymupdf.open()
     handwritten = []
+    confidences = {}  # page -> [[line text, 0-100, [unsure words]], ...] for handwritten pages
+    unread = []       # handwritten pages no model could safely read: a person must
     for page in src:
         if page_has_text(page):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
             continue
 
-        lines = handwriting.tesseract_lines(page) if handwriting.enabled() else None
-        if lines is not None and handwriting.needs_vision(lines) and handwriting.vision_available():
-            # handwriting: the local vision model reads it, Tesseract says where the lines are
+        paddle = handwriting.ocr_engine() == "paddleocr"
+        lines = handwriting.ocr_lines(page) if handwriting.enabled() or paddle else None
+        texts = None
+        if lines is not None and handwriting.needs_vision(lines):
+            # handwriting (or mixed): a vision model reads it -- the cloud one only after the
+            # patient's details are blacked out; None = no model can safely read it
+            try:
+                texts = handwriting.transcribe(page, lines)
+            except Exception:  # model down or overloaded: keep the page for a person, never lose it
+                texts = None
+        if texts is not None:
+            # Tesseract still says where the lines are, for click-to-proof
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
-            for line in handwriting.place_lines(handwriting.transcribe(page), lines):
+            clean, unsure = handwriting.split_unsure(texts)
+            for line, words in zip(handwriting.place_lines(clean, lines), unsure):
                 _add_invisible_line(out[-1], line["text"], line["rect"])
+                score = handwriting._confidence(line["text"], line["confidence"], words)
+                confidences.setdefault(str(page.number + 1), []).append([line["text"], score, words])
             handwritten.append(page.number + 1)
+            continue
+        if lines is not None and handwriting.needs_vision(lines):
+            # handwriting no model could safely read (e.g. no "Name:" label to black out):
+            # keep the picture, add NO text (Tesseract's guess at handwriting is noise),
+            # and mark the page so a person reads it
+            out.insert_pdf(src, from_page=page.number, to_page=page.number)
+            unread.append(page.number + 1)
+            continue
+
+        if paddle and lines:
+            # print, read by PaddleOCR: picture of the page + its lines as invisible text
+            out.insert_pdf(src, from_page=page.number, to_page=page.number)
+            for line in lines:
+                _add_invisible_line(out[-1], line["text"], line["rect"])
             continue
 
         # print: picture of the page + Tesseract's invisible text on top, at the same size.
@@ -83,8 +114,11 @@ def make_searchable(pdf_bytes):
         ocr_pdf = pymupdf.open("pdf", pix.pdfocr_tobytes(language=LANGUAGE, tessdata=pymupdf.get_tessdata()))
         out.insert_pdf(ocr_pdf)
 
+    if unread:
+        out.set_metadata({**out.metadata, "title": UNREAD_MARK + ",".join(map(str, unread))})
     if handwritten:  # remembered inside the PDF, so process_document can flag those facts
-        out.set_metadata({"keywords": f"{HANDWRITING_MARK}{','.join(map(str, handwritten))}"})
+        out.set_metadata({**out.metadata, "keywords": f"{HANDWRITING_MARK}{','.join(map(str, handwritten))}",
+                          "subject": CONFIDENCE_MARK + json.dumps(confidences)})
     return out.tobytes(garbage=3, deflate=True)
 
 
@@ -94,6 +128,24 @@ def _add_invisible_line(page, text, rect):
     size = max(4, min(rect.height * 0.9, rect.width / width_at_1pt if width_at_1pt else rect.height))
     page.insert_text((rect.x0, rect.y1 - rect.height * 0.2), text, fontsize=size, fontname="helv",
                      render_mode=3)
+
+
+def handwriting_confidences(pdf_path):
+    """{page: [(line text, 0-100 confidence), ...]} for pages read from handwriting."""
+    with pymupdf.open(pdf_path) as doc:
+        subject = doc.metadata.get("subject") or ""
+    if not subject.startswith(CONFIDENCE_MARK):
+        return {}
+    return {int(p): [tuple(x) for x in rows] for p, rows in json.loads(subject[len(CONFIDENCE_MARK):]).items()}
+
+
+def unread_pages(pdf_path):
+    """Pages (1-based) kept as pictures only: handwriting a person must read."""
+    with pymupdf.open(pdf_path) as doc:
+        title = doc.metadata.get("title") or ""
+    if not title.startswith(UNREAD_MARK):
+        return []
+    return [int(n) for n in title[len(UNREAD_MARK):].split(",") if n.isdigit()]
 
 
 def handwritten_pages(pdf_path):
