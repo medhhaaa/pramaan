@@ -319,6 +319,31 @@ def test_claim_answers_cite_the_stay_and_documents(client, sunita, fake):
     assert [d["id"] for d in out["documents"]] == ["p1_d3"]
 
 
+def test_questions_follow_the_agreed_routing(client, sunita, doctor):
+    """routed_to / statuses from Akanksha's question loop (AGENTIC_PLAN A.3): read, never changed."""
+    share(client, sunita, doctor)
+    from backend.auth import current_request
+
+    current_request.set(("GET", "/patients/p1/questions"))
+    doc_ctx = agent_context(_user("doctor"), "p1")
+    pat_ctx = patient_ctx()
+    with get_conn() as conn:
+        before = [tuple(r) for r in conn.execute("SELECT id, status FROM questions WHERE patient_id = 'p1' ORDER BY id")]
+    for_doctor = TOOLS["doctor"]["open_questions"].run(doc_ctx, {})
+    for_patient = TOOLS["patient"]["things_to_check"].run(pat_ctx, {})
+    doc_q = {q["question_id"] for q in for_doctor["data"]} if isinstance(for_doctor["data"], list) else set()
+    pat_q = {q["question_id"] for q in for_patient["data"]} if isinstance(for_patient["data"], list) else set()
+    assert doc_q or pat_q
+    assert not doc_q & pat_q  # one question goes to one person
+    for q in for_doctor["data"] if isinstance(for_doctor["data"], list) else []:
+        assert q["status"] == "sent_to_doctor" or q["routed_to"] == "doctor"
+    for q in for_patient["data"] if isinstance(for_patient["data"], list) else []:
+        assert q["status"] == "open" and q["routed_to"] != "doctor"
+    with get_conn() as conn:
+        after = [tuple(r) for r in conn.execute("SELECT id, status FROM questions WHERE patient_id = 'p1' ORDER BY id")]
+    assert after == before  # the tools only read
+
+
 def test_the_claim_pack_zip_includes_what_the_patient_confirmed(client, sunita, fake):
     import io
     import os
