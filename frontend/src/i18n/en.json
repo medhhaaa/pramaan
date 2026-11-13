@@ -220,7 +220,7 @@
     "copy": "Copy of an older record",
     "source": "Open source"
   },
-  "assistant": {
+  "assistant": { "openFull": "Open as a full page",
     "clear": "Clear chat",
     "links": {"upload": "Upload a document", "claim_upload": "Upload what's missing for the claim"},
     "note": "Answers come only from the records, with sources. Not medical advice. Personal details are removed before anything reaches the AI.",

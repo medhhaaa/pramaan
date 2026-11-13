@@ -33,3 +33,56 @@
 }
 .assistant-links { display: flex; flex-wrap: wrap; gap: 8px; }
 .assistant-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }
+
+/* AssistantDock.jsx: round button bottom-right + chat panel above it. z-index 24 sits under the
+   phone menu (25 / 30), the document drawer (40) and modals (50+). No transform or filter is left on
+   the panel after it opens, so the document drawer inside it still covers the whole screen. */
+.assistant-fab {
+  position: fixed; right: 24px; bottom: 24px; z-index: 24;
+  width: 56px; height: 56px; border-radius: 50%; border: none; cursor: pointer;
+  display: grid; place-items: center;
+  background: var(--brand-strong); color: #fff; box-shadow: var(--shadow);
+  transition: transform 160ms cubic-bezier(0.2, 0.8, 0.2, 1), background-color 160ms ease-out;
+}
+.assistant-fab:hover { background: var(--brand); }
+.assistant-fab:active { transform: scale(0.94); }
+.assistant-fab:focus-visible { outline: none; box-shadow: var(--focus), var(--shadow); }
+
+.assistant-dock {
+  position: fixed; right: 24px; bottom: 92px; z-index: 24;
+  width: min(400px, calc(100vw - 32px)); height: min(620px, calc(100vh - 140px));
+  display: flex; flex-direction: column;
+  background: var(--bg); border: 1px solid var(--border); border-radius: var(--radius);
+  box-shadow: var(--shadow); overflow: hidden;
+  transform-origin: bottom right;
+  animation: assistant-dock-in 180ms cubic-bezier(0.2, 0.8, 0.2, 1);
+}
+.assistant-dock[hidden] { display: none; }
+@keyframes assistant-dock-in { from { opacity: 0; transform: translateY(8px) scale(0.97); } }
+
+.assistant-dock-head {
+  display: flex; align-items: center; gap: 8px; padding: 10px 10px 10px 14px;
+  background: var(--surface); border-bottom: 1px solid var(--border);
+}
+.assistant-dock-head h2 { flex: 1; margin: 0; font-size: 1rem; }
+.assistant-dock-badge { display: grid; place-items: center; width: 30px; height: 30px; border-radius: 50%;
+  background: var(--brand-soft); color: var(--brand); flex: none; }
+.assistant-dock-body { flex: 1; min-height: 0; display: flex; flex-direction: column; padding: 12px 14px 4px; }
+.assistant-dock .assistant { flex: 1; min-height: 0; }
+.assistant-dock .assistant-log { flex: 1; min-height: 0; overflow-y: auto; overscroll-behavior: contain; padding-right: 2px; }
+.assistant-dock .assistant-turn { max-width: 92%; }
+.assistant-dock .assistant-input textarea { resize: none; }
+.assistant-dock .assistant-input .btn-label { display: none; }
+
+@media (max-width: 640px) {
+  .assistant-fab { right: 16px; bottom: 16px; }
+  .assistant-fab.is-open { display: none; } /* the panel's own X closes it */
+  .assistant-dock { inset: 0; width: auto; height: auto; border-radius: 0; border: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .assistant-dock { animation: none; }
+  .assistant-fab { transition: none; }
+}
+.assistant-note svg { flex: none; }
+.assistant-dock .assistant-note { display: block; margin: 0 0 4px; }
+.assistant-dock .assistant-note svg { vertical-align: -2px; margin-right: 4px; }
