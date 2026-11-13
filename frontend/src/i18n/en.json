@@ -206,63 +206,90 @@
   "landing": {
     "navLogin": "Log in",
     "langLabel": "Language",
-    "eyebrow": "For patients and doctors",
+    "kicker": "One patient, many records",
     "title": "Other apps summarise your records.",
     "titleAccent": "Pramaan knows what it doesn't know.",
-    "lead": "Pramaan turns scattered prescriptions, lab reports and discharge summaries into one dated health timeline. Every fact links to the exact line it came from. Gaps, contradictions and copies are shown, never hidden.",
+    "lead": "Prescriptions, lab reports and discharge summaries pile up over the years in different formats, units and dates. Pramaan reads them into one dated timeline where every fact points to the exact line it came from.",
     "ctaStart": "Log in to Pramaan",
-    "ctaHow": "See how it works",
-    "demo": {
-      "label": "From the timeline",
-      "fact": "Atenolol 50mg once daily",
-      "echo": "Copy of the 2019 record",
-      "source": "2022 discharge summary · page 1, line 14",
-      "quote": "Tab. Atenolol 50mg OD",
-      "note": "Mentioned in 3 documents. 2 are copies. Last real evidence: 2019.",
-      "gap": "Allergies: not documented",
-      "gapNote": "Not written anywhere does not mean \"no allergies\"."
+    "ctaHow": "See a real example",
+    "docsAlt": "Three of Sunita's documents: a 2019 prescription, a 2022 discharge summary and a 2023 prescription, with the important lines highlighted.",
+    "notes": {
+      "conflict": "2019 says \"No known drug allergies\". 2022 says Penicillin.",
+      "copy": "Atenolol line copied word for word from 2019",
+      "change": "A real change: Metformin dose doubled"
     },
-    "featuresTitle": "Built to be checked, not just trusted",
-    "features": {
-      "proof": {
-        "title": "Click to proof",
-        "text": "Open any fact and see the source document with the exact line highlighted."
-      },
-      "quote": {
-        "title": "No quote, no fact",
-        "text": "A fact is kept only if its words are found in the document. Nothing is made up."
-      },
-      "echo": {
-        "title": "Copies spotted",
-        "text": "A medicine list copied from an old record counts as one piece of evidence, not four."
-      },
-      "gaps": {
-        "title": "Gaps shown",
-        "text": "\"Not documented\" is never treated as \"does not have\". Missing items become questions."
-      },
-      "wrong": {
-        "title": "Wrong-patient check",
-        "text": "A report whose blood group or sex doesn't match is held back until someone checks it."
-      },
-      "ask": {
-        "title": "Ask my records",
-        "text": "Answers come only from your records, with sources. Otherwise: \"The records don't mention this.\""
+    "trail": {
+      "title": "Sunita's file: 7 papers, 5 years",
+      "lead": "Sunita is the synthetic patient in our demo. Almost every paper hides a trap that a fluent summary walks straight past.",
+      "items": {
+        "d1": {
+          "type": "Prescription",
+          "trap": "Starts Metformin and Atenolol"
+        },
+        "d2": {
+          "type": "Lab report",
+          "trap": "Glucose in mmol/L"
+        },
+        "d3": {
+          "type": "Discharge summary",
+          "trap": "Allergy contradiction, copied medicines"
+        },
+        "d4": {
+          "type": "Prescription",
+          "trap": "Dose change, Atenolol copied again"
+        },
+        "d5": {
+          "type": "Lab report",
+          "trap": "Glucose in mg/dL"
+        },
+        "d6": {
+          "type": "Lab report",
+          "trap": "Exact duplicate of the one before"
+        },
+        "d7": {
+          "type": "Lab report",
+          "trap": "Male, B+: someone else's report"
+        }
       }
     },
-    "howTitle": "How it works",
-    "steps": {
-      "upload": {
-        "title": "Upload",
-        "text": "Add your prescriptions, lab reports and discharge summaries as PDFs."
+    "compare": {
+      "title": "Same records, two readings",
+      "summaryLabel": "A typical AI summary",
+      "summaryText": "Sunita, 70, has type 2 diabetes and takes Metformin, Atenolol and Amlodipine. No known drug allergies. Fasting glucose rose from 6.8 to 122.",
+      "summaryNote": "Fluent and confident. You cannot tell which parts are true.",
+      "pramaanLabel": "Pramaan",
+      "rows": {
+        "atenolol": {
+          "name": "Atenolol 50mg OD",
+          "text": "Last real evidence 2019. The 2022 and 2023 mentions are copies."
+        },
+        "allergy": {
+          "name": "Allergies",
+          "text": "\"No known drug allergies\" (2019) and \"Penicillin (rash)\" (2022) disagree. Sent to the doctor to settle."
+        },
+        "glucose": {
+          "name": "Fasting glucose",
+          "text": "6.8 mmol/L and 122 mg/dL use different units. Both shown as written, not compared."
+        },
+        "psa": {
+          "name": "PSA report, 04/05/2023",
+          "text": "Male, blood group B+. Held back: probably another patient."
+        }
       },
-      "verify": {
-        "title": "Verify",
-        "text": "Names and IDs are hidden before any AI reads them. Every fact is checked against its source line."
+      "sourceHint": "Each line opens the page and line it came from."
+    },
+    "inside": {
+      "title": "Inside Pramaan",
+      "timeline": {
+        "title": "Timeline",
+        "text": "Every row links to its source line. Conflicts are flagged for a person to settle, never settled quietly."
       },
-      "review": {
-        "title": "Review",
-        "text": "See a dated timeline with flags and trust badges. Answer open questions; your doctor confirms."
-      }
+      "medication": {
+        "title": "Medication",
+        "text": "Copies count once. Each medicine shows the date of its last real evidence."
+      },
+      "timelineAlt": "Pramaan's timeline for Sunita: a Penicillin allergy in 2022 and \"No known drug allergies\" in 2019, both flagged as a contradiction.",
+      "medicationAlt": "Pramaan's medication view: Metformin, Atenolol and Amlodipine, with copied mentions marked as copies."
     },
     "privacyTitle": "Your data stays yours",
     "privacyLead": "Built following the safeguards of GDPR, the EU AI Act and India's DPDP Act.",
