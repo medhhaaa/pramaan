@@ -25,8 +25,7 @@ import GenerateQR from './pages/GenerateQR.jsx';
 import Claim from './pages/Claim.jsx';
 import ClaimDocuments from './pages/ClaimDocuments.jsx';
 import MyPatients from './pages/MyPatients.jsx';
-import MyCareTeam from './pages/MyCareTeam.jsx';
-import MyMedicines from './pages/MyMedicines.jsx';
+import CareTeamHub from './pages/CareTeamHub.jsx';
 import RefillReview from './pages/RefillReview.jsx';
 import ConsultRecords from './pages/ConsultRecords.jsx';
 import PatientGate from './components/PatientGate.jsx';
@@ -58,8 +57,8 @@ function Shell() {
         <Route element={<RequireLogin><Layout /></RequireLogin>}>
           <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/my-patients' : '/my-records'} replace />} />
           <Route path="/my-patients" element={<RoleRoute roles={['doctor']}><MyPatients /></RoleRoute>} />
-          <Route path="/care-team" element={<RoleRoute roles={['patient']}><MyCareTeam /></RoleRoute>} />
-          <Route path="/my-medicines" element={<RoleRoute roles={['patient']}><MyMedicines /></RoleRoute>} />
+          <Route path="/care-team" element={<RoleRoute roles={['patient']}><CareTeamHub tab="doctors" /></RoleRoute>} />
+          <Route path="/my-medicines" element={<RoleRoute roles={['patient']}><CareTeamHub tab="medicines" /></RoleRoute>} />
           <Route path="/refill/:id" element={<RoleRoute roles={['doctor']}><RefillReview /></RoleRoute>} />
           <Route path="/consult-records" element={<RoleRoute roles={['doctor']}><PatientGate><ConsultRecords /></PatientGate></RoleRoute>} />
           <Route path="/patients" element={<RoleRoute roles={['doctor']}><Patients /></RoleRoute>} />

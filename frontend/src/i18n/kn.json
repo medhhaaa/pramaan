@@ -6,7 +6,7 @@
   "langPopupTitle": "ನಿಮ್ಮ ಭಾಷೆಯನ್ನು ಆಯ್ಕೆಮಾಡಿ",
   "langs": { "en": "English", "hi": "हिंदी", "kn": "ಕನ್ನಡ" },
   "translatedNote": "ಔಷಧಿಗಳ ಹೆಸರು, ಡೋಸ್ ಮತ್ತು ಮೌಲ್ಯಗಳನ್ನು ಮೂಲ ದಾಖಲೆಯಲ್ಲಿ ಬರೆದಂತೆಯೇ ತೋರಿಸಲಾಗುತ್ತದೆ.",
-  "nav": { "assistant": "ಸಹಾಯಕ", "diseaseSearch": "ಕಾಯಿಲೆ ಹುಡುಕಾಟ",
+  "nav": { "careAndMedicines": "ವೈದ್ಯರು ಮತ್ತು ಔಷಧಿಗಳು", "myDoctors": "ನನ್ನ ಆರೈಕೆ ತಂಡ", "careSections": "ಔಷಧಿಗಳು ಮತ್ತು ವೈದ್ಯರು", "assistant": "ಸಹಾಯಕ", "diseaseSearch": "ಕಾಯಿಲೆ ಹುಡುಕಾಟ",
     "security": "ಗೌಪ್ಯತೆ ಮತ್ತು ಸುರಕ್ಷತೆ",
     "patients": "ರೋಗಿಗಳು", "accuracy": "ನಿಖರತೆ", "scan": "ಸ್ಕ್ಯಾನ್", "timeline": "ಕಾಲರೇಖೆ",
     "medication": "ಔಷಧಿಗಳು", "records": "ದಾಖಲೆಗಳು", "flags": "ಫ್ಲ್ಯಾಗ್‌ಗಳು", "ask": "ನನ್ನ ದಾಖಲೆಗಳನ್ನು ಕೇಳಿ", "upload": "ಅಪ್‌ಲೋಡ್",
