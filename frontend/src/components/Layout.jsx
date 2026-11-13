@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { ASK_ON } from '../lib/features.js';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck } from 'lucide-react';
@@ -56,7 +57,8 @@ export default function Layout() {
   const [open, setOpen] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const navigate = useNavigate();
-  const items = user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV;
+  // Ask my records only when switched on (VITE_ENABLE_ASK=true in .env.local)
+  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => i.to !== '/ask' || ASK_ON);
   const sessionActive = session && session.expiresAt > Date.now();
 
   const onLang = (e) => {
