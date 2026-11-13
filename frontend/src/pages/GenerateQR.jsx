@@ -1,7 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
-import { QrCode, ShieldCheck, UserRound, Clock, Eye, MessageSquareMore } from 'lucide-react';
+import { QrCode, ShieldCheck, UserRound, Clock, Eye, MessageSquareMore, TriangleAlert } from 'lucide-react';
 import { createQR, listShares, stopShare, shareOptions, listShareRequests, answerShareRequest, SHARE_MINUTES } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
 import { mmss } from '../lib/format.js';
@@ -155,7 +156,16 @@ export default function GenerateQR() {
                       <Clock size={13} /> {t('qr.timeLeft', { time: mmss(Date.parse(s.expires_at) - now) })}
                       {s.opened_at && <> · {t('qr.openedAt', { time: new Date(s.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}</>}
                     </div>
-                    <div className="muted small"><Eye size={13} /> {scopeText(s.scope)}</div>
+                    <div className="muted small"><Eye size={13} /> {scopeText(s.sees ?? s.scope)}</div>
+                    {s.care_team_scope && JSON.stringify(s.sees) !== JSON.stringify(s.scope) && (
+                      <p className="small share-careteam-note">
+                        <TriangleAlert size={14} aria-hidden="true" />
+                        <span>
+                          {t('shareScope.careTeamWider', { doctor: s.opened_by })}{' '}
+                          <Link to="/care-team">{t('shareScope.careTeamChange')}</Link>
+                        </span>
+                      </p>
+                    )}
                   </div>
                   <button className="btn btn-ghost btn-sm" disabled={busy} onClick={() => stop(s.share_id)}>{t('qr.stop')}</button>
                 </li>

@@ -18,6 +18,8 @@
 .scope-examples { overflow-wrap: anywhere; }
 .scope-line { display: flex; align-items: center; gap: 6px; margin: 0; font-weight: 500; }
 .share-who .muted.small + .muted.small { margin-top: 2px; }
+.share-careteam-note { display: flex; gap: 6px; align-items: flex-start; margin: 4px 0 0; max-width: 46ch; }
+.share-careteam-note > svg { flex: none; margin-top: 2px; color: var(--warn); }
 
 /* a doctor asked to see more */
 .share-request { border-color: var(--brand); display: flex; flex-direction: column; gap: 8px; }
