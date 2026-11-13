@@ -59,6 +59,8 @@ def delete_route(patient_id: str, user=Depends(get_current_user)):
             "audit_entries": conn.execute("DELETE FROM audit_log WHERE patient_id = ?", (patient_id,)).rowcount,
         }
         conn.execute("DELETE FROM user_patients WHERE patient_id = ?", (patient_id,))
+        conn.execute("DELETE FROM share_requests WHERE patient_id = ?", (patient_id,))
+        conn.execute("DELETE FROM share_links WHERE patient_id = ?", (patient_id,))
         conn.execute("DELETE FROM patients WHERE id = ?", (patient_id,))
 
     # files last, after the database rows are gone

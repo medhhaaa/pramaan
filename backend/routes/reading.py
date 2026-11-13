@@ -37,7 +37,9 @@ def _document(conn, document_id, user):
 
 @router.get("/patients/{patient_id}/needs-reading")
 def needs_reading(patient_id: str, user=Depends(get_current_user)):
-    require_patient_access(user, patient_id)
+    from backend.scope import access_scope, document_in_scope
+
+    scope = access_scope(require_patient_access(user, patient_id))
     with get_conn() as conn:
         rows = conn.execute(
             """SELECT d.id, d.filename, d.doc_type, d.document_date,
@@ -46,6 +48,9 @@ def needs_reading(patient_id: str, user=Depends(get_current_user)):
                ORDER BY d.id""",
             (patient_id,),
         ).fetchall()
+        if scope != "all":  # a partial share / care-team scope: only documents this doctor may open
+            rows = [r for r in rows if document_in_scope(
+                [dict(f) for f in conn.execute("SELECT type, name FROM facts WHERE document_id = ?", (r["id"],))], scope)]
     log_action(user, "list_needs_reading", patient_id)
     return [dict(r) for r in rows]
 

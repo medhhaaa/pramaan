@@ -27,14 +27,26 @@ KEYS_BY_TYPE = {
 with open(TAGS_PATH, encoding="utf-8") as f:
     TAGS = json.load(f)
 TAG_NAMES = [t["tag"] for t in TAGS]
+# "other": facts that match no tag above (a chest infection, a fracture). Used by QR / code
+# shares (backend/routes/share.py) so a patient can share those too without sharing everything.
+OTHER = "other"
+SCOPE_NAMES = TAG_NAMES + [OTHER]
+SCOPE_LABELS = {**{t["tag"]: t["label"] for t in TAGS}, OTHER: "Other records"}
 
 
 def parse_scope(text):
-    """'all' or a list of tags, from the care_team.scope column."""
+    """'all' or a list of tags, from the care_team.scope / share_links.scope column."""
     if not text or text == "all":
         return "all"
     tags = json.loads(text)
-    return [t for t in tags if t in TAG_NAMES]
+    return [t for t in tags if t in SCOPE_NAMES]
+
+
+def union_scope(a, b):
+    """Everything either scope shows."""
+    if a == "all" or b == "all":
+        return "all"
+    return sorted(set(a) | set(b))
 
 
 def scope_text(scope):
@@ -52,14 +64,19 @@ def tags_of(fact_type, name):
     return found
 
 
+def groups_of(fact_type, name):
+    """The scope groups a fact belongs to: its tags, or ["other"] if it matches none."""
+    return tags_of(fact_type, name) or [OTHER]
+
+
 def fact_in_scope(fact, scope):
     if scope == "all" or fact.get("type") in ALWAYS_VISIBLE:
         return True
-    return bool(set(tags_of(fact.get("type"), fact.get("name"))) & set(scope))
+    return bool(set(groups_of(fact.get("type"), fact.get("name"))) & set(scope))
 
 
 def medicine_in_scope(medicine, scope):
-    return scope == "all" or bool(set(tags_of("medication", medicine)) & set(scope))
+    return scope == "all" or bool(set(groups_of("medication", medicine)) & set(scope))
 
 
 def access_scope(access):
@@ -86,4 +103,7 @@ def document_in_scope(facts, scope):
     (demographics alone don't count: every document has them)."""
     if scope == "all":
         return True
-    return any(f.get("type") != "demographic" and fact_in_scope(f, scope) for f in facts)
+    clinical = [f for f in facts if f.get("type") != "demographic"]
+    if not clinical:  # nothing read from it yet (a handwritten page waiting to be read)
+        return OTHER in scope
+    return any(fact_in_scope(f, scope) for f in clinical)

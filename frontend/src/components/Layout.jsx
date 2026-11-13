@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { ASK_ON } from '../lib/features.js';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck, Lock } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
+import HiddenNotice from './HiddenNotice.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
 import { getTheme, toggleTheme } from '../lib/theme.js';
@@ -58,6 +59,9 @@ export default function Layout() {
   const { user, setUser, session, setSession, logout, setScanOpen, setPendingPath } = useApp();
   const [open, setOpen] = useState(true);
   const [drawer, setDrawer] = useState(false);
+  // bumped when the patient shares more with this doctor: the page under it loads again
+  const [dataVersion, setDataVersion] = useState(0);
+  const onMoreShared = useCallback(() => setDataVersion((v) => v + 1), []);
   const navigate = useNavigate();
   // Ask my records only when switched on (VITE_ENABLE_ASK=true in .env.local)
   const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => i.to !== '/ask' || ASK_ON);
@@ -156,7 +160,8 @@ export default function Layout() {
               <button className="btn btn-ghost btn-sm" onClick={() => { setSession(null); navigate(session.careTeam ? '/my-patients' : '/patients'); }}>{t('scan.endSession')}</button>
             </div>
           )}
-          <main className="content"><Outlet /></main>
+          {user.role === 'doctor' && sessionActive && <HiddenNotice onMoreShared={onMoreShared} />}
+          <main className="content"><Outlet key={dataVersion} /></main>
           <footer className="app-footer">{t('disclaimer')}</footer>
         </div>
       </div>

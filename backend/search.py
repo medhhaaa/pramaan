@@ -243,7 +243,9 @@ def _direct_match(item, terms):
     return (found, source) if (found or source) else None
 
 
-def search(patient_id, query, page):
+def search(patient_id, query, page, visible=None):
+    """visible(page, item_id) -> bool: items this user may see (a partial share or care-team
+    scope). Hidden items are dropped BEFORE matching, so they can't cause a "same visit" either."""
     if page not in PAGES:
         raise ValueError(f"page must be one of {PAGES}")
     query = (query or "").strip()
@@ -256,7 +258,7 @@ def search(patient_id, query, page):
     items = [{
         "page": r["page"], "item_id": r["item_id"], "lines": json.loads(decrypt_text(r["search_text"])),
         "names": set(json.loads(r["names"])), "visits": json.loads(r["visits"]), "embedding": r["embedding"],
-    } for r in rows]
+    } for r in rows if visible is None or visible(r["page"], r["item_id"])]
 
     results, direct_visits = {}, {}
     for item in items:  # direct matches on BOTH pages: either can make a "same visit"

@@ -111,7 +111,21 @@ CREATE TABLE IF NOT EXISTS share_links (
     expires_at TEXT NOT NULL,
     opened_by INTEGER,
     opened_at TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    scope TEXT NOT NULL DEFAULT 'all'  -- 'all' or a JSON list of condition tags (backend/scope.py)
+);
+-- A doctor with a partial share asks the patient to share more (backend/routes/share_requests.py).
+-- added: what the patient added ('all' or a JSON list of tags). Deleted with its share.
+CREATE TABLE IF NOT EXISTS share_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    share_id INTEGER NOT NULL,
+    patient_id TEXT NOT NULL,
+    doctor_id INTEGER NOT NULL,
+    note TEXT,
+    status TEXT NOT NULL DEFAULT 'pending' CHECK (status IN ('pending', 'answered', 'declined')),
+    added TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    answered_at TEXT
 );
 -- ---- doctor features (backend/routes/care_team.py, refills.py, consult_records.py) ----
 -- Care team: the patient's lasting consent for one doctor. scope is 'all' or a JSON list of
@@ -243,6 +257,8 @@ ADDED_COLUMNS = [
     ("users", "registration_number", "TEXT"),
     # when the document was uploaded (UTC "YYYY-MM-DD HH:MM:SS"), for "new report" on My Patients
     ("documents", "uploaded_at", "TEXT"),
+    # what a QR / code share shows: 'all' or a JSON list of condition tags (backend/scope.py)
+    ("share_links", "scope", "TEXT NOT NULL DEFAULT 'all'"),
 ]
 
 

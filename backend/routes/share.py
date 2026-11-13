@@ -4,15 +4,17 @@ The patient makes a share; a doctor at another clinic scans the QR or types the 
 READ that patient's records until the time runs out. Then access closes by itself and the
 share is deleted. The patient can also stop a share early.
 
-POST   /patients/{id}/share   {"minutes": 15}   (patient only)
-       -> {"share_id", "code", "token", "url", "qr_svg", "expires_at", "seconds_left"}
+POST   /patients/{id}/share   {"minutes": 15, "scope": "all" | ["diabetes", "other"]}   (patient only)
+       -> {"share_id", "code", "token", "url", "qr_svg", "expires_at", "seconds_left", "scope"}
+          scope  what the doctor may see (backend/scope.py); allergies and blood group / sex /
+                 DOB are always shown. GET /patients/{id}/share-options lists the groups.
           code   8 letters/digits shown as "K7P3-QXM9" for typing (no 0/O or 1/I/L mix-ups)
           token  long random string inside the QR link
           qr_svg data URI of the QR picture, use it directly as <img src>
 POST   /share/open            {"code": "K7P3-QXM9"} or {"token": "..."}   (doctor only)
        -> {"share_id", "patient": {id, name, dob, sex, blood_group}, "expires_at", "seconds_left"}
 GET    /patients/{id}/shares  -> active shares: [{"share_id", "created_at", "expires_at",
-                                  "seconds_left", "opened_by", "opened_at"}]
+                                  "seconds_left", "opened_by", "opened_at", "scope"}]
 DELETE /share/{share_id}      -> {"stopped": true}   (the patient stops sharing early)
 
 Safety:
@@ -26,6 +28,7 @@ import hashlib
 import os
 import secrets
 from datetime import datetime, timezone
+from typing import List, Literal, Union
 
 import segno
 from fastapi import APIRouter, Depends, HTTPException
@@ -33,6 +36,7 @@ from pydantic import BaseModel
 
 from backend.auth import get_current_user, has_full_access
 from backend.db import get_conn, log_action
+from backend.scope import SCOPE_NAMES, parse_scope, scope_text
 
 router = APIRouter()
 
@@ -63,10 +67,22 @@ def _seconds_left(sqlite_time):
 
 def _delete_expired(conn):
     conn.execute("DELETE FROM share_links WHERE expires_at <= datetime('now')")
+    conn.execute("DELETE FROM share_requests WHERE share_id NOT IN (SELECT id FROM share_links)")
+
+
+def check_scope(scope):
+    """"all", or a non-empty list of known groups (sorted, no repeats) -> 422 otherwise."""
+    if scope == "all":
+        return "all"
+    scope = sorted(set(scope))
+    if not scope or any(t not in SCOPE_NAMES for t in scope):
+        raise HTTPException(status_code=422, detail=f"Scope must be 'all' or groups from {SCOPE_NAMES}")
+    return scope
 
 
 class ShareBody(BaseModel):
     minutes: int = 15
+    scope: Union[Literal["all"], List[str]] = "all"
 
 
 @router.post("/patients/{patient_id}/share")
@@ -75,6 +91,7 @@ def create_share(patient_id: str, body: ShareBody, user=Depends(get_current_user
         raise HTTPException(status_code=403, detail="Only the patient can share their records")
     if not 1 <= body.minutes <= MAX_MINUTES:
         raise HTTPException(status_code=422, detail=f"Minutes must be between 1 and {MAX_MINUTES}")
+    scope = check_scope(body.scope)
 
     code = "".join(secrets.choice(CODE_ALPHABET) for _ in range(8))
     token = secrets.token_urlsafe(24)
@@ -83,16 +100,16 @@ def create_share(patient_id: str, body: ShareBody, user=Depends(get_current_user
             raise HTTPException(status_code=403, detail="No access to this patient")
         _delete_expired(conn)
         cur = conn.execute(
-            """INSERT INTO share_links (patient_id, created_by, token_hash, code_hash, expires_at)
-               VALUES (?, ?, ?, ?, datetime('now', ?))""",
-            (patient_id, user["id"], _hash(token), _hash(code), f"+{body.minutes} minutes"),
+            """INSERT INTO share_links (patient_id, created_by, token_hash, code_hash, expires_at, scope)
+               VALUES (?, ?, ?, ?, datetime('now', ?), ?)""",
+            (patient_id, user["id"], _hash(token), _hash(code), f"+{body.minutes} minutes", scope_text(scope)),
         )
         expires_at = conn.execute(
             "SELECT expires_at FROM share_links WHERE id = ?", (cur.lastrowid,)
         ).fetchone()["expires_at"]
 
     url = f"{FRONTEND_URL}/?share={token}"
-    log_action(user, "share_created", patient_id, {"share_id": cur.lastrowid, "minutes": body.minutes})
+    log_action(user, "share_created", patient_id, {"share_id": cur.lastrowid, "minutes": body.minutes, "scope": scope})
     return {
         "share_id": cur.lastrowid,
         "code": f"{code[:4]}-{code[4:]}",
@@ -101,6 +118,7 @@ def create_share(patient_id: str, body: ShareBody, user=Depends(get_current_user
         "qr_svg": segno.make(url, error="m").svg_data_uri(scale=6, border=2),
         "expires_at": _iso(expires_at),
         "seconds_left": _seconds_left(expires_at),
+        "scope": scope,
     }
 
 
@@ -174,6 +192,7 @@ def list_shares(patient_id: str, user=Depends(get_current_user)):
             "seconds_left": _seconds_left(r["expires_at"]),
             "opened_by": r["opened_by_name"],
             "opened_at": _iso(r["opened_at"]),
+            "scope": parse_scope(r["scope"]),
         }
         for r in rows
     ]
@@ -186,5 +205,6 @@ def stop_share(share_id: int, user=Depends(get_current_user)):
         if not share or not has_full_access(conn, user, share["patient_id"]):
             raise HTTPException(status_code=404, detail="Share not found")
         conn.execute("DELETE FROM share_links WHERE id = ?", (share_id,))
+        conn.execute("DELETE FROM share_requests WHERE share_id = ?", (share_id,))
     log_action(user, "share_stopped", share["patient_id"], {"share_id": share_id})
     return {"stopped": True}

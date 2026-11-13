@@ -17,8 +17,9 @@ Three kinds of access:
              outside the scope are hidden (backend/scope.py). Reading, the review actions
              below, and the doctor's own actions (prescribe, decide a refill, set a follow-up).
   shared     the patient made a QR / code and the doctor opened it (backend/routes/share.py).
-             Only until the share expires; scope "all". GET requests plus the review actions
-             below. If a doctor has both, the share (wider scope) wins.
+             Only until the share expires. The patient picks the scope when making it ("all"
+             or condition tags, plus "other"). GET requests plus the review actions below.
+             If a doctor has both, the share's rules apply and the scopes are added together.
 Nobody but the patient can upload, delete, share or use claims.
 """
 import hashlib
@@ -119,13 +120,13 @@ def active_care_team(conn, user, patient_id):
 
 
 def require_patient_access(user, patient_id):
-    from backend.scope import parse_scope  # plain helper module; imported here to keep auth light
+    from backend.scope import parse_scope, union_scope  # plain helper module; imported here to keep auth light
 
     with get_conn() as conn:
         if has_full_access(conn, user, patient_id):
             return {"kind": "own", "scope": "all"}
         share = active_share(conn, user, patient_id)
-        team = None if share else active_care_team(conn, user, patient_id)
+        team = active_care_team(conn, user, patient_id)
     if not share and not team:
         raise HTTPException(status_code=403, detail="No access to this patient")
     method, path = current_request.get()
@@ -133,7 +134,11 @@ def require_patient_access(user, patient_id):
     if method != "GET" and not path.rstrip("/").endswith(allowed):
         raise HTTPException(status_code=403, detail="Doctors may only read and review here")
     if share:
-        return {"kind": "shared", "scope": "all"}
+        # the patient chose what this share shows; a care-team scope for the same doctor adds to it
+        scope = parse_scope(share["scope"])
+        if team:
+            scope = union_scope(scope, parse_scope(team["scope"]))
+        return {"kind": "shared", "scope": scope, "share_id": share["id"]}
     return {"kind": "care_team", "scope": parse_scope(team["scope"]), "care_team_id": team["id"]}
 
 
