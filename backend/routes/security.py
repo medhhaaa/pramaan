@@ -41,6 +41,7 @@ router = APIRouter()
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 SECURITY_TESTS = ["tests/test_security.py", "tests/test_doctor_access.py"]
 _last_test_run = {}  # remembered between requests: running the tests takes ~20 s
+TEST_RESULTS = os.path.join(ROOT, "backend", "security_test_results.json")  # survives a restart (gitignored)
 
 PHONE = r"(?<!\d)(?:\+?91[\s-]?)?[6-9]\d{4}[\s-]?\d{5}(?!\d)"
 AADHAAR = r"(?<!\d)\d{4}\s\d{4}\s\d{4}(?!\d)"
@@ -139,6 +140,25 @@ def _run_security_tests():
     failed = sum(int(n) for n in re.findall(r"(\d+) (?:failed|error)", summary))
     _last_test_run.update(passed=passed, failed=failed, summary=summary,
                           at=started.isoformat(timespec="seconds"), files=SECURITY_TESTS)
+    try:  # kept on disk too, so a backend restart doesn't show "not run yet" again
+        import json
+
+        with open(TEST_RESULTS, "w", encoding="utf-8") as f:
+            json.dump(_last_test_run, f, indent=1)
+    except OSError:
+        pass
+
+
+def _load_last_test_run():
+    """The last saved run (backend/security_test_results.json), if the backend restarted since."""
+    import json
+
+    if not _last_test_run and os.path.exists(TEST_RESULTS):
+        try:
+            with open(TEST_RESULTS, encoding="utf-8") as f:
+                _last_test_run.update(json.load(f))
+        except (OSError, ValueError):
+            pass
 
 
 def _injection_results():
@@ -232,6 +252,7 @@ def scorecard(run_tests: bool = False, user=Depends(get_current_user)):
         (encrypted if ok else plain).append(rel)
 
     # 5. security tests (run on request; ~20 s)
+    _load_last_test_run()
     if run_tests or not _last_test_run:
         if run_tests:
             _run_security_tests()
@@ -245,13 +266,17 @@ def scorecard(run_tests: bool = False, user=Depends(get_current_user)):
     injection = _injection_results()
     checks = [
         {"key": "audit_chain", "title": "Audit log can't be edited without it showing",
-         "result": (f"{chain['entries']} entries · chain intact" if chain["intact"]
+         "result": ((f"{chain['chained']} entries · chain intact"
+                     + (f" · {chain['before_chain']} older entries from before the chain was switched on (not checked)"
+                        if chain["before_chain"] else "")) if chain["intact"]
                     else f"BROKEN at entry #{chain['broken_at']}"),
          "passed": chain["intact"],
          "how": "Each audit entry stores a SHA-256 fingerprint of itself plus the entry before it. Every "
                 "fingerprint is recomputed now; changing, removing or slipping in an entry breaks the chain."
                 + (f" Latest fingerprint: {chain['latest_hash'][:16]}…" if chain["intact"] else ""),
-         "details": [] if chain["intact"] else [f"Entry #{chain['broken_at']}: {chain['reason']}"]},
+         "details": [] if chain["intact"] else [
+             f"Entry #{chain['broken_at']} ({chain['broken_entry']['action']}, {chain['broken_entry']['created_at']} UTC): "
+             f"{chain['reason']}"]},
         {"key": "text_leaks", "title": "Patient identifiers left in text sent to the AI",
          "result": f"{len(text_leaks)} left · {removed_total} removed", "passed": not text_leaks,
          "how": "Every document is run through the same de-identification step the pipeline uses; the "
