@@ -163,6 +163,9 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `GET /patients/{id}/documents` | Documents for the Records page (type, date, held back, fact count) | Core backend |
 | `GET /patients/{id}/search?q=&page=medications\|records` | In-page search: `[{item_id, score, reason, matched_terms, source, via}]`, no LLM (`backend/search.py`) | Ashil |
 | `POST /patients/{id}/check-medicine` | Allergy / duplicate warning | Medha |
+| `GET /patients/{id}/disease-search?q=` | Everything about one disease (name, synonym, brand or lab test), scope respected, `hidden_count` only (`backend/disease_search.py`, `data/disease_map.json`) | Ashil |
+| `POST /patients/{id}/assistant` | Doctor / patient assistant: AI picks tools from a fixed list, our code runs them with the user's access; `{answer, fact_ids, citations, sources, documents, tools_used, pending_action, hidden}` (`backend/agent/`) | Ashil |
+| `POST /patients/{id}/assistant/confirm` · `/cancel` | Run or drop a proposed write (save to claim pack); never for shared / care-team doctors | Ashil |
 | `GET /metrics` | Precision / recall results | Medha |
 | `GET /patients/{id}/audit` | Audit log | Medha |
 | `DELETE /patients/{id}` | Delete all patient data | Medha |
@@ -192,6 +195,8 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 - `share_links` (id, patient_id, created_by, token_hash, code_hash, expires_at, opened_by, opened_at, created_at, scope): QR / code sharing; only hashes stored; expired rows deleted; scope `all` or JSON list of condition groups (`backend/scope.py`)
 - `share_requests` (id, share_id, patient_id, doctor_id, note, status `pending`|`answered`|`declined`, added, created_at, answered_at): doctor asks to see more of a partial share; deleted with the share
 - `search_items` (patient_id, page, item_id, search_text (encrypted), names, synonyms, visits, text_hash, embedding): in-page search index, rebuilt by `recompute_patient`
+- `claim_pack_items` (stay_id, document_id, added_by, created_at): documents the patient confirmed for a stay's claim pack (AGENTIC_PLAN A.4)
+- `assistant_actions` (id, user_id, patient_id, action, args JSON, status `proposed`|`done`|`cancelled`, created_at): writes the assistant proposed; done only on confirm
 
 Seed users: patients `sunita` (p1), `iqbal` (p2), `lakshmi` (p3), `arjun` (p4), `gopal` (p5), `ravi` (p6), `nisha` (p7, pneumonia episode for the search), password = username + `123`; doctors `doctor` / `doctor123` and `guestdoctor` / `guest123`. **Only a patient has lasting access to their own records. A doctor sees a patient only while that patient's QR / code share is open** (reading + review: ask, check-medicine, correct, resolve open questions; never upload, delete or share).
 
