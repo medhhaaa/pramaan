@@ -105,7 +105,7 @@
     "reasons": {"quote_not_found": "quote not found in the document", "dose_not_in_line": "dose not in the quoted line", "value_not_in_line": "value not in the quoted line", "unit_not_in_line": "unit not in the quoted line"},
     "types": {"medication": "Medicine", "allergy": "Allergy", "condition": "Condition", "lab_test": "Test", "event": "Event", "demographic": "Personal detail"}
   },
-  "doc": { "title": "Source", "held": "Held back", "close": "Close" },
+  "doc": { "photoTitle": "Original photo, as uploaded", "photoAlt": "Photo of {{name}} as the patient uploaded it", "photoHint": "Check the typed reading below against the photo. Pick a line to mark it on the photo.", "reading": "Typed reading", "zoomIn": "Zoom in", "zoomOut": "Zoom out", "openFull": "Open the photo full size", "photoError": "The photo could not be loaded.", "title": "Source", "held": "Held back", "close": "Close" },
   "myRecords": { "empty": "No documents yet.", "uploadFirst": "Upload your first document", "title": "My Records", "shareButton": "Share with a doctor", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
   "things": {
     "title": "Things to check", "problem": "Problem", "yes": "Yes", "no": "No", "dontKnow": "I don't know", "skip": "Skip",

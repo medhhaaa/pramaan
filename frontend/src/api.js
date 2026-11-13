@@ -356,6 +356,12 @@ export async function getDocument(did) {
   return http('GET', `/documents/${did}`);
 }
 
+// The original photo of a photo upload (metadata removed): a Blob for an <img>. Only when
+// getDocument() said original != null. Audited on the server, never cached.
+export async function getDocumentOriginal(did) {
+  return httpBlob(`/documents/${did}/original`);
+}
+
 export async function getMetrics() {
   if (USE_DUMMY) { await wait(); return METRICS; }
   return http('GET', '/metrics');

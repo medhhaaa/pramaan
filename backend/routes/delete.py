@@ -13,22 +13,23 @@ import os
 
 from fastapi import APIRouter, Depends
 
+from backend import storage
 from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn
 from backend.routes.audit_helper import log_action
 
 router = APIRouter()
 
-ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-STORAGE_DIR = os.path.join(ROOT, "storage")
-
 
 def remove_stored_file(file_path):
-    """Delete the file only if it lives inside storage/. Returns True if a file was removed."""
+    """Delete the file only if it lives inside storage/. Returns True if a file was removed.
+    The root comes from backend.storage at call time (the same place uploads were saved; tests
+    point it at a temp folder)."""
     if not file_path:
         return False
-    full = os.path.realpath(os.path.join(ROOT, file_path))
-    if os.path.commonpath([full, os.path.realpath(STORAGE_DIR)]) != os.path.realpath(STORAGE_DIR):
+    storage_dir = os.path.realpath(os.path.join(storage.ROOT, "storage"))
+    full = os.path.realpath(storage.abs_path(file_path))
+    if os.path.commonpath([full, storage_dir]) != storage_dir:
         return False
     if os.path.isfile(full):
         os.remove(full)
@@ -41,9 +42,10 @@ def delete_route(patient_id: str, user=Depends(get_current_user)):
     require_patient_access(user, patient_id)
 
     with get_conn() as conn:
-        file_paths = [
-            r["file_path"]
-            for r in conn.execute("SELECT file_path FROM documents WHERE patient_id = ?", (patient_id,))
+        file_paths = [  # the working PDF and, for a photo upload, the original photo
+            path
+            for r in conn.execute("SELECT file_path, original_path FROM documents WHERE patient_id = ?", (patient_id,))
+            for path in (r["file_path"], r["original_path"]) if path
         ]
         # before the stays: claim_pack_items only knows its stay
         conn.execute("DELETE FROM claim_pack_items WHERE stay_id IN (SELECT id FROM hospital_stays WHERE patient_id = ?)",

@@ -308,6 +308,10 @@ ADDED_COLUMNS = [
     ("documents", "uploaded_at", "TEXT"),
     # what a QR / code share shows: 'all' or a JSON list of condition tags (backend/scope.py)
     ("share_links", "scope", "TEXT NOT NULL DEFAULT 'all'"),
+    # a photo upload's original picture (metadata removed, encrypted), shown in Source next to the
+    # working PDF so a doctor can check the reading against it (pipeline/original_image.py)
+    ("documents", "original_path", "TEXT"),
+    ("documents", "original_mime", "TEXT"),
 ]
 
 
