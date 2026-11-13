@@ -61,6 +61,27 @@ def test_input_rules(client):
     assert sign_up(client, username="ok_name", full_name="").status_code == 422
 
 
+def test_signup_keeps_the_audit_chain_intact(client):
+    from backend.db import verify_audit_chain
+
+    sign_up(client, username="chain_check", full_name="Chain Check")
+    assert verify_audit_chain()["intact"]
+
+
+def test_scan_without_tesseract_gives_a_clear_message(client, monkeypatch):
+    import pymupdf
+
+    from pipeline import handwriting
+
+    monkeypatch.setattr(handwriting, "TESSERACT", r"C:\no\such\tesseract.exe")
+    doc = pymupdf.open()
+    doc.new_page()  # a page with no text layer, like a scan
+    me = auth(client.post("/login", json={"username": "asha", "password": "secret123"}).json()["token"])
+    r = client.post("/patients/p101/upload", headers=me,
+                    files={"file": ("scan.pdf", doc.tobytes(), "application/pdf")})
+    assert r.status_code == 503 and "Tesseract" in r.json()["detail"]
+
+
 def test_new_doctor_needs_a_registration_number_and_sees_nobody(client):
     assert sign_up(client, username="drnew", role="doctor", full_name="Dr. New").status_code == 422
     r = sign_up(client, username="drnew", role="doctor", full_name="Dr. New", registration_number="KMC 70001")

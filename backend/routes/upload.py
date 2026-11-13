@@ -48,6 +48,9 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
         prepared = await run_in_threadpool(prepare_document, data)  # PDF, scan or photo -> searchable PDF
     except ValueError as e:  # not a PDF or image, or a damaged PDF
         raise HTTPException(status_code=400, detail=str(e))
+    except FileNotFoundError:  # scanned page or photo, but the Tesseract OCR program is not installed
+        raise HTTPException(status_code=503, detail="This file has scanned pages, and the OCR program "
+                            "(Tesseract) is not installed on this server. Digital PDFs still upload.")
     used_ocr = prepared is not data  # a digital PDF comes back unchanged
     data = prepared
 
