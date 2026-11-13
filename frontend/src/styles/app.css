@@ -41,7 +41,12 @@ a { color: var(--brand); }
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
 .sidebar.collapsed { width: 72px; }
-.sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar-top { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+/* the ☰ that expands / collapses the sidebar, lined up with the nav icons below it */
+.sidebar-toggle { width: 44px; height: 44px; align-items: center; justify-content: center; margin-left: 2px; color: var(--text); }
+.sidebar-toggle:hover { background: var(--surface-2); }
+.sidebar.collapsed .sidebar-top { justify-content: center; }
+.sidebar.collapsed .sidebar-toggle { margin-left: 0; }
 .sidebar nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-item {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
@@ -61,6 +66,31 @@ a { color: var(--brand); }
 }
 .theme-toggle { color: var(--header-text); }
 .header-right { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; justify-content: flex-end; }
+
+/* Header logo: the transparent white logo, straight on the header colour */
+.header-logo { display: inline-flex; align-items: center; border-radius: 8px; flex-shrink: 0; }
+.header-logo-img { display: block; height: 44px; width: auto; }
+
+/* Header buttons: the header is dark navy in BOTH themes, so its buttons always use light
+   text with a visible outline, instead of the page's own text colour (which is dark navy
+   in the light theme and made Log out unreadable). */
+.app-header .btn,
+.app-header .btn-ghost {
+  color: var(--header-text);
+  background: rgba(255, 255, 255, 0.10);
+  border: 1px solid rgba(255, 255, 255, 0.45);
+  min-height: 40px;
+}
+.app-header .btn:hover,
+.app-header .btn-ghost:hover { background: rgba(255, 255, 255, 0.22); border-color: rgba(255, 255, 255, 0.75); color: #FFFFFF; }
+.app-header .icon-btn { color: var(--header-text); min-width: 40px; min-height: 40px; align-items: center; justify-content: center; }
+.app-header .icon-btn:hover { background: rgba(255, 255, 255, 0.18); }
+.app-header .lang-select { min-height: 40px; }
+.app-header .lang-select:hover { background: rgba(255, 255, 255, 0.2); }
+.app-header :focus-visible { box-shadow: 0 0 0 2px #FFFFFF; }
+
+/* Dark theme, patient side: white text on the light violet was hard to read (about 2.5:1). */
+:root:not([data-theme='light']) .role-patient { --brand-strong: #6B46D9; }
 .user-chip { background: rgba(255,255,255,0.1); border-radius: var(--radius-pill); padding: 6px 12px; font-size: 0.9rem; }
 .lang-select {
   background: rgba(255,255,255,0.12); color: var(--header-text); border: 1px solid rgba(255,255,255,0.25);
@@ -73,7 +103,11 @@ a { color: var(--brand); }
 }
 .content { padding: 24px 24px 40px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .app-footer { text-align: center; font-size: 0.8rem; color: var(--text-muted); padding: 14px; border-top: 1px solid var(--border); }
-.mobile-only { display: none; }
+/* .icon-btn (declared later) sets display too, so this needs the extra class to win:
+   without it the header ☰ showed on desktop, where it did nothing */
+.mobile-only,
+.icon-btn.mobile-only { display: none; }
+.sidebar-backdrop { display: none; }
 
 /* Logo (placeholder, replace with the supplied file) */
 .logo { display: flex; align-items: center; }
@@ -292,8 +326,11 @@ a { color: var(--brand); }
     position: fixed; left: -280px; top: 0; height: 100%; z-index: 30; transition: left 200ms ease-out; width: 260px;
   }
   .sidebar.drawer-open { left: 0; }
+  /* tap outside the open menu to close it */
+  .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(5, 8, 20, 0.55); }
   .sidebar.collapsed { width: 260px; }
-  .mobile-only { display: inline-flex; }
+  .mobile-only,
+  .icon-btn.mobile-only { display: inline-flex; }
   .content { padding: 16px 14px 32px; }
   .brief-layout { grid-template-columns: 1fr; }
   .brief-side { position: static; }
@@ -301,6 +338,12 @@ a { color: var(--brand); }
 }
 @media (max-width: 480px) {
   .user-chip { display: none; }
+  /* keep the header on one row: menu, logo, theme, language, log out (icon only) */
+  .app-header { padding: 0 8px; gap: 4px; }
+  .header-right { flex-wrap: nowrap; gap: 4px; }
+  .header-logo-img { height: 36px; } /* 44px on wider screens; the patient header also has the bell */
+  .app-header .lang-select { padding: 6px 2px; max-width: 84px; }
+  .app-header .btn-ghost { padding: 8px 10px; min-width: 40px; }
   .btn-ghost .btn-label { display: none; }
   .content { padding: 14px 12px 28px; }
   .table th, .table td { padding: 8px; font-size: 0.85rem; }

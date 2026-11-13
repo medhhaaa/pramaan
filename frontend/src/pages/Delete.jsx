@@ -13,15 +13,25 @@ function DeleteInner() {
   const [typed, setTyped] = useState('');
   const [done, setDone] = useState(false);
   const [name, setName] = useState(pid);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
   useEffect(() => {
-    listPatients().then((ps) => setName(ps.find((p) => p.id === pid)?.name || pid));
+    listPatients().then((ps) => setName(ps.find((p) => p.id === pid)?.name || pid)).catch(() => {}); // the id is shown instead
   }, [pid]);
 
   const confirm = async () => {
-    await deletePatient(pid);
-    setSession(null);
-    setDone(true);
+    setBusy(true);
+    setError('');
+    try {
+      await deletePatient(pid);
+      setSession(null);
+      setDone(true);
+    } catch (e) {
+      setError(e.message);
+    } finally {
+      setBusy(false);
+    }
   };
 
   if (done) return <div className="card success-box"><p>{t('delete.done', { name })}</p></div>;
@@ -36,7 +46,8 @@ function DeleteInner() {
       </label>
       <label className="field-label" htmlFor="typed">{t('delete.typeDelete')}</label>
       <input id="typed" className="input" value={typed} onChange={(e) => setTyped(e.target.value)} />
-      <button className="btn btn-danger" disabled={!ok || typed !== 'DELETE'} onClick={confirm}>{t('delete.button')}</button>
+      <button className="btn btn-danger" disabled={!ok || typed !== 'DELETE' || busy} onClick={confirm}>{t('delete.button')}</button>
+      {error && <p className="error-text" role="alert">{t('common.error')} <span className="muted small mono">{error}</span></p>}
     </section>
   );
 }

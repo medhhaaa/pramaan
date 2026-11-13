@@ -1,36 +1,38 @@
 /* Pramaan themes. Dark is the default. Light is set by data-theme="light" on <html>.
    Change colours here only. */
 
-/* ---------- DARK (default) ---------- */
+/* ---------- DARK (default) ----------
+   Two blues: a deep navy page (--bg) and a lighter blue for everything that sits on it
+   (--surface: cards, panels, sidebar; the header uses the same blue family). */
 :root,
 :root[data-theme='dark'] {
   color-scheme: dark;
-  --bg: #0F1424;
-  --surface: #171E33;
-  --surface-2: #1F2842;
-  --surface-3: #283354;
-  --border: #2D3757;
-  --text: #E9EEFF;
-  --text-muted: #9AA7C7;
+  --bg: #0B1230;
+  --surface: #1A2554;
+  --surface-2: #22306A;
+  --surface-3: #2C3B7C;
+  --border: #33427F;
+  --text: #EDF1FF;
+  --text-muted: #AEB9DD;
 
-  --brand: #7B8CFF;
-  --brand-strong: #5A6BF0;
-  --brand-soft: rgba(123, 140, 255, 0.14);
-  --header-grad: linear-gradient(135deg, #1B2350 0%, #2A2F6B 60%, #3A2E6E 100%);
+  --brand: #8C9BFF;
+  --brand-strong: #4C5DE6;
+  --brand-soft: rgba(140, 155, 255, 0.16);
+  --header-grad: linear-gradient(135deg, #1F2B63 0%, #2B3A80 100%);
   --header-text: #EEF2FF;
-  --login-glow-1: #2A2F6B;
-  --login-glow-2: #3A2E6E;
+  --login-glow-1: #1F2B63;
+  --login-glow-2: #2B3A80;
 
-  --verified: #37D3B0;
-  --info: #5CB8FF;
-  --patient: #B08CFF;
-  --warn: #F5B94A;
-  --danger: #FF6B88;
-  --neutral: #8C97B5;
+  --verified: #3FDDB8;
+  --info: #6CC2FF;
+  --patient: #BC9CFF;
+  --warn: #F7C15A;
+  --danger: #FF7A95;
+  --neutral: #A3AECD;
 
   --radius: 14px;
   --radius-pill: 999px;
-  --shadow: 0 8px 24px rgba(5, 8, 20, 0.45);
+  --shadow: 0 8px 24px rgba(3, 6, 22, 0.5);
   --focus: 0 0 0 2px var(--bg), 0 0 0 4px var(--brand);
   --font: 'Inter', system-ui, -apple-system, 'Noto Sans Devanagari', 'Noto Sans Kannada', sans-serif;
 }

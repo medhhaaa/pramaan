@@ -18,9 +18,15 @@ function AskInner() {
     const question = q.trim();
     setQ('');
     setBusy(true);
-    const res = await ask(pid, question);
-    setLog((l) => [...l, { question, ...res }]);
-    setBusy(false);
+    try {
+      const res = await ask(pid, question);
+      setLog((l) => [...l, { question, ...res }]);
+    } catch (err) {
+      // keep the question visible and free the input again
+      setLog((l) => [...l, { question, answer: `${t('common.error')} (${err.message})`, citations: [], failed: true }]);
+    } finally {
+      setBusy(false);
+    }
   };
 
   return (

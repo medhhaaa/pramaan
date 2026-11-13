@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { ASK_ON } from '../lib/features.js';
-import { NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck } from 'lucide-react';
-import Logo from './Logo.jsx';
+import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
@@ -71,15 +71,29 @@ export default function Layout() {
 
   const handleLogout = () => { logout(); navigate('/login'); };
 
+  // phone menu: Escape closes it (the backdrop below closes it on tap)
+  useEffect(() => {
+    if (!drawer) return undefined;
+    const onKey = (e) => { if (e.key === 'Escape') setDrawer(false); };
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, [drawer]);
+
   return (
     <div className={`shell role-${user.role}`}>
       {isDummy && <div className="demo-banner">{t('demoBanner')}</div>}
       <div className="shell-body">
+        {drawer && <div className="sidebar-backdrop" aria-hidden="true" onClick={() => setDrawer(false)} />}
         <aside className={`sidebar ${open ? '' : 'collapsed'} ${drawer ? 'drawer-open' : ''}`}>
           <div className="sidebar-top">
-            {open && <Logo />}
-            {!open && <Logo compact />}
-            <button className="icon-btn" aria-label="Toggle sidebar" onClick={() => setOpen(!open)}>
+            {/* desktop: expands / collapses the sidebar. Phones: the menu is open here, so it shows X and closes it. */}
+            <button
+              className="icon-btn sidebar-toggle"
+              aria-label={drawer ? t('common.close') : open ? 'Collapse menu' : 'Expand menu'}
+              aria-expanded={drawer || open}
+              title={drawer ? t('common.close') : open ? 'Collapse menu' : 'Expand menu'}
+              onClick={() => (drawer ? setDrawer(false) : setOpen(!open))}
+            >
               {drawer ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
@@ -117,7 +131,9 @@ export default function Layout() {
         <div className="main-col">
           <header className="app-header">
             <button className="icon-btn mobile-only" aria-label="Open menu" onClick={() => setDrawer(!drawer)}><Menu size={22} /></button>
-            <div className="header-logo"><Logo compact /></div>
+            <Link to="/" className="header-logo">
+              <img src={logoTransparent} alt="Pramaan – प्रमाण – ಪ್ರಮಾಣ" className="header-logo-img" height="44" />
+            </Link>
             <div className="header-right">
               {user.role === 'patient' && <Notifications />}
               <ThemeToggle />
@@ -127,7 +143,9 @@ export default function Layout() {
                 <option value="kn">ಕನ್ನಡ</option>
               </select>
               <span className="user-chip">{user.name} ({user.role})</span>
-              <button className="btn btn-ghost" onClick={handleLogout}><LogOut size={16} />{t('auth.logout')}</button>
+              <button className="btn btn-ghost" onClick={handleLogout} aria-label={t('auth.logout')}>
+                <LogOut size={16} /><span className="btn-label">{t('auth.logout')}</span>
+              </button>
             </div>
           </header>
           {user.role === 'doctor' && sessionActive && (

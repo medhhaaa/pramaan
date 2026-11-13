@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { X } from 'lucide-react';
 import { getDocument } from '../api.js';
@@ -8,15 +8,24 @@ import { getDocument } from '../api.js';
 export default function DocDrawer({ docId, highlightLine, onClose }) {
   const { t } = useTranslation();
   const [doc, setDoc] = useState(null);
+  const [error, setError] = useState('');
+  // parents pass a new onClose function on every render; keep the latest one in a ref so the
+  // effect below runs only when the document changes (it used to refetch on every render)
+  const closeRef = useRef(onClose);
+  useEffect(() => { closeRef.current = onClose; });
 
   useEffect(() => {
     if (!docId) return undefined;
     let alive = true;
-    getDocument(docId).then((d) => { if (alive) setDoc(d); });
-    const onKey = (e) => { if (e.key === 'Escape') onClose(); };
+    setDoc(null); // don't keep showing the previous document while the next one loads
+    setError('');
+    getDocument(docId)
+      .then((d) => { if (alive) setDoc(d); })
+      .catch((e) => { if (alive) setError(e.message); });
+    const onKey = (e) => { if (e.key === 'Escape') closeRef.current(); };
     window.addEventListener('keydown', onKey);
     return () => { alive = false; window.removeEventListener('keydown', onKey); };
-  }, [docId, onClose]);
+  }, [docId]);
 
   if (!docId) return null;
 
@@ -25,7 +34,8 @@ export default function DocDrawer({ docId, highlightLine, onClose }) {
       <aside className="drawer" role="dialog" aria-label={t('doc.title')} onClick={(e) => e.stopPropagation()}>
         <div className="modal-head">
           <div>
-            <h2>{doc ? doc.filename : t('common.loading')}</h2>
+            <h2>{doc ? doc.filename : error ? t('common.error') : t('common.loading')}</h2>
+            {error && <p className="muted small mono" role="alert">{error}</p>}
             {doc && <p className="muted small">{doc.doc_type} · {doc.document_date}</p>}
             {doc && doc.held_back && <span className="chip chip-danger">{t('doc.held')}</span>}
           </div>

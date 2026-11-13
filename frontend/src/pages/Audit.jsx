@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getAudit } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
+import LoadError from '../components/LoadError.jsx';
 
 const PAGE = 20;
 
@@ -13,11 +14,14 @@ export default function Audit() {
   const [page, setPage] = useState(0);
   const pid = user.role === 'patient' ? user.patientId : session?.patientId;
 
-  useEffect(() => { getAudit(pid).then(setRows); }, [pid]);
+  const [error, setError] = useState('');
+  useEffect(() => { setError(''); getAudit(pid).then(setRows).catch((e) => setError(e.message)); }, [pid]);
 
   const filtered = rows.filter((r) => action === 'all' || r.action === action);
   const shown = filtered.slice(page * PAGE, page * PAGE + PAGE);
   const actions = ['all', ...new Set(rows.map((r) => r.action))];
+
+  if (error) return <LoadError message={error} />;
 
   return (
     <section>

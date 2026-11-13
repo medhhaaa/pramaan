@@ -205,6 +205,105 @@
       "fir_or_mlc": "FIR or MLC copy"
     }
   },
+  "landing": {
+    "navLogin": "Log in",
+    "langLabel": "Language",
+    "kicker": "One patient, many records",
+    "title": "Other apps summarise your records.",
+    "titleAccent": "Pramaan knows what it doesn't know.",
+    "lead": "Prescriptions, lab reports and discharge summaries pile up over the years in different formats, units and dates. Pramaan reads them into one dated timeline where every fact points to the exact line it came from.",
+    "ctaStart": "Log in to Pramaan",
+    "ctaHow": "See a real example",
+    "docsAlt": "Three of Sunita's documents: a 2019 prescription, a 2022 discharge summary and a 2023 prescription, with the important lines highlighted.",
+    "notes": {
+      "conflict": "2019 says \"No known drug allergies\". 2022 says Penicillin.",
+      "copy": "Atenolol line copied word for word from 2019",
+      "change": "A real change: Metformin dose doubled"
+    },
+    "trail": {
+      "title": "Sunita's file: 7 papers, 5 years",
+      "lead": "Sunita is the synthetic patient in our demo. Almost every paper hides a trap that a fluent summary walks straight past.",
+      "items": {
+        "d1": {
+          "type": "Prescription",
+          "trap": "Starts Metformin and Atenolol"
+        },
+        "d2": {
+          "type": "Lab report",
+          "trap": "Glucose in mmol/L"
+        },
+        "d3": {
+          "type": "Discharge summary",
+          "trap": "Allergy contradiction, copied medicines"
+        },
+        "d4": {
+          "type": "Prescription",
+          "trap": "Dose change, Atenolol copied again"
+        },
+        "d5": {
+          "type": "Lab report",
+          "trap": "Glucose in mg/dL"
+        },
+        "d6": {
+          "type": "Lab report",
+          "trap": "Exact duplicate of the one before"
+        },
+        "d7": {
+          "type": "Lab report",
+          "trap": "Male, B+: someone else's report"
+        }
+      }
+    },
+    "compare": {
+      "title": "Same records, two readings",
+      "summaryLabel": "A typical AI summary",
+      "summaryText": "Sunita, 70, has type 2 diabetes and takes Metformin, Atenolol and Amlodipine. No known drug allergies. Fasting glucose rose from 6.8 to 122.",
+      "summaryNote": "Fluent and confident. You cannot tell which parts are true.",
+      "pramaanLabel": "Pramaan",
+      "rows": {
+        "atenolol": {
+          "name": "Atenolol 50mg OD",
+          "text": "Last real evidence 2019. The 2022 and 2023 mentions are copies."
+        },
+        "allergy": {
+          "name": "Allergies",
+          "text": "\"No known drug allergies\" (2019) and \"Penicillin (rash)\" (2022) disagree. Sent to the doctor to settle."
+        },
+        "glucose": {
+          "name": "Fasting glucose",
+          "text": "6.8 mmol/L and 122 mg/dL use different units. Both shown as written, not compared."
+        },
+        "psa": {
+          "name": "PSA report, 04/05/2023",
+          "text": "Male, blood group B+. Held back: probably another patient."
+        }
+      },
+      "sourceHint": "Each line opens the page and line it came from."
+    },
+    "inside": {
+      "title": "Inside Pramaan",
+      "timeline": {
+        "title": "Timeline",
+        "text": "Every row links to its source line. Conflicts are flagged for a person to settle, never settled quietly."
+      },
+      "medication": {
+        "title": "Medication",
+        "text": "Copies count once. Each medicine shows the date of its last real evidence."
+      },
+      "timelineAlt": "Pramaan's timeline for Sunita: a Penicillin allergy in 2022 and \"No known drug allergies\" in 2019, both flagged as a contradiction.",
+      "medicationAlt": "Pramaan's medication view: Metformin, Atenolol and Amlodipine, with copied mentions marked as copies."
+    },
+    "privacyTitle": "Your data stays yours",
+    "privacyLead": "Built following the safeguards of GDPR, the EU AI Act and India's DPDP Act.",
+    "privacy": {
+      "deid": "Names, phone numbers and IDs removed before any AI call",
+      "encrypted": "Encrypted file storage",
+      "audit": "Audit log of who saw what",
+      "delete": "Delete all your data at any time"
+    },
+    "closing": "A fluent summary asks you to trust it. Pramaan gives you a history you can verify.",
+    "footerDemo": "Demo with synthetic patient data only."
+  },
   "myPatients": {"title": "MY PATIENTS", "count": "{{count}} patients", "intro": "Patients who added you to their care team. Tags show what changed in their records; what to do is your decision.", "filter": "Filter by tag", "all": "All", "empty": "No patients have added you to their care team yet.", "noMatch": "No patients match.", "noConditions": "No conditions in your scope", "scopeLimited": "you see: {{tags}}", "lastActivity": "Last activity", "followUp": "Follow-up", "taken": "{{percent}}% taken", "never": "never", "today": "today", "yesterday": "yesterday", "daysAgo": "{{count}} days ago", "careTeamChip": "Care team patient", "reviewRefill": "Review refill", "tag": {"refill_request": "Refill request", "new_report": "New report", "missed_doses": "Missed doses", "followup_overdue": "Follow-up overdue", "stable": "Stable"}},
   "careTeam": {"title": "MY CARE TEAM", "intro": "Doctors on your care team can see your records until you revoke them. You choose what each doctor sees. Allergies are always visible to them, for your safety.", "yourDoctors": "Your doctors", "none": "No doctors yet. Add the doctors who treat you.", "regNo": "Reg. no.", "sees": "Can see", "scopeAllShort": "All your records", "added": "Added", "lastViewed": "Last viewed", "revoke": "Revoke", "yesRevoke": "Yes, revoke access", "cancel": "Cancel", "addTitle": "Add a doctor", "searchHint": "Doctor's name or registration number", "search": "Search", "noDoctors": "No doctor found. Check the spelling or the registration number.", "scopeQuestion": "What may {{name}} see?", "scopeAll": "All my records", "scopeSome": "Only these conditions", "allergyNote": "Your allergies are always shown to your care-team doctors.", "confirmAdd": "Add {{name}}", "already": "This doctor is already on your care team.", "reviewQuestion": "Keep {{name}} on your care team?", "reviewWhy": "There is no consultation with this doctor in Pramaan for 6 months.", "keep": "Keep", "remove": "Remove", "historyTitle": "Who viewed your records", "noHistory": "No doctor has viewed your records yet.", "viewedOn": "{{name}} viewed your records on {{date}}", "revokedTitle": "Removed doctors ({{count}})", "revokedOn": "removed on {{date}}", "tagName": {"diabetes": "Diabetes", "hypertension": "High blood pressure", "heart": "Heart", "thyroid": "Thyroid", "asthma": "Asthma and breathing", "kidney": "Kidney"}},
   "myMeds": {"title": "MY MEDICINES", "intro": "Medicines your care-team doctor prescribed in Pramaan. Tap Taken or Skipped for each dose. Medicines from your uploaded papers are on the Medication page.", "empty": "No Pramaan prescriptions yet.", "from": "from {{doctor}}", "until": "until {{date}}", "adherence": "Last 14 days: {{percent}}% of doses taken", "today": "Today's doses", "taken": "Taken", "skipped": "Skipped", "doseAt": "Dose at {{time}}", "requestRefill": "Request refill", "noteLabel": "Note for {{doctor}} (optional)", "notePlaceholder": "e.g. My tablets finish in 4 days.", "send": "Send to {{doctor}}", "doctorNote": "Doctor's note", "blocked": {"not_active": "This medicine is not active any more.", "doctor_not_on_care_team": "The prescribing doctor is not on your care team, so a refill can't be requested here."}, "status": {"pending": "Refill requested", "approved": "Refill approved", "declined": "Refill declined", "visit_required": "Visit requested"}},

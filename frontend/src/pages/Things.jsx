@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { getQuestions, answerQuestion } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
+import LoadError from '../components/LoadError.jsx';
 
 const OPTIONS = [
   { key: 'yes', answer: 'yes' },
@@ -19,9 +20,12 @@ export default function Things() {
   const [choice, setChoice] = useState(null);
   const [other, setOther] = useState('');
   const [sent, setSent] = useState([]);
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
 
-  useEffect(() => { getQuestions(user.patientId).then((q) => setQs(q.filter((x) => x.status === 'open'))); }, [user.patientId]);
+  useEffect(() => { getQuestions(user.patientId).then((q) => setQs(q.filter((x) => x.status === 'open'))).catch((e) => setError(e.message)); }, [user.patientId]);
 
+  if (error && qs.length === 0) return <LoadError message={error} />;
   if (qs.length === 0) return <div className="empty-state card"><p>{t('things.empty')}</p></div>;
   const q = qs[i];
   const done = sent.length;
@@ -30,9 +34,18 @@ export default function Things() {
   const options = q.claim_condition ? OPTIONS.filter((o) => ['yes', 'no', 'dontKnow'].includes(o.key)) : OPTIONS;
 
   const send = async () => {
-    if (!choice) return;
+    if (!choice || busy) return;
     const opt = OPTIONS.find((o) => o.key === choice);
-    await answerQuestion(q.id, opt.answer, choice === 'other' ? other : null);
+    setBusy(true);
+    setError('');
+    try {
+      await answerQuestion(q.id, opt.answer, choice === 'other' ? other : null);
+    } catch (e) {
+      setError(e.message);
+      return;
+    } finally {
+      setBusy(false);
+    }
     setSent([...sent, q.id]);
     setChoice(null);
     setOther('');
@@ -68,7 +81,8 @@ export default function Things() {
             <input className="input" value={other} onChange={(e) => setOther(e.target.value)} placeholder={t('things.other')} aria-label={t('things.other')} />
           )}
 
-          <button className="btn btn-primary btn-block" disabled={!choice} onClick={send}>{t('things.send')}</button>
+          <button className="btn btn-primary btn-block" disabled={!choice || busy} onClick={send}>{t('things.send')}</button>
+          {error && <p className="error-text small" role="alert">{t('common.error')} <span className="muted mono">{error}</span></p>}
         </article>
       )}
 

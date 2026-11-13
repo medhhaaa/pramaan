@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getFlags } from '../api.js';
 import { useActivePatientId, useApp } from '../context/AppContext.jsx';
 import PatientGate from '../components/PatientGate.jsx';
+import LoadError from '../components/LoadError.jsx';
 
 const ORDER = ['contradiction', 'duplicate', 'unit_mismatch', 'ambiguous_date', 'wrong_patient', 'implausible_value', 'gap'];
 
@@ -12,7 +13,9 @@ function FlagsInner() {
   const { user } = useApp();
   const [data, setData] = useState(null);
 
-  useEffect(() => { getFlags(pid).then(setData); }, [pid]);
+  const [error, setError] = useState('');
+  useEffect(() => { setError(''); getFlags(pid).then(setData).catch((e) => setError(e.message)); }, [pid]);
+  if (error) return <LoadError message={error} />;
   if (!data) return <div className="skeleton" />;
 
   const isDoctor = user.role === 'doctor';

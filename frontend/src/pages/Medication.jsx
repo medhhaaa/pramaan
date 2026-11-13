@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getMedications } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
 import PatientGate from '../components/PatientGate.jsx';
+import LoadError from '../components/LoadError.jsx';
 import { fmtDate } from '../lib/format.js';
 import { useInPageSearch, useFlip } from '../lib/inPageSearch.js';
 import { SearchBar, Highlight, ReasonChip, RelatedHeading } from '../components/InPageSearch.jsx';
@@ -26,10 +27,11 @@ function MedicationInner() {
   const [meds, setMeds] = useState([]);
   const [open, setOpen] = useState({});
 
+  const [error, setError] = useState('');
   const { query, setQuery, results, busy } = useInPageSearch(pid, 'medications');
   const listRef = useRef(null);
 
-  useEffect(() => { getMedications(pid).then(setMeds); }, [pid]);
+  useEffect(() => { setError(''); getMedications(pid).then(setMeds).catch((e) => setError(e.message)); }, [pid]);
 
   const sorted = [...meds].sort((a, b) => Number(b.current) - Number(a.current));
   // fact_id -> medicine name, for "Same visit as Augmentin"
@@ -91,6 +93,9 @@ function MedicationInner() {
             </article>
     );
   };
+
+  // after every hook above (useFlip), so the hook order never changes
+  if (error) return <LoadError message={error} />;
 
   return (
     <section>

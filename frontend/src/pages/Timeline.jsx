@@ -9,6 +9,7 @@ import { EditFact, NeedsReading, Unsure } from '../components/HandwritingReview.
 // a fact read from handwriting that a person should check: low score or best-guess words
 const needsCheck = (f) => f.confidence != null && (f.confidence < 85 || (f.unsure || []).length > 0);
 import PatientGate from '../components/PatientGate.jsx';
+import LoadError from '../components/LoadError.jsx';
 import { fmtDate, yearOf } from '../lib/format.js';
 
 function TimelineInner() {
@@ -20,10 +21,11 @@ function TimelineInner() {
   const [src, setSrc] = useState(null);
   const [hl, setHl] = useState(null);
 
+  const [error, setError] = useState('');
   const [refresh, setRefresh] = useState(0);
   const reload = () => setRefresh((n) => n + 1);
 
-  useEffect(() => { getTimeline(pid).then(setFacts); }, [pid, refresh]);
+  useEffect(() => { setError(''); getTimeline(pid).then(setFacts).catch((e) => setError(e.message)); }, [pid, refresh]);
 
   const rows = useMemo(() => facts.filter((f) => !(hideCopies && f.echo_of)), [facts, hideCopies]);
   const years = useMemo(() => {
@@ -37,6 +39,8 @@ function TimelineInner() {
     const original = facts.find((x) => x.fact_id === factId);
     return original ? original.document_id : factId;
   };
+
+  if (error) return <LoadError message={error} />;
 
   return (
     <section>
