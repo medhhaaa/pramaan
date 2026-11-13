@@ -110,7 +110,8 @@ def call_llm(prompt: str) -> str:
 # VISION_PROVIDER in .env picks the service:
 #   (empty)  default: the text provider's API (free.ai) with VISION_MODEL, e.g. qwen-vl
 #   github   GitHub Models, key GITHUB_TOKEN, model GITHUB_VISION_MODEL (default openai/gpt-4o)
-#   gemini   Google AI Studio, key GEMINI_API_KEY, model GEMINI_VISION_MODEL (default gemini-2.5-flash)
+#   gemini   Google AI Studio, key GEMINI_API_KEY, model GEMINI_VISION_MODEL (default gemini-3-flash-preview;
+#            gemini-2.5-flash is closed to new accounts)
 #   anthropic  key LLM_API_KEY, model VISION_MODEL
 # github and gemini both speak the OpenAI API, so they share the code below.
 
@@ -118,7 +119,7 @@ VISION_SERVICES = {
     "github": {"base_url": "https://models.github.ai/inference", "key": "GITHUB_TOKEN",
                "model": "GITHUB_VISION_MODEL", "default_model": "openai/gpt-4o"},
     "gemini": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "key": "GEMINI_API_KEY",
-               "model": "GEMINI_VISION_MODEL", "default_model": "gemini-2.5-flash"},
+               "model": "GEMINI_VISION_MODEL", "default_model": "gemini-3-flash-preview"},
 }
 
 
@@ -184,6 +185,8 @@ def _openai_vision(prompt, data, model, api_key, base_url):
             ]},
         ],
     )
+    if isinstance(response, str):  # not an API reply (seen: GitHub Models answering a bare "OK")
+        raise RuntimeError(f"{base_url or 'vision API'} did not return a chat completion: {response[:60]!r}")
     return response.choices[0].message.content
 
 
