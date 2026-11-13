@@ -155,7 +155,8 @@ def _visits(doc, stays):
 
 def _build_items(conn, patient_id):
     docs = [dict(r) for r in conn.execute(
-        "SELECT * FROM documents WHERE patient_id = ? AND held_back = 0 ORDER BY document_date, id", (patient_id,))]
+        "SELECT * FROM documents WHERE patient_id = ? AND held_back = 0"
+        " AND doc_type IS NOT 'patient_profile' ORDER BY document_date, id", (patient_id,))]  # profile: no file
     stays = [dict(r) for r in conn.execute("SELECT * FROM hospital_stays WHERE patient_id = ?", (patient_id,))]
     facts = [dict(r) for r in conn.execute(
         """SELECT * FROM facts WHERE patient_id = ? AND type = 'medication' AND status = 'documented'

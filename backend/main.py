@@ -17,7 +17,7 @@ from backend import auth  # noqa: E402
 from backend.db import init_db  # noqa: E402
 from backend.routes import (  # noqa: E402
     agent, ask, audit, brief, not_sure, care_team, check_medicine, claims, consult_records, corrections, delete, documents,
-    flags, language, medications, metrics, patients, privacy, questions, reading, refills, search, security, share,
+    flags, language, medications, metrics, patients, privacy, profile, questions, reading, refills, search, security, share,
     share_requests, timeline, upload, assistant, disease_search,
 )
 
@@ -42,7 +42,7 @@ if os.getenv("OCR_ENGINE", "").lower() == "paddleocr":
 for module in [
     auth,
     # core backend
-    patients, upload, timeline, medications, flags, documents, corrections, share, reading, security, privacy, agent, not_sure,
+    patients, upload, timeline, medications, flags, documents, corrections, share, reading, security, privacy, agent, not_sure, profile,
     # Medha
     ask, questions, brief, check_medicine, metrics, audit, delete, language, claims, care_team,
     refills, consult_records,

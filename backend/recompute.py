@@ -4,6 +4,11 @@ and save the results. Called after every upload and every correction. (Core back
 Order (KICKOFF.md): mark_echoes -> add_flags -> add_badges  (Deeksha's pure functions)
 If one of them is not built yet (NotImplementedError), that step is skipped and the
 stored values for it are kept as they are.
+
+The patient's own health profile (backend/routes/profile.py) takes part in the flags, so
+"No known allergies" vs a documented allergy is a contradiction. It is never a document for
+the badges: its facts are patient_reported (or conflicting / doctor_verified), and they never
+make a document fact "independent_2plus".
 """
 import copy
 import json
@@ -47,6 +52,8 @@ def recompute_patient(patient_id):
         doctor_verified_ids = {r["fact_id"] for r in conn.execute(
             """SELECT DISTINCT c.fact_id FROM corrections c JOIN facts f ON f.fact_id = c.fact_id
                WHERE f.patient_id = ? AND c.role = 'doctor'""", (patient_id,))}
+        profile_docs = {r["id"] for r in conn.execute(
+            "SELECT id FROM documents WHERE patient_id = ? AND doc_type = 'patient_profile'", (patient_id,))}
         patient_reported_ids = set()
         for r in conn.execute(
                 "SELECT fact_ids FROM questions WHERE patient_id = ? AND status = 'answered'", (patient_id,)):
@@ -54,7 +61,13 @@ def recompute_patient(patient_id):
 
     facts = _try(echo.mark_echoes, facts, _reset_echo)
     facts = _try(flags.add_flags, facts, _reset_flags)
-    facts = _try(badges.add_badges, facts, _reset_badge, doctor_verified_ids, patient_reported_ids)
+    from_records = [f for f in facts if f["document_id"] not in profile_docs]
+    from_patient = [f for f in facts if f["document_id"] in profile_docs]
+    from_records = _try(badges.add_badges, from_records, _reset_badge, doctor_verified_ids, patient_reported_ids)
+    for f in from_patient:
+        f["badge"] = ("doctor_verified" if f["fact_id"] in doctor_verified_ids
+                      else "conflicting" if "contradiction" in f["flags"] else "patient_reported")
+    facts = from_records + from_patient
 
     with get_conn() as conn:
         for f in facts:

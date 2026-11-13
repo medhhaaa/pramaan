@@ -106,7 +106,7 @@ export default function Brief() {
           <ul className="list">
             {b.allergies.map((a) => (
               <li key={a.fact_id} className="list-row">
-                <div><StatusChip status={a.status} /> <strong>{a.name}</strong></div>
+                <div><StatusChip status={a.status} /> <strong>{a.name}</strong>{a.patient_reported && <> <BadgeChip badge="patient_reported" /></>}</div>
                 <button className="link-btn small" onClick={() => setSrc(a.document_id)}>{a.quote}</button>
               </li>
             ))}

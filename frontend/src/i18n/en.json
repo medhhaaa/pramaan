@@ -6,7 +6,7 @@
   "langPopupTitle": "Choose your language",
   "langs": { "en": "English", "hi": "हिंदी", "kn": "ಕನ್ನಡ" },
   "translatedNote": "Medicine names, doses and values are shown as written in the original.",
-  "nav": { "careAndMedicines": "Doctors & medicines", "myDoctors": "My care team", "careSections": "Medicines and doctors", "assistant": "Assistant", "diseaseSearch": "Disease search",
+  "nav": { "healthProfile": "Health profile", "careAndMedicines": "Doctors & medicines", "myDoctors": "My care team", "careSections": "Medicines and doctors", "assistant": "Assistant", "diseaseSearch": "Disease search",
     "security": "Privacy & security",
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
     "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
@@ -65,6 +65,7 @@
     "implausible_value": "This value looks impossible. It may be a typing or scanning error. The original is unchanged.",
     "gap": "Not in your records. This does not mean you don't have it."
   },
+  "profile": { "title": "Your health profile", "intro": "A few details for your doctor. They are shown as \"said by you\", next to what your records say. You can skip any question and change it later.", "dob": "Date of birth", "sex": "Sex", "female": "Female", "male": "Male", "other": "Other", "notAnswered": "Not answered", "bloodGroup": "Blood group", "dontKnow": "I don't know", "allergies": "Do you have any allergies (medicines, food or anything else)?", "allergyYes": "Yes", "allergyNone": "No known allergies", "allergyName": "Allergic to", "allergyNamePh": "e.g. Penicillin", "reaction": "What happens", "reactionPh": "e.g. rash", "addAllergy": "+ Add another", "remove": "Remove", "save": "Save", "later": "Do it later", "saved": "Saved. Your doctor will see these as said by you.", "mismatchTitle": "Please check: this differs from your records", "mismatch": "You said {{you_said}}, but your {{source}} says {{records_say}}. Your doctor will see both.", "needOneAllergy": "Add at least one allergy, or choose another answer.", "saveFailed": "Could not save. Please try again.", "done": "OK" },
   "timeline": { "title": "Timeline", "hideCopies": "Hide copies", "copyOf": "Copy of {{doc}}", "legend": "What the labels mean", "date": "Date", "type": "Type", "name": "Name", "doseValue": "Dose / value", "reaction": "Reaction", "status": "Status", "badge": "Badge", "flags": "Flags", "source": "Source", "empty": "No facts yet." },
   "medication": { "title": "Medication", "current": "Current", "stopped": "Stopped", "summary": "{{mentions}} mentions · {{copies}} copies · last real evidence {{date}}", "empty": "No medicines documented yet." },
   "flagsPage": { "title": "Flags", "allergen": "Allergen", "details": "Details", "held": "Held back, waiting for review" },
@@ -133,6 +134,10 @@
     "auditNote": "Every time a doctor opens your records it is written in your audit log."
   },
   "shareScope": {
+    "edit": "Change what they see",
+    "saveScope": "Save",
+    "changed": "Updated. The doctor sees the change right away.",
+    "editNote": "You can share more or take something back. It changes at once.",
     "title": "What can the doctor see?",
     "everything": "Everything",
     "everythingHint": "All your records",

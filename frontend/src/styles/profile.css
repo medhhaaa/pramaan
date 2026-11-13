@@ -1,0 +1,12 @@
+/* Health profile form (components/HealthProfileForm.jsx) */
+.modal.modal-profile { max-width: 560px; max-height: 90vh; overflow-y: auto; }
+.profile-form { display: flex; flex-direction: column; gap: 14px; }
+.profile-field { display: flex; flex-direction: column; gap: 4px; flex: 1 1 160px; min-width: 0; border: 0; padding: 0; margin: 0; }
+.profile-row { display: flex; gap: 12px; flex-wrap: wrap; }
+.profile-choices { display: flex; gap: 8px; flex-wrap: wrap; }
+.profile-choices .radio-row { flex: 1 1 140px; padding: 10px 12px; }
+.profile-allergies { display: flex; flex-direction: column; gap: 10px; }
+.profile-allergy { display: flex; gap: 10px; align-items: flex-end; flex-wrap: wrap; padding: 10px; border: 1px solid var(--border); border-radius: 10px; }
+.profile-actions { margin-top: 4px; }
+.profile-mismatches { list-style: none; padding: 0; margin: 0; display: flex; flex-direction: column; gap: 8px; }
+.alert-warn { background: rgba(245, 185, 74, 0.12); border: 1px solid rgba(245, 185, 74, 0.45); padding: 12px; }
