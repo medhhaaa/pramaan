@@ -16,7 +16,7 @@
   "auth": {
     "signup": "SIGN-UP", "login": "LOG IN", "alreadyUser": "Already a user?", "newHere": "New here?",
     "loginLink": "Login", "signupLink": "Sign up", "username": "Username", "password": "Password",
-    "demoHint": "Demo: doctor / doctor123 · sunita / sunita123", "signupDemoOnly": "Sign-up is demo only for now.",
+    "demoHint": "Demo: sunita / sunita123 makes a QR · doctor / doctor123 scans it", "signupDemoOnly": "Sign-up is demo only for now.",
     "badLogin": "Username or password is not right.", "logout": "Log out"
   },
   "scan": {
@@ -25,7 +25,7 @@
     "expired": "This code has expired. Ask the patient to generate a new one.",
     "sessionChip": "Session active", "endSession": "End session", "needScan": "Scan the patient's QR to open this."
   },
-  "patients": { "title": "PATIENTS", "count": "{{count}} patients", "empty": "No patients yet. Upload records to start.", "search": "Search patients", "brief": "BRIEF", "timeline": "TIMELINE", "upload": "UPLOAD", "born": "Born", "bloodGroup": "Blood group", "sex": "Sex" },
+  "patients": { "emptyDoctor": "Patients appear here only while they share their records with you. Ask the patient to open Pramaan and show you their QR code or share code.", "scanButton": "Scan QR or enter code", "title": "PATIENTS", "count": "{{count}} patients", "empty": "No patients yet. Upload records to start.", "search": "Search patients", "brief": "BRIEF", "timeline": "TIMELINE", "upload": "UPLOAD", "born": "Born", "bloodGroup": "Blood group", "sex": "Sex" },
   "brief": {
     "title": "Brief", "checkTitle": "Check a medicine", "checkPlaceholder": "Type a brand or generic name", "check": "Check",
     "noMatch": "No match in the records. This does not mean the medicine is safe.",

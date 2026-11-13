@@ -8,10 +8,12 @@ In any route:
     require_patient_access(user, patient_id) -> 403 if this user can't see the patient
 
 Two kinds of access:
-  full    the user is linked to the patient in user_patients (their own doctor, the patient)
-  shared  a doctor opened the patient's QR / code (backend/routes/share.py). Read-only and
-          only until the share expires: GET requests plus the read-only POSTs below.
-          Anything that changes data (correct, upload, answer, delete) gets 403.
+  full    the PATIENT's own account (linked in user_patients). Only patients get this:
+          a doctor never has lasting access, even if a user_patients row links them.
+  shared  the only way a doctor sees a patient: the patient made a QR / code and the doctor
+          opened it (backend/routes/share.py). Only until the share expires. GET requests
+          plus the doctor's review actions below (ask, check-medicine, correct a fact,
+          resolve an open question). Upload, delete, sharing and claims get 403.
 """
 import hashlib
 import os
@@ -63,7 +65,9 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 
 
 # POST routes that only read records, so a shared (read-only) doctor may use them
-READ_ONLY_POSTS = ("/ask", "/check-medicine")
+# what a doctor may do during a share besides reading: questions to the records, and the
+# review work (correct a fact, resolve an open question). Nothing that adds or deletes data.
+SHARED_POSTS = ("/ask", "/check-medicine", "/correct", "/answer")
 
 # method + path of the request being handled, saved by remember_request (main.py runs it
 # for every request) so require_patient_access knows whether the route reads or writes
@@ -75,6 +79,9 @@ async def remember_request(request: Request):
 
 
 def has_full_access(conn, user, patient_id):
+    """Lasting access: only the patient's own account. Doctors only ever get shared access."""
+    if user["role"] != "patient":
+        return False
     return conn.execute(
         "SELECT 1 FROM user_patients WHERE user_id = ? AND patient_id = ?",
         (user["id"], patient_id),
@@ -98,8 +105,8 @@ def require_patient_access(user, patient_id):
     if not share:
         raise HTTPException(status_code=403, detail="No access to this patient")
     method, path = current_request.get()
-    if method != "GET" and not path.endswith(READ_ONLY_POSTS):
-        raise HTTPException(status_code=403, detail="Shared access is read-only")
+    if method != "GET" and not path.endswith(SHARED_POSTS):
+        raise HTTPException(status_code=403, detail="Shared access only allows reading and reviewing")
 
 
 class LoginBody(BaseModel):

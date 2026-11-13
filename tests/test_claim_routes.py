@@ -48,8 +48,12 @@ def sunita(client):
 
 
 @pytest.fixture(scope="module")
-def doctor(client):
-    return login(client, "doctor", "doctor123")
+def doctor(client, ravi):
+    """A doctor sees Ravi only after Ravi shares by code (backend/auth.py)."""
+    headers = login(client, "doctor", "doctor123")
+    code = client.post("/patients/p6/share", json={"minutes": 30}, headers=ravi).json()["code"]
+    assert client.post("/share/open", json={"code": code}, headers=headers).status_code == 200
+    return headers
 
 
 def stay_id(client, headers):
