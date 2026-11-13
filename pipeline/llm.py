@@ -29,6 +29,13 @@ SYSTEM_PROMPT = (
 )
 
 
+MAX_REPLY_TOKENS = int(os.getenv("LLM_MAX_TOKENS", "8192"))  # OpenAI-style servers (openai, groq)
+
+
+class ReplyTooLong(RuntimeError):
+    """The model stopped at the token limit, so its reply is incomplete."""
+
+
 _MODEL_OVERRIDE = ContextVar("model_override", default=None)  # set by call_llm(model=...)
 
 
@@ -63,12 +70,19 @@ def _call_openai(prompt, provider="openai"):
     response = client.chat.completions.create(
         model=_model(provider),
         temperature=0,  # same document -> same facts
+        # some servers cut replies at 2048 tokens unless told otherwise (free.ai does): a document
+        # with ~20 facts needs more, and a cut-off reply is broken JSON
+        max_tokens=MAX_REPLY_TOKENS,
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
             {"role": "user", "content": prompt},
         ],
     )
-    return response.choices[0].message.content
+    choice = response.choices[0]
+    if choice.finish_reason == "length":  # not a JSON problem: asking again would be cut off the same way
+        raise ReplyTooLong(f"The AI reply was cut off at the length limit ({MAX_REPLY_TOKENS} tokens). "
+                           "Set LLM_MAX_TOKENS higher in .env.")
+    return choice.message.content
 
 
 def _call_ollama(prompt):
