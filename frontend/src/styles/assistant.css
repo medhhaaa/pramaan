@@ -1,0 +1,33 @@
+/* Assistants (AssistantChat.jsx). Theme tokens only. */
+.assistant-page { max-width: 860px; }
+.assistant { display: flex; flex-direction: column; gap: 10px; }
+.assistant-note { display: flex; align-items: center; gap: 6px; margin: -4px 0 4px; }
+.assistant-log { display: flex; flex-direction: column; gap: 12px; min-height: 240px; }
+.assistant-empty { display: flex; flex-direction: column; gap: 10px; padding: 8px 0; }
+.assistant-suggest { cursor: pointer; font: inherit; font-size: 0.85rem; }
+.assistant-turn { max-width: min(640px, 92%); border-radius: var(--radius); padding: 10px 14px; }
+.assistant-turn p { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.assistant-user { align-self: flex-end; background: var(--brand-soft); border: 1px solid var(--brand); }
+.assistant-bot { align-self: flex-start; background: var(--surface); border: 1px solid var(--border);
+  display: flex; flex-direction: column; gap: 8px; }
+.assistant-sources { display: flex; flex-direction: column; gap: 4px; }
+.assistant-cite { cursor: pointer; font: inherit; font-size: 0.8rem; display: inline-flex; align-items: center; gap: 4px; }
+.assistant-hidden { display: flex; align-items: center; gap: 6px; color: var(--text-muted); }
+.assistant-hidden svg { color: var(--warn); flex: none; }
+.assistant-tools { display: flex; align-items: center; gap: 5px; }
+.assistant-action { margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 6px; border-color: var(--brand); }
+.assistant-action p { margin: 0; }
+.assistant-done { display: flex; align-items: center; gap: 6px; color: var(--verified); }
+.assistant-thinking { display: flex; align-items: center; gap: 6px; margin: 0; }
+.assistant-preview { margin: 0; padding: 12px; display: flex; flex-direction: column; gap: 6px; }
+.assistant-preview p { margin: 0; }
+.assistant-preview-text { background: var(--surface-2); border-radius: 8px; padding: 8px 10px; overflow-wrap: anywhere; }
+.assistant-input { display: flex; gap: 8px; align-items: flex-end; padding: 8px 0; }
+.assistant-input textarea { flex: 1; resize: vertical; min-height: 48px; font: inherit; }
+.assistant .alert ul { margin: 6px 0 0; padding-left: 18px; }
+.sr-only { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
+
+@media (max-width: 767px) {
+  .assistant-turn { max-width: 100%; }
+  .assistant-input .btn-label { display: none; }
+}

@@ -183,6 +183,35 @@ export async function diseaseSearch(pid, q) {
   return http('GET', `/patients/${pid}/disease-search?q=${encodeURIComponent(q)}`);
 }
 
+// ---- Assistants (backend/routes/assistant.py, backend/agent/) ----
+// What the AI would see for this text: {original, redacted, findings, by_layer, blocked, still_found}
+export async function privacyPreview(pid, text) {
+  if (USE_DUMMY) { await wait(); return { original: text, redacted: text, findings: [], blocked: false, still_found: [] }; }
+  return http('POST', `/patients/${pid}/privacy-preview`, { text });
+}
+
+// -> {answer, fact_ids, citations, sources, documents, tools_used, pending_action, hidden}
+// Errors: err.status 422 with err.detail.found = personal details still in the message.
+export async function askAssistant(pid, message, history = []) {
+  if (USE_DUMMY) {
+    await wait(500);
+    return { answer: "The records don't mention this.", fact_ids: [], citations: [], sources: [], documents: [],
+      tools_used: [], pending_action: null, hidden: null };
+  }
+  return http('POST', `/patients/${pid}/assistant`, { message, history });
+}
+
+// A write the assistant proposed (e.g. save to claim pack) happens only on confirm.
+export async function confirmAssistantAction(pid, actionId) {
+  if (USE_DUMMY) { await wait(); return { action_id: actionId, status: 'done', result: {} }; }
+  return http('POST', `/patients/${pid}/assistant/confirm`, { action_id: actionId });
+}
+
+export async function cancelAssistantAction(pid, actionId) {
+  if (USE_DUMMY) { await wait(); return { action_id: actionId, status: 'cancelled' }; }
+  return http('POST', `/patients/${pid}/assistant/cancel`, { action_id: actionId });
+}
+
 export async function getFlags(pid) {
   if (USE_DUMMY) { await wait(); return groupFlags(pid); }
   return http('GET', `/patients/${pid}/flags`);
