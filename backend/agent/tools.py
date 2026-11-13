@@ -239,7 +239,23 @@ def claim_checklist_tool(ctx, args):
                    "The insurer makes the final decision.",
     }
     source_ids = [f"stay_{stay['id']}", *listed, *in_pack, *(d["id"] for d in data["other_documents"])]
-    return {"data": data, "fact_ids": [], "source_ids": list(dict.fromkeys(source_ids))}
+    out = {"data": data, "fact_ids": [], "source_ids": list(dict.fromkeys(source_ids))}
+    if any(i["status"] == "not_saved" for i in result["items"]):
+        out["links"] = [CLAIM_UPLOAD_LINK]  # Claim documents has an upload button per missing item
+    return out
+
+
+UPLOAD_LINK = {"to": "/upload", "kind": "upload"}
+CLAIM_UPLOAD_LINK = {"to": "/claim-documents", "kind": "claim_upload"}
+
+
+def upload_help_tool(ctx, args):
+    """The assistant cannot upload or receive files. This only returns where the patient uploads,
+    so every document still goes through the Upload page and the full pipeline."""
+    data = {"note": "The assistant cannot upload files. The patient uploads PDFs or photos on the Upload page; "
+                    "documents missing for an insurance claim can also be uploaded on the Claim documents page.",
+            "page_id": "upload_page"}
+    return {"data": data, "fact_ids": [], "source_ids": ["upload_page"], "links": [UPLOAD_LINK]}
 
 
 def save_to_claim_pack_tool(ctx, args):
@@ -308,6 +324,8 @@ TOOLS = {
              save_to_claim_pack_tool, write=True, required=["stay", "document_ids"]),
         Tool("who_can_see", "who can see these records now: open QR / code shares and the care team", {},
              who_can_see_tool),
+        Tool("upload_help", "the patient wants to upload or add a new document: you can NOT upload; this gives "
+             "the page where they upload it themselves", {}, upload_help_tool),
     ]},
 }
 

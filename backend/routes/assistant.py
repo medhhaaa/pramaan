@@ -2,7 +2,8 @@
 
 POST /patients/{id}/assistant   {"message": "...", "history": [{"role": "user"|"assistant", "text"}]}
   -> {"answer", "fact_ids", "citations", "sources", "documents", "tools_used": [{"tool", "args"}],
-      "pending_action": {"action_id", "action", "summary"} | null, "hidden"}
+      "pending_action": {"action_id", "action", "summary"} | null, "hidden", "links": [{"to", "kind"}]}
+     links: pages to open, e.g. the Upload page. The assistant itself never uploads anything.
      hidden: counts-only summary when the user (a doctor with partial sharing) can't see everything
   422 {"message", "found": [{"kind", "text"}]} when the message still has personal details after
       the privacy layer (show it like the privacy preview); 502 when the AI can't answer.
