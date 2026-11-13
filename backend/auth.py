@@ -76,7 +76,7 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 # POST routes that only read records, so a shared (read-only) doctor may use them
 # what a doctor may do during a share besides reading: questions to the records, and the
 # review work (correct a fact, resolve an open question). Nothing that adds or deletes data.
-SHARED_POSTS = ("/ask", "/check-medicine", "/correct", "/answer")
+SHARED_POSTS = ("/ask", "/check-medicine", "/correct", "/answer", "/assistant")  # /assistant: read-only tools (backend/agent); its /confirm is NOT allowed
 # what a care-team doctor may also do: write a prescription, decide a refill, set a follow-up,
 # correct their own consult record (as a new record)
 CARE_TEAM_POSTS = SHARED_POSTS + ("/prescriptions", "/decision", "/follow-up", "/corrections")

@@ -18,7 +18,7 @@ from backend.db import init_db  # noqa: E402
 from backend.routes import (  # noqa: E402
     ask, audit, brief, care_team, check_medicine, claims, consult_records, corrections, delete, documents,
     flags, language, medications, metrics, patients, privacy, questions, reading, refills, search, security, share,
-    share_requests, timeline, upload,
+    share_requests, timeline, upload, assistant, disease_search,
 )
 
 # remember_request runs first on every request so shared (QR) access can be kept read-only
@@ -47,7 +47,7 @@ for module in [
     ask, questions, brief, check_medicine, metrics, audit, delete, language, claims, care_team,
     refills, consult_records,
     # Ashil
-    search, share_requests,
+    search, share_requests, assistant, disease_search,
 ]:
     app.include_router(module.router)
 
