@@ -71,6 +71,20 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 -- a hospital stay, for the Claim Documents checklist (backend/routes/claims.py).
 -- surgery / implant_used / accident: 1 yes, 0 no, NULL not answered or "I don't know"
+-- in-page search (backend/search.py): one row per searchable item, rebuilt by recompute_patient.
+-- page 'medications': item = a medication fact; page 'records': item = a document.
+CREATE TABLE IF NOT EXISTS search_items (
+    patient_id TEXT NOT NULL,
+    page TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    search_text TEXT,   -- the item's source lines as JSON, ENCRYPTED (storage.encrypt_text)
+    names TEXT,         -- JSON: normalized names (a medicine also gets its generic and brand names)
+    synonyms TEXT,      -- JSON: synonym groups (data/synonyms.json) whose terms appear in the item
+    visits TEXT,        -- JSON: visit keys shared with other items (doc:<id>, day:<date>, stay:<id>)
+    text_hash TEXT,     -- sha256 of the text the embedding was made from (re-embed only on change)
+    embedding BLOB,     -- float32 vector from the local sentence-transformers model, or NULL
+    PRIMARY KEY (page, item_id)
+);
 CREATE TABLE IF NOT EXISTS hospital_stays (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id TEXT NOT NULL,
@@ -93,6 +107,99 @@ CREATE TABLE IF NOT EXISTS share_links (
     opened_by INTEGER,
     opened_at TEXT,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+-- ---- doctor features (backend/routes/care_team.py, refills.py, consult_records.py) ----
+-- Care team: the patient's lasting consent for one doctor. scope is 'all' or a JSON list of
+-- condition tags from rules/condition_tags.json (["diabetes", "hypertension"]).
+-- followup_on: a follow-up date the doctor set; followup_set_at: when they set it.
+CREATE TABLE IF NOT EXISTS care_team (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    doctor_id INTEGER NOT NULL,
+    scope TEXT NOT NULL DEFAULT 'all',
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'revoked')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    last_confirmed_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    revoked_at TEXT,
+    followup_on TEXT,
+    followup_set_at TEXT
+);
+-- In-app prescriptions written by a care-team doctor. A refill approval makes a new version
+-- (previous_id = the prescription it renews).
+CREATE TABLE IF NOT EXISTS prescriptions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    doctor_id INTEGER NOT NULL,
+    previous_id INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+-- One medicine on a prescription. Active while status = 'active' and end_date >= today.
+-- dose_times: JSON list of reminder times ["08:00", "20:00"].
+CREATE TABLE IF NOT EXISTS prescription_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    prescription_id INTEGER NOT NULL,
+    patient_id TEXT NOT NULL,
+    medicine TEXT NOT NULL, dose TEXT, frequency TEXT,
+    duration_days INTEGER NOT NULL,
+    start_date TEXT NOT NULL, end_date TEXT NOT NULL,
+    dose_times TEXT NOT NULL DEFAULT '[]',
+    status TEXT NOT NULL DEFAULT 'active' CHECK (status IN ('active', 'stopped', 'renewed')),
+    previous_item_id INTEGER
+);
+-- Medicine reminders: one row per dose time, from a prescription item's dates.
+CREATE TABLE IF NOT EXISTS reminders (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    prescription_item_id INTEGER NOT NULL,
+    time_of_day TEXT NOT NULL,          -- "08:00"
+    start_date TEXT NOT NULL, end_date TEXT NOT NULL
+);
+-- What the patient tapped for one reminder on one day. A due dose with no row counts as missed.
+CREATE TABLE IF NOT EXISTS dose_logs (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    reminder_id INTEGER NOT NULL,
+    dose_date TEXT NOT NULL,
+    status TEXT NOT NULL CHECK (status IN ('taken', 'skipped')),
+    logged_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    UNIQUE (reminder_id, dose_date)
+);
+CREATE TABLE IF NOT EXISTS refill_requests (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    doctor_id INTEGER NOT NULL,
+    prescription_item_id INTEGER NOT NULL,
+    status TEXT NOT NULL DEFAULT 'pending'
+        CHECK (status IN ('pending', 'approved', 'declined', 'visit_required')),
+    patient_note TEXT, doctor_note TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    decided_at TEXT
+);
+-- Medico-legal snapshot of every prescription and refill decision. Never updated or deleted:
+-- a correction is a new row pointing at the original. sha256 covers every other field.
+CREATE TABLE IF NOT EXISTS consult_records (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    doctor_id INTEGER NOT NULL,
+    patient_id TEXT NOT NULL,
+    type TEXT NOT NULL CHECK (type IN ('prescription', 'refill_decision')),
+    snapshot_json TEXT NOT NULL,
+    decision_json TEXT NOT NULL,
+    warnings_shown_json TEXT NOT NULL DEFAULT '[]',
+    overrides_json TEXT NOT NULL DEFAULT '[]',
+    corrects_record_id INTEGER,
+    created_at TEXT NOT NULL,
+    sha256 TEXT NOT NULL
+);
+-- In-app notifications (refill decisions).
+CREATE TABLE IF NOT EXISTS notifications (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    patient_id TEXT,
+    kind TEXT NOT NULL,
+    text TEXT NOT NULL,
+    link TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    read_at TEXT
 );
 """
 
@@ -118,6 +225,11 @@ ADDED_COLUMNS = [
     ("documents", "doc_type_quote", "TEXT"),
     ("documents", "doc_type_page", "INTEGER"),
     ("documents", "doc_type_line", "INTEGER"),
+    # doctors: shown name and registration number (patients search by either)
+    ("users", "full_name", "TEXT"),
+    ("users", "registration_number", "TEXT"),
+    # when the document was uploaded (UTC "YYYY-MM-DD HH:MM:SS"), for "new report" on My Patients
+    ("documents", "uploaded_at", "TEXT"),
 ]
 
 

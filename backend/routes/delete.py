@@ -55,6 +55,7 @@ def delete_route(patient_id: str, user=Depends(get_current_user)):
             "hospital_stays": conn.execute(
                 "DELETE FROM hospital_stays WHERE patient_id = ?", (patient_id,)).rowcount,
             "documents": conn.execute("DELETE FROM documents WHERE patient_id = ?", (patient_id,)).rowcount,
+            "search_items": conn.execute("DELETE FROM search_items WHERE patient_id = ?", (patient_id,)).rowcount,
             "audit_entries": conn.execute("DELETE FROM audit_log WHERE patient_id = ?", (patient_id,)).rowcount,
         }
         conn.execute("DELETE FROM user_patients WHERE patient_id = ?", (patient_id,))

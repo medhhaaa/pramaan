@@ -1,7 +1,7 @@
 """Build the real demo database: reset, then run every synthetic PDF through the same
 upload steps as POST /patients/{id}/upload (encrypt -> pipeline/AI -> checks). (Core backend)
 
-    python -m backend.load_demo            all 5 patients (uses the AI: one call per document)
+    python -m backend.load_demo            all demo patients (uses the AI: one call per document)
     python -m backend.load_demo p1 p3      only these patients
     python -m backend.load_demo --saved    NO AI calls: uses Ashil's saved extraction results
                                            (data/extracted/pN.json); encryption, wrong-patient
@@ -51,6 +51,9 @@ def load(patient_ids, use_saved=False):
                   f"{r['dropped']} dropped, {r['doc_type']}, {r['document_date']}  "
                   f"({time.time() - start:.0f}s){held}")
     print(f"\nDone in {time.time() - total_start:.0f}s")
+    # Dr. Rao's care team, prescriptions, doses and a refill request (needs the documents above)
+    from backend.demo_care_team import build
+    build()
 
 
 if __name__ == "__main__":

@@ -28,6 +28,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.auth import get_current_user, require_patient_access
+from backend.scope import scoped_questions
 from backend.db import get_conn
 from backend.logic.flags import find_gaps
 from backend.recompute import recompute_patient
@@ -198,9 +199,9 @@ def list_questions_for(conn, patient_id, lang="en"):
 
 @router.get("/patients/{patient_id}/questions")
 def list_questions(patient_id: str, user=Depends(get_current_user)):
-    require_patient_access(user, patient_id)
+    access = require_patient_access(user, patient_id)
     with get_conn() as conn:
-        questions = list_questions_for(conn, patient_id, user_language(user))
+        questions = scoped_questions(list_questions_for(conn, patient_id, user_language(user)), access)
     log_action(user, "view_questions", patient_id, "")
     return questions
 

@@ -12,6 +12,7 @@ import os
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend.auth import get_current_user, require_patient_access
+from backend.scope import access_scope, document_in_scope
 from backend.db import get_conn, log_action
 from backend.storage import abs_path, read_file, temp_copy
 from pipeline.read_pdf import read_pdf
@@ -25,7 +26,13 @@ def get_document(document_id: str, user=Depends(get_current_user)):
         doc = conn.execute("SELECT * FROM documents WHERE id = ?", (document_id,)).fetchone()
     if not doc:
         raise HTTPException(status_code=404, detail="Document not found")
-    require_patient_access(user, doc["patient_id"])
+    access = require_patient_access(user, doc["patient_id"])
+    scope = access_scope(access)
+    if scope != "all":  # a scoped care-team doctor opens only documents with an in-scope fact
+        with get_conn() as conn:
+            facts = conn.execute("SELECT type, name FROM facts WHERE document_id = ?", (document_id,)).fetchall()
+        if not document_in_scope([dict(f) for f in facts], scope):
+            raise HTTPException(status_code=403, detail="This document is outside your care-team scope")
 
     pdf_base64, lines = None, []
     if os.path.exists(abs_path(doc["file_path"])):
@@ -48,3 +55,20 @@ def get_document(document_id: str, user=Depends(get_current_user)):
         "pdf_base64": pdf_base64,
         "lines": lines,
     }
+
+
+@router.get("/patients/{patient_id}/documents")
+def list_documents(patient_id: str, user=Depends(get_current_user)):
+    """The patient's documents for the Records page, newest first:
+    [{"id", "filename", "doc_type", "document_date", "held_back", "facts"}]  (facts = how many)."""
+    require_patient_access(user, patient_id)
+    with get_conn() as conn:
+        rows = conn.execute(
+            """SELECT d.id, d.filename, d.doc_type, d.document_date, d.held_back,
+                      (SELECT COUNT(*) FROM facts f WHERE f.document_id = d.id) AS facts
+               FROM documents d WHERE d.patient_id = ?
+               ORDER BY d.document_date DESC, d.id DESC""",
+            (patient_id,),
+        ).fetchall()
+    log_action(user, "list_documents", patient_id)
+    return [{**dict(r), "held_back": bool(r["held_back"])} for r in rows]

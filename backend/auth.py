@@ -5,15 +5,21 @@ POST /login  {"username", "password"} -> {"token", "role", "username", "language
 
 In any route:
     user = Depends(get_current_user)        -> {"id", "username", "role"} or 401
-    require_patient_access(user, patient_id) -> 403 if this user can't see the patient
+    require_patient_access(user, patient_id) -> 403 if this user can't see the patient, else
+        {"kind": "own" | "shared" | "care_team", "scope": "all" | ["diabetes", ...]}
+        Routes that return facts filter them with backend.scope.scoped(facts, access).
 
-Two kinds of access:
-  full    the PATIENT's own account (linked in user_patients). Only patients get this:
-          a doctor never has lasting access, even if a user_patients row links them.
-  shared  the only way a doctor sees a patient: the patient made a QR / code and the doctor
-          opened it (backend/routes/share.py). Only until the share expires. GET requests
-          plus the doctor's review actions below (ask, check-medicine, correct a fact,
-          resolve an open question). Upload, delete, sharing and claims get 403.
+Three kinds of access:
+  own        the PATIENT's own account (linked in user_patients). Only patients get this:
+             a doctor never gets it, even if a user_patients row links them.
+  care_team  a doctor the patient added to their care team (backend/routes/care_team.py),
+             while that entry is active. Scope "all" or a list of condition tags: facts
+             outside the scope are hidden (backend/scope.py). Reading, the review actions
+             below, and the doctor's own actions (prescribe, decide a refill, set a follow-up).
+  shared     the patient made a QR / code and the doctor opened it (backend/routes/share.py).
+             Only until the share expires; scope "all". GET requests plus the review actions
+             below. If a doctor has both, the share (wider scope) wins.
+Nobody but the patient can upload, delete, share or use claims.
 """
 import hashlib
 import os
@@ -68,6 +74,9 @@ def get_current_user(creds: HTTPAuthorizationCredentials = Depends(bearer)):
 # what a doctor may do during a share besides reading: questions to the records, and the
 # review work (correct a fact, resolve an open question). Nothing that adds or deletes data.
 SHARED_POSTS = ("/ask", "/check-medicine", "/correct", "/answer")
+# what a care-team doctor may also do: write a prescription, decide a refill, set a follow-up,
+# correct their own consult record (as a new record)
+CARE_TEAM_POSTS = SHARED_POSTS + ("/prescriptions", "/decision", "/follow-up", "/corrections")
 
 # method + path of the request being handled, saved by remember_request (main.py runs it
 # for every request) so require_patient_access knows whether the route reads or writes
@@ -97,16 +106,33 @@ def active_share(conn, user, patient_id):
     ).fetchone()
 
 
+def active_care_team(conn, user, patient_id):
+    """This doctor's active care-team entry for this patient, if any."""
+    if user["role"] != "doctor":
+        return None
+    return conn.execute(
+        "SELECT * FROM care_team WHERE doctor_id = ? AND patient_id = ? AND status = 'active'",
+        (user["id"], patient_id),
+    ).fetchone()
+
+
 def require_patient_access(user, patient_id):
+    from backend.scope import parse_scope  # plain helper module; imported here to keep auth light
+
     with get_conn() as conn:
         if has_full_access(conn, user, patient_id):
-            return
+            return {"kind": "own", "scope": "all"}
         share = active_share(conn, user, patient_id)
-    if not share:
+        team = None if share else active_care_team(conn, user, patient_id)
+    if not share and not team:
         raise HTTPException(status_code=403, detail="No access to this patient")
     method, path = current_request.get()
-    if method != "GET" and not path.endswith(SHARED_POSTS):
-        raise HTTPException(status_code=403, detail="Shared access only allows reading and reviewing")
+    allowed = SHARED_POSTS if share else CARE_TEAM_POSTS
+    if method != "GET" and not path.rstrip("/").endswith(allowed):
+        raise HTTPException(status_code=403, detail="Doctors may only read and review here")
+    if share:
+        return {"kind": "shared", "scope": "all"}
+    return {"kind": "care_team", "scope": parse_scope(team["scope"]), "care_team_id": team["id"]}
 
 
 class LoginBody(BaseModel):
