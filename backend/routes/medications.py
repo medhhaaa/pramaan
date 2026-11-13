@@ -10,6 +10,7 @@ Negated medication facts ("not on insulin") are left out: they are not a dose hi
 from fastapi import APIRouter, Depends
 
 from backend.auth import get_current_user, require_patient_access
+from backend.scope import scoped
 from backend.db import fact_from_row, get_conn, log_action
 
 router = APIRouter()
@@ -54,7 +55,7 @@ def group_medications(facts):
 
 @router.get("/patients/{patient_id}/medications")
 def medications_route(patient_id: str, user=Depends(get_current_user)):
-    require_patient_access(user, patient_id)
+    access = require_patient_access(user, patient_id)
     with get_conn() as conn:
         rows = conn.execute(
             """SELECT f.* FROM facts f
@@ -63,4 +64,4 @@ def medications_route(patient_id: str, user=Depends(get_current_user)):
             (patient_id,),
         ).fetchall()
     log_action(user, "view_medications", patient_id)
-    return group_medications([fact_from_row(r) for r in rows])
+    return group_medications(scoped([fact_from_row(r) for r in rows], access))  # care-team scope

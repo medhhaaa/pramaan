@@ -5,6 +5,7 @@ import {
   USERS, PATIENTS, P1_FACTS, DOCUMENTS, QUESTIONS_P1, METRICS, AUDIT_ROWS,
 } from './dummy/data.js';
 import DUMMY_CLAIM_CHECKLIST from './dummy/claim_checklist.json';
+import { CONDITION_TAGS, DOCTORS, CARE_TEAM, ACCESS_HISTORY, MY_PATIENTS } from './dummy/care_team.js';
 
 const USE_DUMMY = import.meta.env.VITE_USE_DUMMY !== 'false';
 const BASE = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -364,6 +365,86 @@ export async function getClaimChecklist(pid, stayId) {
 export async function downloadClaimPack(pid, stayId) {
   if (USE_DUMMY) throw new Error('needs_backend');
   return httpBlob(`/patients/${pid}/hospital-stays/${stayId}/claim-pack`);
+}
+
+// ---- Care team (backend/routes/care_team.py) ----
+// A patient's lasting consent for a doctor, with a scope ("all" or condition tags).
+// Doctors: My Patients dashboard. Dummy mode keeps changes in memory.
+
+let dummyTeam = CARE_TEAM.map((e) => ({ ...e }));
+
+export async function getConditionTags() {
+  if (USE_DUMMY) { await wait(100); return CONDITION_TAGS; }
+  return http('GET', '/condition-tags');
+}
+
+// doctors by name or registration number
+export async function searchDoctors(q) {
+  if (USE_DUMMY) {
+    await wait(200);
+    const low = q.toLowerCase();
+    return DOCTORS.filter((d) => d.name.toLowerCase().includes(low) || d.registration_number.toLowerCase().includes(low));
+  }
+  return http('GET', `/doctors/search?q=${encodeURIComponent(q)}`);
+}
+
+// -> [{id, doctor: {id, name, registration_number}, scope, scope_labels, status, created_at,
+//      revoked_at, last_viewed_at, review_due}]
+export async function getCareTeam(pid) {
+  if (USE_DUMMY) { await wait(); return dummyTeam.map((e) => ({ ...e })); }
+  return http('GET', `/patients/${pid}/care-team`);
+}
+
+// scope: 'all' or ['diabetes', ...]
+export async function addCareTeamDoctor(pid, doctorId, scope) {
+  if (USE_DUMMY) {
+    await wait(300);
+    if (dummyTeam.some((e) => e.doctor.id === doctorId && e.status === 'active')) throw new Error('HTTP 409');
+    const labels = scope === 'all' ? 'all' : scope.map((t) => CONDITION_TAGS.find((c) => c.tag === t)?.label || t);
+    const entry = { id: Date.now(), doctor: DOCTORS.find((d) => d.id === doctorId), scope, scope_labels: labels,
+      status: 'active', created_at: new Date().toISOString().replace('T', ' ').slice(0, 19), revoked_at: null,
+      last_viewed_at: null, review_due: false };
+    dummyTeam = [entry, ...dummyTeam];
+    return entry;
+  }
+  return http('POST', `/patients/${pid}/care-team`, { doctor_id: doctorId, scope });
+}
+
+export async function revokeCareTeamDoctor(pid, entryId) {
+  if (USE_DUMMY) {
+    await wait(200);
+    dummyTeam = dummyTeam.map((e) => (e.id === entryId ? { ...e, status: 'revoked', revoked_at: new Date().toISOString() } : e));
+    return { id: entryId, status: 'revoked' };
+  }
+  return http('POST', `/patients/${pid}/care-team/${entryId}/revoke`);
+}
+
+export async function keepCareTeamDoctor(pid, entryId) {
+  if (USE_DUMMY) {
+    await wait(200);
+    dummyTeam = dummyTeam.map((e) => (e.id === entryId ? { ...e, review_due: false } : e));
+    return { id: entryId, status: 'active' };
+  }
+  return http('POST', `/patients/${pid}/care-team/${entryId}/keep`);
+}
+
+// -> [{doctor_id, doctor_name, day, last_at, actions}] one row per doctor per day, newest first
+export async function getAccessHistory(pid) {
+  if (USE_DUMMY) { await wait(); return ACCESS_HISTORY; }
+  return http('GET', `/patients/${pid}/access-history`);
+}
+
+// -> [{patient_id, name, age, sex, scope, conditions, tags, adherence_14d, followup_on,
+//      last_activity, last_viewed_at}] sorted by highest-priority tag, then latest activity
+export async function getMyPatients() {
+  if (USE_DUMMY) { await wait(); return MY_PATIENTS; }
+  return http('GET', '/doctors/me/patients');
+}
+
+// date: 'YYYY-MM-DD' or null to clear
+export async function setFollowUp(pid, date) {
+  if (USE_DUMMY) { await wait(200); return { patient_id: pid, followup_on: date }; }
+  return http('POST', `/patients/${pid}/follow-up`, { date });
 }
 
 export const isDummy = USE_DUMMY;

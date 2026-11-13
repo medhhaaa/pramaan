@@ -1,13 +1,14 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope } from 'lucide-react';
 import Logo from './Logo.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
 import { getTheme, toggleTheme } from '../lib/theme.js';
 
 const DOCTOR_NAV = [
+  { to: '/my-patients', key: 'nav.myPatients', icon: Users },
   { to: '/patients', key: 'nav.patients', icon: LayoutDashboard },
   { to: '/accuracy', key: 'nav.accuracy', icon: Gauge },
   { to: '/scan', key: 'nav.scan', icon: Scan, action: 'scan' },
@@ -24,6 +25,7 @@ const PATIENT_NAV = [
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
+  { to: '/care-team', key: 'nav.careTeam', icon: Stethoscope },
   { to: '/things', key: 'nav.thingsToCheck', icon: ListChecks },
   { to: '/claim-documents', key: 'nav.claimDocuments', icon: ClipboardCheck },
   { to: '/medication', key: 'nav.medication', icon: Pill },
@@ -123,8 +125,8 @@ export default function Layout() {
           </header>
           {user.role === 'doctor' && sessionActive && (
             <div className="session-bar">
-              <span className="chip chip-verified">{t('scan.sessionChip')}</span>
-              <button className="btn btn-ghost btn-sm" onClick={() => { setSession(null); navigate('/patients'); }}>{t('scan.endSession')}</button>
+              <span className="chip chip-verified">{session.careTeam ? t('myPatients.careTeamChip') : t('scan.sessionChip')}</span>
+              <button className="btn btn-ghost btn-sm" onClick={() => { setSession(null); navigate(session.careTeam ? '/my-patients' : '/patients'); }}>{t('scan.endSession')}</button>
             </div>
           )}
           <main className="content"><Outlet /></main>

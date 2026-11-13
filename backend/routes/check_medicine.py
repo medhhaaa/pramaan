@@ -17,6 +17,7 @@ from fastapi import APIRouter, Depends
 from pydantic import BaseModel, Field
 
 from backend.auth import get_current_user, require_patient_access
+from backend.scope import scoped
 from backend.db import get_conn
 from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import load_documents, load_facts, medication_summaries, source_info
@@ -169,7 +170,7 @@ class CheckBody(BaseModel):
 
 @router.post("/patients/{patient_id}/check-medicine")
 def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_current_user)):
-    require_patient_access(user, patient_id)
+    access = require_patient_access(user, patient_id)
     lang = user_language(user)
     kn = lang == "kn"
     drug = body.drug.strip()
@@ -177,7 +178,7 @@ def check_medicine_route(patient_id: str, body: CheckBody, user=Depends(get_curr
     typed_words = set(words(drug))
 
     with get_conn() as conn:
-        facts = load_facts(conn, patient_id)
+        facts = scoped(load_facts(conn, patient_id), access)  # allergies are always in scope
         docs = load_documents(conn, patient_id)
         resolved = conn.execute(
             "SELECT fact_ids, answer FROM questions WHERE patient_id = ? AND status = 'resolved'",
