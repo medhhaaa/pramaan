@@ -6,7 +6,7 @@
   "langPopupTitle": "Choose your language",
   "langs": { "en": "English", "hi": "हिंदी", "kn": "ಕನ್ನಡ" },
   "translatedNote": "Medicine names, doses and values are shown as written in the original.",
-  "nav": {
+  "nav": { "diseaseSearch": "Disease search",
     "security": "Privacy & security",
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
     "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
@@ -180,6 +180,32 @@
       "kidney": "Kidney",
       "other": "Other records"
     }
+  },
+  "disease": {
+    "title": "Disease search",
+    "intro": "Everything in this patient's records about one disease. Type a disease, an everyday word (sugar), a medicine (Glycomet) or a test (HbA1c).",
+    "placeholder": "Disease, medicine or test, e.g. diabetes, sugar, Glycomet",
+    "search": "Search",
+    "examples": "Examples",
+    "via": {
+      "condition": "found from “{{q}}”",
+      "medicine": "found from the medicine “{{q}}”",
+      "lab": "found from the test “{{q}}”"
+    },
+    "hidden_one": "1 more record about this is not shared with you.",
+    "hidden_other": "{{count}} more records about this are not shared with you.",
+    "nothing": "The records you can see don't mention {{label}}.",
+    "unknown": "“{{q}}” is not in the disease list yet. Try a disease name, a synonym or a medicine.",
+    "sections": {
+      "conditions": "Conditions",
+      "medicines": "Medicines",
+      "labs": "Lab tests",
+      "events": "Events",
+      "documents": "Documents"
+    },
+    "negated": "Recorded as absent",
+    "copy": "Copy of an older record",
+    "source": "Open source"
   },
   "accuracy": { "title": "Accuracy", "precision": "Precision", "recall": "Recall", "f1": "F1", "byType": "By fact type", "byPatient": "By patient", "note": "Checked against answer keys · synthetic data." },
   "audit": { "title": "Audit log", "time": "Time", "who": "Who", "action": "Action", "patient": "Patient", "detail": "Detail" },

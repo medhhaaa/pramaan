@@ -172,6 +172,17 @@ export async function searchRecords(pid, q, page) {
   return http('GET', `/patients/${pid}/search?q=${encodeURIComponent(q)}&page=${page}`);
 }
 
+// Disease search (backend/disease_search.py): everything about one disease in the records.
+// -> {query, disease, label, matched_by, matched_terms, conditions, medicines, labs, events, documents, hidden_count}
+export async function diseaseSearch(pid, q) {
+  if (USE_DUMMY) {
+    await wait();
+    return { query: q, disease: null, label: null, matched_by: null, matched_terms: [], conditions: [], medicines: [],
+      labs: [], events: [], documents: [], hidden_count: 0 }; // the map lives on the backend
+  }
+  return http('GET', `/patients/${pid}/disease-search?q=${encodeURIComponent(q)}`);
+}
+
 export async function getFlags(pid) {
   if (USE_DUMMY) { await wait(); return groupFlags(pid); }
   return http('GET', `/patients/${pid}/flags`);

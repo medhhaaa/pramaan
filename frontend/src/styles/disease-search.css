@@ -1,0 +1,27 @@
+/* Disease search page (DiseaseSearch.jsx). Theme tokens only; the search bar reuses .ips-bar. */
+.disease-page { max-width: 1100px; }
+.disease-intro { margin: -4px 0 14px; max-width: 70ch; }
+.disease-page .ips-input .btn { flex: none; }
+.disease-examples { margin: 8px 0 18px; }
+.disease-examples .chip { cursor: pointer; font: inherit; font-size: 0.85rem; }
+.disease-heading { display: flex; flex-wrap: wrap; align-items: baseline; gap: 10px; margin: 0 0 10px; font-size: 1.25rem; }
+.disease-hidden { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; color: var(--text-muted); }
+.disease-hidden svg { color: var(--warn); flex: none; }
+.disease-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 14px; }
+.disease-section { margin-bottom: 0; }
+.disease-section + .disease-section, .disease-grid + .disease-section { margin-top: 14px; }
+.disease-grid .disease-section + .disease-section { margin-top: 0; }
+.disease-section h3 { font-size: 1rem; margin: 0 0 8px; }
+.disease-item {
+  display: flex; justify-content: space-between; align-items: flex-start; gap: 12px;
+  padding: 9px 0; border-top: 1px solid var(--border);
+}
+.disease-item:first-child { border-top: 0; }
+.disease-item-main { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; min-width: 0; }
+.disease-item-meta { display: flex; flex-direction: column; align-items: flex-end; gap: 2px; flex: none; text-align: right; }
+
+@media (max-width: 767px) {
+  .disease-grid { grid-template-columns: 1fr; }
+  .disease-item { flex-direction: column; gap: 4px; }
+  .disease-item-meta { flex-direction: row; align-items: center; gap: 10px; text-align: left; }
+}
