@@ -64,6 +64,29 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     prev_hash TEXT, row_hash TEXT  -- tamper-evident chain (log_action / verify_audit_chain)
 );
+-- "What the agent did" for each document (backend/agent/steps.py)
+CREATE TABLE IF NOT EXISTS agent_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    document_id TEXT,
+    step TEXT NOT NULL,      -- read, protect, extract, check, retry, classify, patient_check, save, merge, ...
+    status TEXT NOT NULL,    -- ok | warn | blocked | retry
+    detail TEXT,
+    ms INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
+-- facts the agent could not prove even after retrying (backend/routes/not_sure.py)
+CREATE TABLE IF NOT EXISTS not_sure_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    fact TEXT NOT NULL,       -- JSON: type, name, dose, frequency, value, unit, action, status, event_date, quote
+    reason TEXT,              -- why the quote check failed
+    attempts TEXT,            -- JSON list of what was tried
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'accepted', 'rejected')),
+    resolved_by INTEGER, resolved_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id TEXT, fact_ids TEXT, text TEXT,
@@ -238,6 +261,11 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("questions", "reminded_at", "TEXT"),   # backend/agent/reminders.py
+    ("questions", "escalated_at", "TEXT"),
+    ("questions", "text_hi", "TEXT"),  # the question in Hindi
+    ("questions", "routed_to", "TEXT DEFAULT 'patient'"),  # patient | doctor (backend/agent/routing.py)
+    ("questions", "route_reason", "TEXT"),
     ("patients", "phone", "TEXT"),    # optional: the privacy layer removes it anywhere in text
     ("patients", "address", "TEXT"),
     ("audit_log", "prev_hash", "TEXT"),

@@ -220,7 +220,8 @@ def build_brief(patient_id, access, lang="en"):
         "events": events(facts, docs),
         "red_flags": red_flags(all_facts, docs, meds, find_gaps(facts), lang),
         "open_questions": [
-            {"id": q["id"], "text": q["text"], "status": q["status"]}
+            {"id": q["id"], "text": q["text"], "status": q["status"],
+             "routed_to": q.get("routed_to"), "route_reason": q.get("route_reason")}
             for q in questions
             if q["status"] != "resolved" and not q["claim_condition"]  # claim questions are the patient's
         ],

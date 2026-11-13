@@ -51,11 +51,11 @@ def parse_json(reply):
         return json.loads(text[min(starts):end + 1])
 
 
-def _ask_ai(prompt, receipt):
+def _ask_ai(prompt, receipt, model=None):
     try:
-        return parse_json(call_llm(prompt, receipt))
+        return parse_json(call_llm(prompt, receipt, model=model))
     except ValueError:  # json.JSONDecodeError is a ValueError too
-        return parse_json(call_llm(prompt + RETRY_NOTE, receipt))  # one retry, then give up
+        return parse_json(call_llm(prompt + RETRY_NOTE, receipt, model=model))  # one retry, then give up
 
 
 def _text_or_none(value):
@@ -101,7 +101,7 @@ def clean_fact(raw):
     }
 
 
-def extract_document(clean_text, receipt=None):
+def extract_document(clean_text, receipt=None, model=None):
     """clean_text must come from privacy_layer.protect(); receipt is that result (llm.call_llm checks it).
     Without a receipt the text is protected here, with no known patient identity."""
     if receipt is None:
@@ -109,7 +109,7 @@ def extract_document(clean_text, receipt=None):
 
         receipt = protect(clean_text)
         clean_text = receipt.text
-    data = _ask_ai(build_prompt(clean_text), receipt)
+    data = _ask_ai(build_prompt(clean_text), receipt, model)
     if isinstance(data, list):  # the model returned just the facts list
         data = {"facts": data}
     if not isinstance(data, dict):

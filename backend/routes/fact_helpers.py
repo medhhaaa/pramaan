@@ -40,6 +40,10 @@ def source_label(fact, docs, lang="en"):
         if not doc:
             return "ದಾಖಲೆಗಳು"
         return f"{date or 'ದಿನಾಂಕ ತಿಳಿದಿಲ್ಲ'} ರ {doc_type_label(doc['doc_type'], lang)}"
+    if lang == "hi":
+        if not doc:
+            return "रिकॉर्ड"
+        return f"{doc_type_label(doc['doc_type'], lang)} ({date or 'तारीख़ अज्ञात'})"
     if not doc:
         return "records"
     return f"{doc_type_label(doc['doc_type'], lang)} from {date or 'an unknown date'}"
