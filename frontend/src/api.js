@@ -282,14 +282,29 @@ export async function deletePatient(pid) {
 }
 
 // NEW ROUTES, not in CLAUDE.md yet. Agree with the core backend owner before merging.
+export const SHARE_MINUTES = 15; // how long one QR / code share lasts
+
 export async function createQR(pid) {
   if (USE_DUMMY) {
     await wait(200);
     return { token: `demo-${pid}-${Date.now()}`, expires_at: Date.now() + 10 * 60 * 1000 };
   }
-  const res = await http('POST', `/patients/${pid}/share`, { minutes: 15 });
+  const res = await http('POST', `/patients/${pid}/share`, { minutes: SHARE_MINUTES });
   // the screens use expires_at as a millisecond timestamp
   return { ...res, expires_at: Date.parse(res.expires_at) };
+}
+
+// The patient's shares: who can see their records right now (backend/routes/share.py)
+// -> [{share_id, created_at, expires_at, seconds_left, opened_by (username or null), opened_at}]
+export async function listShares(pid) {
+  if (USE_DUMMY) { await wait(); return []; }
+  return http('GET', `/patients/${pid}/shares`);
+}
+
+// the patient stops a share early: the doctor loses access at once
+export async function stopShare(shareId) {
+  if (USE_DUMMY) { await wait(); return { stopped: true }; }
+  return http('DELETE', `/share/${shareId}`);
 }
 
 export async function scanQR(code) {

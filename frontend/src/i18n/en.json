@@ -10,7 +10,7 @@
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
     "medication": "Medication", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
     "audit": "Audit log", "delete": "Delete data", "myRecords": "My Records",
-    "thingsToCheck": "Things to check", "generateQr": "Generate QR",
+    "thingsToCheck": "Things to check", "generateQr": "Share with doctor",
     "claimDocuments": "Claim documents", "myPatients": "My patients", "careTeam": "My care team"
   },
   "auth": {
@@ -92,16 +92,32 @@
     "types": {"medication": "Medicine", "allergy": "Allergy", "condition": "Condition", "lab_test": "Test", "event": "Event", "demographic": "Personal detail"}
   },
   "doc": { "title": "Source", "held": "Held back", "close": "Close" },
-  "myRecords": { "title": "My Records", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
+  "myRecords": { "title": "My Records", "shareButton": "Share with a doctor", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
   "things": {
     "title": "Things to check", "problem": "Problem", "yes": "Yes", "no": "No", "dontKnow": "I don't know", "skip": "Skip",
     "other": "Other", "send": "SEND", "why": "Why are we asking?", "sentDoctor": "Your doctor will check this.",
     "progress": "{{done}} of {{total}} answered", "empty": "Nothing to check right now."
   },
   "qr": {
-    "title": "Generate QR", "button": "Generate QR", "expires": "Expires in {{time}}",
-    "share": "Share this only with your doctor. It opens your records for 10 minutes, one time.",
-    "scope": "Brief and records. Your data is not changed.", "expired": "This QR has expired.", "new": "Generate a new one"
+    "title": "Share with a doctor",
+    "intro": "Doctors can only see your records while you share them. You decide who, and you can stop at any time.",
+    "makeTitle": "Show your doctor a QR code",
+    "button": "Show my QR code",
+    "new": "Make a new QR code",
+    "how": "Your doctor scans this QR code, or types the code under it. It works for {{minutes}} minutes.",
+    "scope": "They can read your records and check them. They cannot delete or upload anything.",
+    "oneDoctor": "Only the first doctor who opens it gets access.",
+    "codeLabel": "Or tell them this code",
+    "expires": "Expires in {{time}}",
+    "share": "Show this only to your doctor. It opens your records for {{minutes}} minutes, for one doctor.",
+    "stop": "Stop sharing",
+    "expired": "This QR has expired.",
+    "whoTitle": "Who can see your records now",
+    "nobody": "Nobody. Your records are private.",
+    "waiting": "Waiting for a doctor to scan",
+    "timeLeft": "{{time}} left",
+    "openedAt": "opened at {{time}}",
+    "auditNote": "Every time a doctor opens your records it is written in your audit log."
   },
   "accuracy": { "title": "Accuracy", "precision": "Precision", "recall": "Recall", "f1": "F1", "byType": "By fact type", "byPatient": "By patient", "note": "Checked against answer keys · synthetic data." },
   "audit": { "title": "Audit log", "time": "Time", "who": "Who", "action": "Action", "patient": "Patient", "detail": "Detail" },

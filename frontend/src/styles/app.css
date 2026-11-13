@@ -331,3 +331,19 @@ a { color: var(--brand); }
 /* Brief: red flag rows read left to right (chip, then its explanation) */
 .brief-redflag { justify-content: flex-start; align-items: flex-start; gap: 10px; }
 .brief-redflag .chip { flex-shrink: 0; }
+
+/* Share with a doctor (patient): make a QR on the left, who can see the records on the right */
+.share-page { max-width: 980px; }
+.share-intro { margin: -4px 0 16px; max-width: 68ch; }
+.share-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .share-layout { grid-template-columns: 1fr; } }
+.share-h { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0 0 12px; }
+.share-make { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.share-make .share-h { align-self: stretch; }
+.share-points { text-align: left; margin: 0; padding-left: 18px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+.share-code { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.share-code strong { font-size: 1.6rem; letter-spacing: 0.12em; }
+.share-list { margin: 0 0 10px; }
+.share-row { align-items: center; gap: 12px; }
+.share-who-name { display: flex; align-items: center; gap: 6px; }
+.share-who .muted.small svg { vertical-align: -2px; }

@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
+import { QrCode } from 'lucide-react';
 import { listPatients, getTimeline, getQuestions, createHospitalStay } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
 import { BadgeChip } from '../components/Chip.jsx';
@@ -39,6 +40,7 @@ export default function MyRecords() {
           <Link className="btn btn-primary" to="/things">
             {t('myRecords.thingsButton')} {openQ > 0 && <span className="count-badge">{openQ}</span>}
           </Link>
+          <Link className="btn btn-ghost" to="/qr"><QrCode size={16} /> {t('myRecords.shareButton')}</Link>
           <Link className="btn btn-ghost" to="/claim-documents">{t('nav.claimDocuments')}</Link>
           <button className="btn btn-ghost" onClick={newStay}>{t('claimDocs.newStay')}</button>
         </div>
