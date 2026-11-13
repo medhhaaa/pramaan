@@ -420,3 +420,22 @@ mark { background: rgba(245, 185, 74, 0.32); color: inherit; border-radius: 3px;
 .record-title { display: flex; flex-direction: column; flex: 1; min-width: 12em; }
 .record-file { margin: 6px 0 4px; overflow-wrap: anywhere; }
 @media (prefers-reduced-motion: reduce) { .ips-dim > * { transition: none; } }
+
+/* privacy & security scorecard + what the AI saw */
+.score-list { display: flex; flex-direction: column; gap: 10px; margin-bottom: 16px; }
+.score-head { display: flex; align-items: center; gap: 10px; }
+.score-title { flex: 1; font-weight: 600; }
+.score-result { font-variant-numeric: tabular-nums; white-space: nowrap; }
+.score-pass { border-left: 4px solid var(--verified); }
+.score-pass .score-head svg { color: var(--verified); }
+.score-fail { border-left: 4px solid var(--danger); }
+.score-fail .score-head svg { color: var(--danger); }
+.score-details { margin: 6px 0 0; color: var(--danger); }
+.ok-text { color: var(--verified); }
+mark.ai-removed { background: rgba(255, 107, 136, 0.22); color: inherit; text-decoration: line-through; border-radius: 3px; padding: 0 2px; }
+mark.ai-token { background: rgba(55, 211, 176, 0.22); color: inherit; border-radius: 3px; padding: 0 2px; }
+tr.ai-changed td { background: rgba(245, 185, 74, 0.05); }
+.ai-table td { vertical-align: top; }
+.ai-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+.ai-compare img { width: 100%; border: 1px solid rgba(140, 151, 181, 0.3); border-radius: 6px; }
+@media (max-width: 760px) { .ai-compare { grid-template-columns: 1fr; } }

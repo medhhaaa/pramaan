@@ -23,6 +23,7 @@ from backend.db import fact_from_row, get_conn
 from backend.routes.audit_helper import log_action
 from backend.routes.language import user_language
 from pipeline.llm import call_llm
+from pipeline.privacy_layer import PrivacyBlocked, protect, restore
 
 router = APIRouter()
 
@@ -101,10 +102,10 @@ def is_not_documented_reply(reply):
     return reply.strip().strip('"').strip() in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN)
 
 
-def ask_llm(prompt):
+def ask_llm(prompt, receipts=None):
     """Call the AI and parse its JSON, retrying once on bad JSON."""
     for attempt in range(2):
-        reply = call_llm(prompt)
+        reply = call_llm(prompt, receipts)
         if is_not_documented_reply(reply):
             return {"answer": NOT_DOCUMENTED, "fact_ids": []}
         try:
@@ -145,20 +146,33 @@ def ask_route(patient_id: str, body: AskBody, user=Depends(get_current_user)):
         for f in facts
         if not (f["type"] == "demographic" and f["name"] in NEVER_SEND)
     ]
+    # privacy layer (pipeline/privacy_layer.py): same tokens in the facts and the question;
+    # the token map stays here and the real values are put back into the answer
+    from backend.routes.privacy import identity_for
+
+    identity = identity_for(patient_id)
+    try:
+        facts_receipt = protect(json.dumps(facts_for_ai, ensure_ascii=False, indent=1), identity)
+        question_receipt = protect(question, identity, facts_receipt.mapping)
+    except PrivacyBlocked as blocked:
+        raise HTTPException(status_code=422, detail={
+            "message": "Please remove these personal details before asking.",
+            "found": [{"kind": f.kind, "text": f.text} for f in blocked.findings]})
+    mapping = {**facts_receipt.mapping, **question_receipt.mapping}
     prompt = (
         PROMPT.replace("<<NOT_DOCUMENTED>>", NOT_DOCUMENTED)
         .replace("<<LANGUAGE_RULE>>", KANNADA_RULE if lang == "kn" else "")
-        .replace("<<FACTS>>", json.dumps(facts_for_ai, ensure_ascii=False, indent=1))
-        .replace("<<QUESTION>>", strip_patient_name(question, patient["name"]))
+        .replace("<<FACTS>>", facts_receipt.text)
+        .replace("<<QUESTION>>", question_receipt.text)
     )
 
     try:
-        data = ask_llm(prompt)
+        data = ask_llm(prompt, [facts_receipt, question_receipt])
     except Exception as err:  # AI down, bad key, or JSON twice in a row
         print(f"/ask failed: {err!r}")
         raise HTTPException(status_code=502, detail="The AI could not answer right now. Try again.")
 
-    answer = str(data.get("answer") or "").strip()
+    answer = restore(str(data.get("answer") or "").strip(), mapping)  # real values back, on our server
     cited = [fid for fid in data.get("fact_ids") or [] if fid in by_id]  # drop made-up ids
     cited = list(dict.fromkeys(cited))  # unique, keep order
 

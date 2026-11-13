@@ -51,6 +51,7 @@ def needs_reading(patient_id: str, user=Depends(get_current_user)):
         if scope != "all":  # a partial share / care-team scope: only documents this doctor may open
             rows = [r for r in rows if document_in_scope(
                 [dict(f) for f in conn.execute("SELECT type, name FROM facts WHERE document_id = ?", (r["id"],))], scope)]
+    log_action(user, "list_needs_reading", patient_id)
     return [dict(r) for r in rows]
 
 

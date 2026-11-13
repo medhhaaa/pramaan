@@ -108,6 +108,29 @@ export async function login(username, password) {
   return { ...data, name, patientId };
 }
 
+// New account next to the demo ones. role: 'patient' (gets an empty record of their own) or
+// 'doctor' (needs registration_number). Logs the new user in: same shape as login().
+export async function signup({ username, password, role, fullName, registrationNumber }) {
+  if (USE_DUMMY) {
+    await wait();
+    if (USERS[username]) { const err = new Error('This username is taken'); err.status = 409; throw err; }
+    const patientId = role === 'patient' ? `p${100 + Object.keys(USERS).length}` : null;
+    USERS[username] = { password, role, name: fullName, patientId };
+    token = `dummy-${username}`;
+    return { token, role, name: fullName, username, patientId, language: null };
+  }
+  const data = await http('POST', '/signup', {
+    username, password, role, full_name: fullName, registration_number: registrationNumber || null,
+  });
+  setToken(data.token);
+  let patientId = null;
+  if (data.role === 'patient') {
+    const [own] = await http('GET', '/patients');
+    if (own) patientId = own.id;
+  }
+  return { ...data, name: fullName, patientId };
+}
+
 // Saves the user's language (en | kn | hi) to their account, so it follows them to any device.
 export async function saveLanguage(username, language) {
   if (USE_DUMMY) { localStorage.setItem(`pramaan_lang:${username}`, language); return { language }; }
@@ -678,4 +701,15 @@ export async function addFactFromImage(docId, body) {
 }
 export async function markDocumentRead(docId) {
   return http('POST', `/documents/${docId}/read`);
+}
+
+// ---------- privacy & security scorecard (core backend: backend/routes/security.py) ----------
+// -> {generated_at, patients, checks: [{key, title, result, passed, how, details, ran_at}], documents}
+export async function getScorecard(runTests = false) {
+  return http('GET', `/security/scorecard${runTests ? '?run_tests=true' : ''}`);
+}
+// -> {document_id, filename, lines: [{page, line, original, sent, changed}], removed: [{token, original}],
+//     leaks, images: [{page, original_png, masked_png, leaks}], handwritten_pages, unread_pages}
+export async function getAiView(docId) {
+  return http('GET', `/documents/${docId}/ai-view`);
 }

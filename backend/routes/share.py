@@ -183,6 +183,7 @@ def list_shares(patient_id: str, user=Depends(get_current_user)):
                WHERE s.patient_id = ? ORDER BY s.created_at DESC""",
             (patient_id,),
         ).fetchall()
+    log_action(user, "list_shares", patient_id)
     return [
         {
             "share_id": r["id"],

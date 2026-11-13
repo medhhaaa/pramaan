@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ASK_ON } from '../lib/features.js';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck, Lock } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
 import HiddenNotice from './HiddenNotice.jsx';
@@ -23,6 +23,7 @@ const DOCTOR_NAV = [
   { to: '/consult-records', key: 'nav.consultRecords', icon: FileCheck, gated: true },
   // no upload / delete: a doctor's shared access is reading and reviewing only (backend/auth.py)
   { to: '/audit', key: 'nav.audit', icon: ShieldCheck, gated: true },
+  { to: '/security', key: 'nav.security', icon: Lock },
 ];
 
 const PATIENT_NAV = [
@@ -38,6 +39,7 @@ const PATIENT_NAV = [
   { to: '/flags', key: 'nav.flags', icon: Flag },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare },
   { to: '/audit', key: 'nav.audit', icon: ShieldCheck },
+  { to: '/security', key: 'nav.security', icon: Lock },
   { to: '/delete', key: 'nav.delete', icon: Trash2 },
 ];
 

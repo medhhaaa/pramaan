@@ -94,7 +94,22 @@ def _provider():
     return os.getenv("LLM_PROVIDER", "anthropic").lower()
 
 
-def call_llm(prompt: str) -> str:
+class PrivacyRequired(RuntimeError):
+    """call_llm was called without text that went through pipeline/privacy_layer.protect()."""
+
+
+def call_llm(prompt: str, receipts=None) -> str:
+    """receipts: the Redaction result(s) of privacy_layer.protect() for the patient text inside this
+    prompt. No receipt, or a receipt whose redacted text is not in the prompt -> refused. As a last
+    net, the whole prompt is scanned for phone, Aadhaar, ABHA, PAN, email, PIN and ID patterns."""
+    from pipeline import privacy_layer
+
+    receipts = receipts if isinstance(receipts, (list, tuple)) else [receipts] if receipts else []
+    if not receipts or not all(isinstance(r, privacy_layer.Redaction) and r.text in prompt for r in receipts):
+        raise PrivacyRequired("Refusing to call the AI: the patient text did not go through the privacy layer.")
+    leftovers = privacy_layer.quick_scan(prompt)
+    if leftovers:
+        raise privacy_layer.PrivacyBlocked(leftovers, prompt)
     provider = _provider()
     if provider == "anthropic":
         return _call_anthropic(prompt)
@@ -193,4 +208,7 @@ def _openai_vision(prompt, data, model, api_key, base_url):
 if __name__ == "__main__":
     provider = _provider()
     print(f"Provider: {provider}, model: {_model(provider) or os.getenv('OLLAMA_MODEL')}")
-    print(call_llm('Reply with exactly this JSON and nothing else: {"ok": true}'))
+    from pipeline.privacy_layer import protect
+
+    checked = protect("")  # nothing personal in this test prompt
+    print(call_llm('Reply with exactly this JSON and nothing else: {"ok": true}', checked))

@@ -31,7 +31,9 @@ from datetime import datetime, timedelta, timezone
 import jwt
 from fastapi import APIRouter, Depends, HTTPException, Request
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
-from pydantic import BaseModel
+from typing import Literal, Optional
+
+from pydantic import BaseModel, Field
 
 from backend.db import get_conn
 
@@ -159,3 +161,50 @@ def login(body: LoginBody):
         "username": user["username"],
         "language": user["language"],
     }
+
+
+# ---------- sign-up (Medha) ----------
+# Adds a new account next to the demo ones (nothing is deleted). A new patient gets an EMPTY
+# record of their own (no documents, no facts) and lasting access to it. A new doctor sees
+# nobody until a patient adds them to a care team or opens a QR share.
+# New patient ids start at p101 so they never clash with demo patients (p1-p8, or later ones).
+
+FIRST_SIGNUP_PATIENT = 101
+
+
+class SignupBody(BaseModel):
+    username: str = Field(pattern=r"^[A-Za-z0-9._-]{3,30}$")
+    password: str = Field(min_length=6, max_length=128)
+    role: Literal["patient", "doctor"] = "patient"
+    full_name: str = Field(min_length=2, max_length=80)
+    registration_number: Optional[str] = Field(default=None, max_length=40)
+
+
+def next_patient_id(conn):
+    taken = [int(r["id"][1:]) for r in conn.execute("SELECT id FROM patients") if r["id"][1:].isdigit()]
+    return f"p{max([FIRST_SIGNUP_PATIENT - 1, *taken]) + 1}"
+
+
+@router.post("/signup")
+def signup(body: SignupBody):
+    username, full_name = body.username.strip(), body.full_name.strip()
+    reg = (body.registration_number or "").strip() or None
+    if body.role == "doctor" and not reg:
+        raise HTTPException(status_code=422, detail="A doctor needs a registration number")
+    with get_conn() as conn:
+        if conn.execute("SELECT 1 FROM users WHERE lower(username) = lower(?)", (username,)).fetchone():
+            raise HTTPException(status_code=409, detail="This username is taken")
+        cur = conn.execute(
+            "INSERT INTO users (username, password_hash, role, full_name, registration_number) VALUES (?, ?, ?, ?, ?)",
+            (username, hash_password(body.password), body.role, full_name, reg if body.role == "doctor" else None),
+        )
+        user_id = cur.lastrowid
+        if body.role == "patient":
+            patient_id = next_patient_id(conn)
+            conn.execute("INSERT INTO patients (id, name, dob, sex, blood_group) VALUES (?, ?, NULL, NULL, NULL)",
+                         (patient_id, full_name))
+            conn.execute("INSERT INTO user_patients (user_id, patient_id) VALUES (?, ?)", (user_id, patient_id))
+        user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+        conn.execute("INSERT INTO audit_log (user_id, action, patient_id, detail) VALUES (?, 'signup', ?, ?)",
+                     (user_id, patient_id if body.role == "patient" else None, body.role))
+    return {"token": create_token(user), "role": user["role"], "username": user["username"], "language": None}
