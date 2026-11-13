@@ -22,3 +22,7 @@ storage/*
 .idea/
 .DS_Store
 Thumbs.db
+
+# local results of python -m backend.injection_test
+backend/injection_results.json
+backend/.audit_tamper_backup.json

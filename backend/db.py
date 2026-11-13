@@ -4,9 +4,11 @@ get_conn()          open a connection; rows behave like dicts (row["name"])
 init_db()           create all tables if they don't exist (and add newer columns to an old file)
 fact_from_row(row)  turn a facts-table row into the contract dict (CLAUDE.md section 5)
 """
+import hashlib
 import json
 import os
 import sqlite3
+from datetime import datetime, timezone
 
 DB_PATH = os.getenv("DB_PATH", os.path.join(os.path.dirname(__file__), "pramaan.db"))
 
@@ -59,7 +61,8 @@ CREATE TABLE IF NOT EXISTS corrections (
 CREATE TABLE IF NOT EXISTS audit_log (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER, action TEXT, patient_id TEXT, detail TEXT,
-    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    prev_hash TEXT, row_hash TEXT  -- tamper-evident chain (log_action / verify_audit_chain)
 );
 CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -221,6 +224,10 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("patients", "phone", "TEXT"),    # optional: the privacy layer removes it anywhere in text
+    ("patients", "address", "TEXT"),
+    ("audit_log", "prev_hash", "TEXT"),
+    ("audit_log", "row_hash", "TEXT"),
     ("facts", "confidence", "INTEGER"),
     ("facts", "unsure", "TEXT DEFAULT '[]'"),
     ("documents", "needs_reading", "INTEGER DEFAULT 0"),
@@ -258,19 +265,69 @@ def fact_from_row(row):
     return fact
 
 
+# ---------- tamper-evident audit log ----------
+# Every audit row stores row_hash = SHA-256 of (previous row's hash + this row's contents).
+# Editing, deleting or inserting a row in the middle breaks every hash after it, and
+# verify_audit_chain() finds the first broken row. (Deleting only the newest rows can't be
+# seen from inside the database: the scorecard shows the latest hash so it can be noted down.)
+
+GENESIS_HASH = "0" * 64  # the "previous hash" of the very first row
+
+
+def _audit_hash(prev_hash, user_id, action, patient_id, detail, created_at):
+    payload = json.dumps([prev_hash, user_id, action, patient_id, detail, created_at],
+                         separators=(",", ":"), ensure_ascii=False)
+    return hashlib.sha256(payload.encode("utf-8")).hexdigest()
+
+
+def append_audit(conn, user_id, action, patient_id=None, detail=None, created_at=None):
+    """Add one chained row using an open connection (call log_action from routes)."""
+    if isinstance(detail, (dict, list)):
+        detail = json.dumps(detail)
+    created_at = created_at or datetime.now(timezone.utc).strftime("%Y-%m-%d %H:%M:%S")
+    last = conn.execute("SELECT row_hash FROM audit_log ORDER BY id DESC LIMIT 1").fetchone()
+    prev_hash = last["row_hash"] if last and last["row_hash"] else GENESIS_HASH
+    row_hash = _audit_hash(prev_hash, user_id, action, patient_id, detail, created_at)
+    conn.execute(
+        """INSERT INTO audit_log (user_id, action, patient_id, detail, created_at, prev_hash, row_hash)
+           VALUES (?, ?, ?, ?, ?, ?, ?)""",
+        (user_id, action, patient_id, detail, created_at, prev_hash, row_hash),
+    )
+
+
 def log_action(user, action, patient_id=None, detail=None):
     """Write one row to audit_log. Call it from every route that reads or changes patient data.
 
     user: the dict from get_current_user  action: short verb like "view_timeline"
     detail: optional string or dict (dicts are saved as JSON)
     """
-    if isinstance(detail, (dict, list)):
-        detail = json.dumps(detail)
+    conn = get_conn()
+    try:
+        conn.execute("BEGIN IMMEDIATE")  # one writer at a time, so two rows never share a parent
+        append_audit(conn, user["id"] if user else None, action, patient_id, detail)
+        conn.commit()
+    except Exception:
+        conn.rollback()
+        raise
+    finally:
+        conn.close()
+
+
+def verify_audit_chain():
+    """{"entries", "intact", "broken_at", "reason", "latest_hash"}: recomputes every row's hash."""
     with get_conn() as conn:
-        conn.execute(
-            "INSERT INTO audit_log (user_id, action, patient_id, detail) VALUES (?, ?, ?, ?)",
-            (user["id"] if user else None, action, patient_id, detail),
-        )
+        rows = conn.execute("SELECT * FROM audit_log ORDER BY id").fetchall()
+    prev = GENESIS_HASH
+    for row in rows:
+        if row["prev_hash"] != prev:
+            return {"entries": len(rows), "intact": False, "broken_at": row["id"],
+                    "reason": "a row before this one was changed, removed or added", "latest_hash": None}
+        expected = _audit_hash(prev, row["user_id"], row["action"], row["patient_id"], row["detail"], row["created_at"])
+        if row["row_hash"] != expected:
+            return {"entries": len(rows), "intact": False, "broken_at": row["id"],
+                    "reason": "this row's contents were changed", "latest_hash": None}
+        prev = row["row_hash"]
+    return {"entries": len(rows), "intact": True, "broken_at": None, "reason": None, "latest_hash": prev}
 
 
 def insert_fact(conn, fact):
