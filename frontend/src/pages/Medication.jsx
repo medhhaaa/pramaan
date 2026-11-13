@@ -3,6 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { getMedications } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
 import PatientGate from '../components/PatientGate.jsx';
+import LoadError from '../components/LoadError.jsx';
 import { fmtDate } from '../lib/format.js';
 
 function MedicationInner() {
@@ -11,9 +12,12 @@ function MedicationInner() {
   const [meds, setMeds] = useState([]);
   const [open, setOpen] = useState({});
 
-  useEffect(() => { getMedications(pid).then(setMeds); }, [pid]);
+  const [error, setError] = useState('');
+  useEffect(() => { setError(''); getMedications(pid).then(setMeds).catch((e) => setError(e.message)); }, [pid]);
 
   const sorted = [...meds].sort((a, b) => Number(b.current) - Number(a.current));
+
+  if (error) return <LoadError message={error} />;
 
   return (
     <section>

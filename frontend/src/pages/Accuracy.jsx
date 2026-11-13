@@ -2,12 +2,15 @@ import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { BarChart, Bar, XAxis, YAxis, Tooltip, CartesianGrid, ResponsiveContainer } from 'recharts';
 import { getMetrics } from '../api.js';
+import LoadError from '../components/LoadError.jsx';
 
 export default function Accuracy() {
   const { t } = useTranslation();
   const [m, setM] = useState(null);
 
-  useEffect(() => { getMetrics().then(setM); }, []);
+  const [error, setError] = useState('');
+  useEffect(() => { getMetrics().then(setM).catch((e) => setError(e.message)); }, []);
+  if (error) return <LoadError message={error} />;
   if (!m) return <div className="skeleton" />;
 
   const byType = Object.entries(m.per_type).map(([type, v]) => ({ type, precision: v.precision, recall: v.recall, f1: v.f1 }));

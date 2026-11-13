@@ -18,7 +18,7 @@ export default function Claim() {
   const [start, setStart] = useState('');
   const [route, setRoute] = useState(null);
 
-  useEffect(() => { if (pid) getTimeline(pid).then(setFacts); }, [pid]);
+  useEffect(() => { if (pid) getTimeline(pid).then(setFacts).catch(() => setFacts([])); }, [pid]);
 
   if (import.meta.env.VITE_ENABLE_CLAIM_READY !== 'true') return <Navigate to="/" replace />;
 

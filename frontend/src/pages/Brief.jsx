@@ -4,6 +4,7 @@ import { getBrief, checkMedicine, answerQuestion } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
 import { StatusChip, BadgeChip, FlagChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
+import LoadError from '../components/LoadError.jsx';
 import { fmtDate } from '../lib/format.js';
 
 export default function Brief() {
@@ -15,10 +16,13 @@ export default function Brief() {
   const [src, setSrc] = useState(null);
   const [questions, setQuestions] = useState([]);
 
+  const [error, setError] = useState('');
   useEffect(() => {
-    getBrief(pid).then((data) => { setB(data); setQuestions(data.open_questions); });
+    setError('');
+    getBrief(pid).then((data) => { setB(data); setQuestions(data.open_questions); }).catch((e) => setError(e.message));
   }, [pid]);
 
+  if (error) return <LoadError message={error} />;
   if (!b) return <div className="skeleton" />;
 
   const onCheck = async (e) => {

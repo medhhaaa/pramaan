@@ -5,6 +5,7 @@ import { useActivePatientId } from '../context/AppContext.jsx';
 import { StatusChip, BadgeChip, FlagChip, CopyChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
 import PatientGate from '../components/PatientGate.jsx';
+import LoadError from '../components/LoadError.jsx';
 import { fmtDate, yearOf } from '../lib/format.js';
 
 function TimelineInner() {
@@ -16,7 +17,8 @@ function TimelineInner() {
   const [src, setSrc] = useState(null);
   const [hl, setHl] = useState(null);
 
-  useEffect(() => { getTimeline(pid).then(setFacts); }, [pid]);
+  const [error, setError] = useState('');
+  useEffect(() => { setError(''); getTimeline(pid).then(setFacts).catch((e) => setError(e.message)); }, [pid]);
 
   const rows = useMemo(() => facts.filter((f) => !(hideCopies && f.echo_of)), [facts, hideCopies]);
   const years = useMemo(() => {
@@ -30,6 +32,8 @@ function TimelineInner() {
     const original = facts.find((x) => x.fact_id === factId);
     return original ? original.document_id : factId;
   };
+
+  if (error) return <LoadError message={error} />;
 
   return (
     <section>
