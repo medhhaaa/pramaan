@@ -72,3 +72,21 @@ def test_ai_view_respects_patient_access(client):
     assert client.get("/documents/p1_d1/ai-view", headers=sunita).status_code in (200, 404)
     ravi = login(client, "ravi", "ravi123")
     assert client.get("/documents/p1_d1/ai-view", headers=ravi).status_code == 403
+
+
+def test_audit_log_tampering_is_detected(client):
+    from backend.db import DB_PATH, verify_audit_chain
+    sunita = login(client, "sunita", "sunita123")
+    for _ in range(3):  # make sure there are a few entries
+        client.get("/patients/p1/timeline", headers=sunita)
+    assert verify_audit_chain()["intact"]
+    conn = sqlite3.connect(DB_PATH)
+    row_id, action = conn.execute("SELECT id, action FROM audit_log ORDER BY id LIMIT 1 OFFSET 1").fetchone()
+    with conn:
+        conn.execute("UPDATE audit_log SET action = 'login' WHERE id = ?", (row_id,))
+    result = verify_audit_chain()
+    assert not result["intact"] and result["broken_at"] == row_id
+    with conn:  # put it back: the chain is whole again
+        conn.execute("UPDATE audit_log SET action = ? WHERE id = ?", (action, row_id))
+    conn.close()
+    assert verify_audit_chain()["intact"]

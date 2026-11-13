@@ -22,7 +22,7 @@ import os
 import sys
 from datetime import date, datetime, timedelta, timezone
 
-from backend.db import get_conn
+from backend.db import append_audit, get_conn
 from backend.prescriptions import create_prescription
 from backend.routes.consult_records import build_snapshot, create_consult_record
 
@@ -64,10 +64,8 @@ def add_team(conn, patient_id, doctor_id, scope="all", days_ago=60, **extra):
 
 
 def viewed(conn, doctor_id, patient_id, days_ago):
-    conn.execute(
-        "INSERT INTO audit_log (user_id, action, patient_id, detail, created_at) VALUES (?, 'view_brief', ?, 'demo', ?)",
-        (doctor_id, patient_id, at(days_ago, 11)),
-    )
+    # through the audit chain (backend/db.py), so demo rows are covered by the tamper check too
+    append_audit(conn, doctor_id, "view_brief", patient_id, "demo", created_at=at(days_ago, 11))
 
 
 def log_doses(conn, patient_id, reminder_id, days, taken_days, skipped_days=()):

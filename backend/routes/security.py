@@ -30,7 +30,7 @@ from fastapi import APIRouter, Depends, HTTPException
 
 from backend import storage
 from backend.auth import get_current_user, require_patient_access
-from backend.db import get_conn, log_action
+from backend.db import get_conn, log_action, verify_audit_chain
 from pipeline.deidentify import deidentify
 from pipeline.ocr import handwritten_pages, unread_pages
 from pipeline.read_pdf import read_pdf
@@ -220,7 +220,16 @@ def scorecard(run_tests: bool = False, user=Depends(get_current_user)):
     covered, missing = _audit_coverage()
 
     total_facts, verified = facts[0] or 0, facts[1] or 0
+    chain = verify_audit_chain()
     checks = [
+        {"key": "audit_chain", "title": "Audit log can't be edited without it showing",
+         "result": (f"{chain['entries']} entries · chain intact" if chain["intact"]
+                    else f"BROKEN at entry #{chain['broken_at']}"),
+         "passed": chain["intact"],
+         "how": "Each audit entry stores a SHA-256 fingerprint of itself plus the entry before it. Every "
+                "fingerprint is recomputed now; changing, removing or slipping in an entry breaks the chain."
+                + (f" Latest fingerprint: {chain['latest_hash'][:16]}…" if chain["intact"] else ""),
+         "details": [] if chain["intact"] else [f"Entry #{chain['broken_at']}: {chain['reason']}"]},
         {"key": "text_leaks", "title": "Patient identifiers left in text sent to the AI",
          "result": f"{len(text_leaks)} left · {removed_total} removed", "passed": not text_leaks,
          "how": "Every document is run through the same de-identification step the pipeline uses; the "
