@@ -58,6 +58,8 @@ TESS_DPI = 300
 VISION_WIDTH_PX = 1000          # page width sent to the model: handwriting still readable, much faster
 UNSURE_CONFIDENCE = 80          # a word Tesseract is unsure about
 HANDWRITTEN_SHARE = 0.045       # handwritten pages: 5-42% unsure words; clean printed scans: 0-4%
+# (word confidence limit, share of unsure words) per OCR engine
+THRESHOLDS = {"tesseract": (UNSURE_CONFIDENCE, HANDWRITTEN_SHARE)}
 MIN_MATCH = 35                  # rapidfuzz score to trust a line position
 
 PROMPT = """You are copying a medical document that may be handwritten.
@@ -78,6 +80,25 @@ def _model():
 
 def _ollama_url():
     return os.getenv("OLLAMA_URL", "http://localhost:11434")
+
+
+def ocr_engine():
+    """OCR_ENGINE in .env: tesseract (default) or paddleocr (trial)."""
+    return os.getenv("OCR_ENGINE", "tesseract").lower()
+
+
+def ocr_lines(page):
+    """The page's text lines from the chosen OCR engine (same shape either way), each with
+    its 1-based page and line number in reading order."""
+    if ocr_engine() == "paddleocr":
+        from pipeline.paddle_ocr import paddle_lines
+
+        lines = paddle_lines(page)
+    else:
+        lines = tesseract_lines(page)
+    for n, line in enumerate(lines, start=1):
+        line["page"], line["line"] = page.number + 1, n
+    return lines
 
 
 def tesseract_lines(page):
@@ -114,8 +135,9 @@ def needs_vision(lines):
              if sum(ch.isalnum() for ch in word) >= 2]
     if not confs:
         return True  # Tesseract found no words at all
-    unsure = sum(c < UNSURE_CONFIDENCE for c in confs) / len(confs)
-    return unsure >= HANDWRITTEN_SHARE
+    limit, share = THRESHOLDS.get(ocr_engine(), (UNSURE_CONFIDENCE, HANDWRITTEN_SHARE))
+    unsure = sum(c < limit for c in confs) / len(confs)
+    return unsure >= share
 
 
 def enabled():

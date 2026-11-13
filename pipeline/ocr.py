@@ -70,7 +70,8 @@ def make_searchable(pdf_bytes):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
             continue
 
-        lines = handwriting.tesseract_lines(page) if handwriting.enabled() else None
+        paddle = handwriting.ocr_engine() == "paddleocr"
+        lines = handwriting.ocr_lines(page) if handwriting.enabled() or paddle else None
         texts = None
         if lines is not None and handwriting.needs_vision(lines):
             # handwriting (or mixed): a vision model reads it -- the cloud one only after the
@@ -83,6 +84,13 @@ def make_searchable(pdf_bytes):
                 _add_invisible_line(out[-1], line["text"], line["rect"])
                 confidences.setdefault(str(page.number + 1), []).append([line["text"], line["confidence"]])
             handwritten.append(page.number + 1)
+            continue
+
+        if paddle and lines:
+            # print, read by PaddleOCR: picture of the page + its lines as invisible text
+            out.insert_pdf(src, from_page=page.number, to_page=page.number)
+            for line in lines:
+                _add_invisible_line(out[-1], line["text"], line["rect"])
             continue
 
         # print: picture of the page + Tesseract's invisible text on top, at the same size.

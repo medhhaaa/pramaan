@@ -4,6 +4,8 @@
 
 Then open http://localhost:8000/docs to try every route in the browser.
 """
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()  # must run before importing modules that read env vars
@@ -29,6 +31,12 @@ app.add_middleware(
 )
 
 init_db()
+
+# trial OCR engine: load PaddleOCR's model now, not on the first upload
+if os.getenv("OCR_ENGINE", "").lower() == "paddleocr":
+    from pipeline.paddle_ocr import warm_up
+
+    warm_up()
 
 for module in [
     auth,

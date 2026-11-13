@@ -106,22 +106,49 @@ def call_llm(prompt: str) -> str:
 
 
 # ---------- vision: reading handwritten pages (pipeline/handwriting.py) ----------
-# Optional. Set VISION_MODEL in .env (e.g. qwen-vl on free.ai) to read handwriting with a cloud
-# model. handwriting.py only ever sends a page AFTER blacking out the patient's personal details.
-# VISION_PROVIDER defaults to the text provider; anthropic or any OpenAI-style API works.
+# Optional. handwriting.py only ever sends a page AFTER blacking out the patient's personal details.
+# VISION_PROVIDER in .env picks the service:
+#   (empty)  default: the text provider's API (free.ai) with VISION_MODEL, e.g. qwen-vl
+#   github   GitHub Models, key GITHUB_TOKEN, model GITHUB_VISION_MODEL (default openai/gpt-4o)
+#   gemini   Google AI Studio, key GEMINI_API_KEY, model GEMINI_VISION_MODEL (default gemini-2.5-flash)
+#   anthropic  key LLM_API_KEY, model VISION_MODEL
+# github and gemini both speak the OpenAI API, so they share the code below.
+
+VISION_SERVICES = {
+    "github": {"base_url": "https://models.github.ai/inference", "key": "GITHUB_TOKEN",
+               "model": "GITHUB_VISION_MODEL", "default_model": "openai/gpt-4o"},
+    "gemini": {"base_url": "https://generativelanguage.googleapis.com/v1beta/openai/", "key": "GEMINI_API_KEY",
+               "model": "GEMINI_VISION_MODEL", "default_model": "gemini-2.5-flash"},
+}
 
 
-def vision_enabled():
+def _vision_provider():
+    return os.getenv("VISION_PROVIDER", "").lower()
+
+
+def vision_enabled(provider=None):
+    provider = provider or _vision_provider()
+    if provider in VISION_SERVICES:
+        return bool(os.getenv(VISION_SERVICES[provider]["key"]))
     return bool(os.getenv("VISION_MODEL"))
 
 
-def call_vision(prompt: str, png: bytes) -> str:
-    """Send one prompt + one PNG image, return the model's text reply."""
+def call_vision(prompt: str, png: bytes, provider: str | None = None) -> str:
+    """Send one prompt + one PNG image, return the model's text reply.
+    provider overrides VISION_PROVIDER (used to compare services, or to read a page twice)."""
     import base64
 
-    provider = os.getenv("VISION_PROVIDER", "").lower() or _provider()
-    model = os.getenv("VISION_MODEL")
+    provider = (provider or _vision_provider()).lower()
+    if provider == "default":  # explicitly the default service, whatever VISION_PROVIDER says
+        provider = ""
     data = base64.b64encode(png).decode()
+    if provider in VISION_SERVICES:
+        service = VISION_SERVICES[provider]
+        return _openai_vision(prompt, data, os.getenv(service["model"]) or service["default_model"],
+                              api_key=os.getenv(service["key"]), base_url=service["base_url"])
+
+    provider = provider or _provider()
+    model = os.getenv("VISION_MODEL")
     if provider == "anthropic":
         import anthropic
 
@@ -137,10 +164,15 @@ def call_vision(prompt: str, png: bytes) -> str:
         )
         return "".join(block.text for block in response.content if block.type == "text")
 
+    # default: same OpenAI-style API as the text model (free.ai via OPENAI_BASE_URL, or Groq)
+    return _openai_vision(prompt, data, model, api_key=os.getenv("LLM_API_KEY"),
+                          base_url=GROQ_URL if provider == "groq" else None)
+
+
+def _openai_vision(prompt, data, model, api_key, base_url):
     from openai import OpenAI
 
-    client = OpenAI(api_key=os.getenv("LLM_API_KEY"), base_url=GROQ_URL if provider == "groq" else None,
-                    max_retries=3)
+    client = OpenAI(api_key=api_key, base_url=base_url, max_retries=3)
     response = client.chat.completions.create(
         model=model,
         temperature=0,
