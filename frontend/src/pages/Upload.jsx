@@ -1,7 +1,7 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText, Copy, FileText, Trash2, Pencil, Check } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText, Copy, Crop, FileText, Trash2, Pencil, Check } from 'lucide-react';
 import { upload, listDocuments, deleteDocument, renameDocument } from '../api.js';
 import { useActivePatientId, useApp } from '../context/AppContext.jsx';
 import { useCachedState } from '../lib/sessionCache.js';
@@ -9,6 +9,7 @@ import PatientGate from '../components/PatientGate.jsx';
 import { StatusChip, FlagChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
 import { fmtDate } from '../lib/format.js';
+import '../styles/upload-photo.css';
 
 const CONSENT_KEY = 'pramaan_consent_v1';
 // what the backend reads: PDFs (digital or scanned) and phone photos of documents
@@ -276,6 +277,46 @@ function AllDocuments({ docs, error, onDeleted, onRenamed }) {
   );
 }
 
+// Before a photo uploads: "Is your name written on it? Crop it out or cover it first." Shows the
+// chosen photos so the person can look. Nothing uploads until they choose.
+function PhotoNameCheck({ files, onUpload, onCancel }) {
+  const { t } = useTranslation();
+  const [previews, setPreviews] = useState([]);
+  const headRef = useRef(null);
+  const photos = files.filter((f) => f.type.startsWith('image/'));
+
+  useEffect(() => {
+    const urls = files.filter((f) => f.type.startsWith('image/'))
+      .map((f) => ({ name: f.name, url: URL.createObjectURL(f) }));
+    setPreviews(urls);
+    headRef.current?.focus();
+    return () => urls.forEach((p) => URL.revokeObjectURL(p.url));
+  }, [files]);
+
+  return (
+    <section className="card photo-check" role="alertdialog" aria-labelledby="photo-check-title" aria-describedby="photo-check-why">
+      <h2 id="photo-check-title" ref={headRef} tabIndex={-1}>
+        <AlertTriangle size={20} className="warn-icon" aria-hidden="true" /> {t('upload.nameCheck.title', { count: photos.length })}
+      </h2>
+      <p id="photo-check-why">{t('upload.nameCheck.why')}</p>
+      <p className="muted small"><Crop size={14} aria-hidden="true" /> {t('upload.nameCheck.how')}</p>
+      <ul className="photo-check-list">
+        {previews.map((p) => (
+          <li key={p.url}>
+            <img src={p.url} alt={t('upload.nameCheck.previewAlt', { name: p.name })} />
+            <span className="small">{p.name}</span>
+          </li>
+        ))}
+      </ul>
+      <div className="btn-row">
+        <button type="button" className="btn btn-primary" onClick={onUpload}>{t('upload.nameCheck.upload', { count: photos.length })}</button>
+        <button type="button" className="btn btn-ghost" onClick={onCancel}>{t('upload.nameCheck.cancel')}</button>
+      </div>
+      {files.length > photos.length && <p className="muted small">{t('upload.nameCheck.pdfsWait', { count: files.length - photos.length })}</p>}
+    </section>
+  );
+}
+
 function UploadInner() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -311,10 +352,20 @@ function UploadInner() {
 
   const update = (i, patch) => setItems((prev) => prev.map((it, j) => (j === i ? { ...it, ...patch } : it)));
 
-  // one file at a time: each takes ~20-40 s (OCR + AI extraction + quote checks)
-  const run = async (list) => {
+  // A photo (often a handwritten prescription) may have the patient's name written on it. The
+  // browser can't read the photo, so every photo waits here until the person says the name is
+  // cropped out or not there (PhotoNameCheck). PDFs alone upload straight away.
+  const [held, setHeld] = useState(null); // files waiting for that answer
+  const choose = (list) => {
     const files = list.filter((f) => ACCEPT.includes(f.type));
     if (files.length === 0 || busy) return;
+    if (files.some((f) => f.type.startsWith('image/'))) setHeld(files);
+    else run(files);
+  };
+
+  // one file at a time: each takes ~20-40 s (OCR + AI extraction + quote checks)
+  const run = async (files) => {
+    setHeld(null);
     // new files go on top; earlier reports from this session stay below them
     setItems((prev) => [...files.map((f) => ({ name: f.name, state: 'waiting' })), ...prev]);
     for (let i = 0; i < files.length; i += 1) {
@@ -351,14 +402,16 @@ function UploadInner() {
         className={`dropzone ${dragging ? 'dragging' : ''} ${busy ? 'disabled' : ''}`}
         onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
         onDragLeave={() => setDragging(false)}
-        onDrop={(e) => { e.preventDefault(); setDragging(false); run(Array.from(e.dataTransfer.files)); }}
+        onDrop={(e) => { e.preventDefault(); setDragging(false); choose(Array.from(e.dataTransfer.files)); }}
       >
         <UploadCloud size={36} />
         <span>{t('upload.drop')}</span>
         <span className="btn btn-ghost btn-sm">{t('upload.choose')}</span>
         <input type="file" accept={ACCEPT.join(',')} multiple hidden disabled={busy}
-          onChange={(e) => { run(Array.from(e.target.files)); e.target.value = ''; }} />
+          onChange={(e) => { choose(Array.from(e.target.files)); e.target.value = ''; }} />
       </label>
+
+      {held && <PhotoNameCheck files={held} onUpload={() => run(held)} onCancel={() => setHeld(null)} />}
 
       {items.map((it, i) => (
         <div key={`${it.name}-${i}`} className="card upload-item">
