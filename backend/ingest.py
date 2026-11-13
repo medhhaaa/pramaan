@@ -113,6 +113,14 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         steps.record(conn, patient_id, document_id, "merge", "warn" if counts else "ok",
                      ("flags: " + ", ".join(f"{n} {k.replace('_', ' ')}" for k, n in sorted(counts.items())))
                      if counts else "merged into the timeline, no conflicts, duplicates or unit problems")
+        from backend.routes.questions import sync_questions  # avoids an import loop
+
+        new = sync_questions(conn, patient_id)
+        to_doctor = [q for q in new if q["routed_to"] == "doctor"]
+        steps.record(conn, patient_id, document_id, "questions", "warn" if to_doctor else "ok",
+                     (f"{len(new)} new question(s): {len(to_doctor)} straight to the doctor"
+                      + "".join(f" ({q['route_reason']})" for q in to_doctor[:2])
+                      + f", {len(new) - len(to_doctor)} to the patient first") if new else "no new questions")
     if doc_type == "discharge_summary" and evidence.get("doc_type_quote") and not conflicts:
         from backend.routes.claims import stay_from_discharge_summary  # avoids an import loop
         stay_from_discharge_summary(patient_id, document_id, result.get("stay_dates") or {})

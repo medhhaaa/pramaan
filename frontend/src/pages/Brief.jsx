@@ -165,6 +165,11 @@ export default function Brief() {
         {questions.length === 0 && <p className="muted">—</p>}
         {questions.map((q) => (
           <div key={q.id} className="question">
+            {q.routed_to === 'doctor' && (
+              <span className="chip chip-danger small" title={t('brief.directTip', { defaultValue: 'The agent sent this straight to the doctor instead of asking the patient first.' })}>
+                {t('brief.direct', { defaultValue: 'Sent straight to you' })}: {q.route_reason}
+              </span>
+            )}
             <p>{q.text}</p>
             {q.source && <button className="link-btn small" onClick={() => setSrc(q.source)}>{q.source}</button>}
             <div className="btn-row">

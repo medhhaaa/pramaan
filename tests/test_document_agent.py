@@ -50,7 +50,7 @@ def test_every_step_is_recorded_in_order(client, monkeypatch):
     r = client.get(f"/documents/{doc_id}/agent-steps", headers=headers(client))
     assert r.status_code == 200
     steps = [s["step"] for s in r.json()["steps"]]
-    assert steps == ["read", "protect", "extract", "check", "classify", "patient", "save", "merge"], steps
+    assert steps == ["read", "protect", "extract", "check", "classify", "patient", "save", "merge", "questions"], steps
     by_step = {s["step"]: s for s in r.json()["steps"]}
     assert "personal details replaced" in by_step["protect"]["detail"]
     assert by_step["classify"]["detail"].startswith("prescription")

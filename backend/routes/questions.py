@@ -15,6 +15,10 @@ POST /questions/{question_id}/answer   {"answer": "...", "value": "..."}
 
 The answer column holds JSON: {"answer", "value", "by", "role", "at"}.
 Each question is saved in English (text) and Kannada (text_kn); the user's language picks one.
+Routing (backend/agent/routing.py, core backend): clinical questions (allergy / medicine
+conflicts, a report that may be someone else's, an impossible value) go straight to the doctor:
+saved with routed_to "doctor" and status "sent_to_doctor". Everything else asks the patient first
+(routed_to "patient"). Each question also says why (route_reason).
 Claim checklist questions (stay_id + claim_condition set, see backend/routes/claims.py) live
 in the same table: the patient answers yes / no / dont_know, and the answer sets the hospital
 stay's condition. They never go to the doctor.
@@ -130,8 +134,13 @@ def gap_questions(facts):
     return questions
 
 
-def build_questions(facts, docs):
-    return contradiction_questions(facts, docs) + echo_medicine_questions(facts, docs) + gap_questions(facts)
+def build_questions(facts, docs, conn=None, patient_id=None):
+    questions = contradiction_questions(facts, docs) + echo_medicine_questions(facts, docs) + gap_questions(facts)
+    if conn is not None:  # doctor-only questions need held-back documents too
+        from backend.agent.routing import doctor_only_questions
+
+        questions += doctor_only_questions(conn, patient_id, docs)
+    return questions
 
 
 def question_key(fact_ids, text):
@@ -141,27 +150,50 @@ def question_key(fact_ids, text):
 
 def sync_questions(conn, patient_id):
     """Save any new questions for this patient. Existing ones (any status) are kept as they are,
-    except that a missing Kannada text is filled in (questions saved before text_kn existed)."""
+    except that a missing Kannada text is filled in (questions saved before text_kn existed).
+    Returns the new questions: [{"id", "text", "routed_to", "route_reason"}]."""
+    from backend.agent.routing import route
+
     facts = load_facts(conn, patient_id)
     docs = load_documents(conn, patient_id)
+    facts_by_id = facts_with_gaps(conn, patient_id)
+    new = []
     existing = {
-        question_key(json.loads(r["fact_ids"] or "[]"), r["text"]): r
+        question_key(json.loads(r["fact_ids"] or "[]"), r["text"]): dict(r)
         for r in conn.execute(
-            "SELECT id, fact_ids, text, text_kn FROM questions WHERE patient_id = ?", (patient_id,)
+            "SELECT id, fact_ids, text, text_kn, status, stay_id FROM questions WHERE patient_id = ?", (patient_id,)
         )
     }
-    for fact_ids, texts in build_questions(facts, docs):
+    current = set()  # keys of the questions that still apply now
+    for fact_ids, texts in build_questions(facts, docs, conn, patient_id):
         key = question_key(fact_ids, texts["en"])
+        current.add(key)
         row = existing.get(key)
         if row is None:
-            conn.execute(
-                "INSERT INTO questions (patient_id, fact_ids, text, text_kn) VALUES (?, ?, ?, ?)",
-                (patient_id, json.dumps(sorted(fact_ids)), texts["en"], texts["kn"]),
+            to, reason = route(fact_ids, facts_by_id)
+            cur = conn.execute(
+                """INSERT INTO questions (patient_id, fact_ids, text, text_kn, status, routed_to, route_reason)
+                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
+                (patient_id, json.dumps(sorted(fact_ids)), texts["en"], texts["kn"],
+                 "sent_to_doctor" if to == "doctor" else "open", to, reason),
             )
+            new.append({"id": cur.lastrowid, "text": texts["en"], "routed_to": to, "route_reason": reason})
             existing[key] = {"text_kn": texts["kn"]}
         elif not row["text_kn"]:
             conn.execute("UPDATE questions SET text_kn = ? WHERE id = ?", (texts["kn"], row["id"]))
+    # unanswered questions that no longer apply (a newer document changed the picture, e.g. a
+    # third copy of a medicine replaces the "two copies" question) are retired by the agent;
+    # answered or resolved ones and claim questions are never touched
+    for key, row in existing.items():
+        if (key not in current and row.get("status") in ("open", "sent_to_doctor") and not row.get("stay_id")
+                and row.get("id")):
+            conn.execute(
+                "UPDATE questions SET status = 'resolved', answer = ? WHERE id = ?",
+                (json.dumps({"answer": "superseded", "by": "agent", "role": "agent",
+                             "at": datetime.now(timezone.utc).isoformat(timespec="seconds")}), row["id"]),
+            )
     sync_claim_questions(conn, patient_id)
+    return new
 
 
 def question_out(row, facts_by_id, lang="en"):
@@ -176,6 +208,8 @@ def question_out(row, facts_by_id, lang="en"):
         "created_at": row["created_at"],
         "stay_id": row["stay_id"],
         "claim_condition": row["claim_condition"],
+        "routed_to": row["routed_to"] or "patient",
+        "route_reason": row["route_reason"],
     }
 
 

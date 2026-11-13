@@ -261,6 +261,8 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("questions", "routed_to", "TEXT DEFAULT 'patient'"),  # patient | doctor (backend/agent/routing.py)
+    ("questions", "route_reason", "TEXT"),
     ("patients", "phone", "TEXT"),    # optional: the privacy layer removes it anywhere in text
     ("patients", "address", "TEXT"),
     ("audit_log", "prev_hash", "TEXT"),
