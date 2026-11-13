@@ -52,3 +52,23 @@ def adherence(conn, patient_id, days=14, item_ids=None, today=None):
     n = len(due)
     return {"due": n, "taken": taken, "skipped": skipped, "missed": n - taken - skipped,
             "percent": round(100 * taken / n) if n else None}
+
+
+def daily(conn, patient_id, item_ids, days=30, today=None):
+    """[{date, due, taken, skipped}] for each of the last `days` days (oldest first), for the
+    reminders of these prescription items: the bars on the refill review screen."""
+    today = today or today_utc()
+    if not item_ids:
+        return []
+    q = ",".join("?" for _ in item_ids)
+    reminders = conn.execute(f"SELECT * FROM reminders WHERE prescription_item_id IN ({q})", list(item_ids)).fetchall()
+    logs = {(r["reminder_id"], r["dose_date"]): r["status"] for r in conn.execute(
+        f"""SELECT l.reminder_id, l.dose_date, l.status FROM dose_logs l
+            JOIN reminders r ON r.id = l.reminder_id WHERE r.prescription_item_id IN ({q})""", list(item_ids))}
+    out = []
+    for n in range(days, 0, -1):
+        day = (today - timedelta(days=n)).isoformat()
+        due = [r for r in reminders if r["start_date"] <= day <= r["end_date"]]
+        statuses = [logs.get((r["id"], day)) for r in due]
+        out.append({"date": day, "due": len(due), "taken": statuses.count("taken"), "skipped": statuses.count("skipped")})
+    return out

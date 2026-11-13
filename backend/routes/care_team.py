@@ -306,6 +306,9 @@ def my_patients(conn, doctor_id, today=None):
     for e in entries:
         scope = parse_scope(e["scope"])
         tags, doses = patient_tags(conn, e, today)
+        refill = conn.execute(
+            "SELECT id FROM refill_requests WHERE doctor_id = ? AND patient_id = ? AND status = 'pending' ORDER BY id",
+            (doctor_id, e["patient_id"])).fetchone()
         out.append({
             "patient_id": e["patient_id"],
             "name": e["name"],
@@ -314,6 +317,7 @@ def my_patients(conn, doctor_id, today=None):
             "scope": scope,
             "conditions": scoped_conditions(conn, e["patient_id"], scope),
             "tags": tags,
+            "refill_request_id": refill["id"] if refill else None,
             "adherence_14d": doses["percent"],
             "followup_on": e["followup_on"],
             "last_activity": last_activity(conn, e),
