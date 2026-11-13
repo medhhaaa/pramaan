@@ -1,0 +1,9 @@
+# Optional: "Similar meaning" in the in-page search (backend/search.py) needs a local
+# embedding model. Without these packages search still works (exact words, synonyms,
+# brand <-> generic medicine names, same visit); only the "Similar meaning" tier is off.
+#
+# CPU-only PyTorch first (much smaller than the default CUDA build):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-search.txt
+# The model (all-MiniLM-L6-v2, ~90 MB) is downloaded once on first use, then runs offline.
+sentence-transformers
