@@ -36,6 +36,8 @@ from functools import lru_cache
 
 from rapidfuzz import fuzz
 
+from pipeline.deidentify import INSTITUTION_KEYWORD, INSTITUTION_WORD
+
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 ALLOW_PATH = os.path.join(ROOT, "data", "brand_generic.json")
 SPACY_MODEL = os.getenv("PRIVACY_SPACY_MODEL", "en_core_web_md")
@@ -336,6 +338,11 @@ def layer_context(text):
     # a street / locality: capitalised word(s) before Road, Nagar, Layout, Cross... ("Kadri Road")
     for m in re.finditer(rf"\b((?:\d+(?:st|nd|rd|th)?\s+)?(?:[A-Z][a-z]+\s+){{1,3}}(?:{STREET}))\b", text):
         found.append(Finding(m.group(1), m.start(1), m.end(1), "PLACE", "4 context"))
+    # a hospital / clinic / lab: capitalised words ending in Hospital, Clinic, Diagnostics...
+    # ("Mercy Hospital", "Sunrise Diagnostics"). Same rule as pipeline/deidentify.py, which the
+    # upload path runs first; NER alone missed these in questions typed for Ask.
+    for m in re.finditer(rf"\b(?:{INSTITUTION_WORD} +){{1,5}}{INSTITUTION_KEYWORD}\b", text):
+        found.append(Finding(m.group(), m.start(), m.end(), "ORG", "4 context"))
     for pat in CONTEXT:  # (street rule above)
         for m in re.finditer(pat, text):
             words = m.group(1).strip()
