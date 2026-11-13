@@ -24,7 +24,8 @@ from pipeline import process
 
 
 def new_document_id(conn, patient_id):
-    n = conn.execute("SELECT COUNT(*) FROM documents WHERE patient_id = ?", (patient_id,)).fetchone()[0] + 1
+    n = conn.execute("SELECT COUNT(*) FROM documents WHERE patient_id = ? AND doc_type IS NOT 'patient_profile'",
+                     (patient_id,)).fetchone()[0] + 1
     while conn.execute("SELECT 1 FROM documents WHERE id = ?", (f"{patient_id}_d{n}",)).fetchone():
         n += 1
     return f"{patient_id}_d{n}"

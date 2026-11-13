@@ -2,7 +2,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { ASK_ON } from '../lib/features.js';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, QrCode, FileText, Sun, Moon, ClipboardCheck, Users, FolderOpen, Tablets, FileCheck, Lock, SearchCheck } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, QrCode, FileText, Sun, Moon, ClipboardCheck, Users, FolderOpen, Tablets, FileCheck, Lock, SearchCheck, HeartPulse } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
 import HiddenNotice from './HiddenNotice.jsx';
@@ -30,6 +30,7 @@ const DOCTOR_NAV = [
 const PATIENT_NAV = [
   // Things to check opens from My Records (its button shows the open count), so My Records stays lit there
   { to: '/my-records', key: 'nav.myRecords', icon: FileText, also: ['/things'] },
+  { to: '/health-profile', key: 'nav.healthProfile', icon: HeartPulse },
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },

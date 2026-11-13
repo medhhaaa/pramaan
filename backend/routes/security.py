@@ -188,7 +188,8 @@ def scorecard(run_tests: bool = False, user=Depends(get_current_user)):
     by_id = {p["id"]: p for p in patients}
     with get_conn() as conn:
         docs = [dict(r) for r in conn.execute(
-            f"SELECT * FROM documents WHERE patient_id IN ({','.join('?' * len(by_id)) or 'NULL'}) ORDER BY patient_id, id",
+            f"SELECT * FROM documents WHERE patient_id IN ({','.join('?' * len(by_id)) or 'NULL'})"
+            " AND doc_type IS NOT 'patient_profile' ORDER BY patient_id, id",
             list(by_id))]
         facts = conn.execute(
             f"""SELECT COUNT(*), SUM(quote_verified) FROM facts WHERE patient_id IN ({','.join('?' * len(by_id)) or 'NULL'})
@@ -304,7 +305,7 @@ def document_ai_view(document_id: str, user=Depends(get_current_user)):
         require_patient_access(user, doc["patient_id"])
         patient = dict(conn.execute("SELECT * FROM patients WHERE id = ?", (doc["patient_id"],)).fetchone())
         doc = dict(doc)
-    if not os.path.exists(storage.abs_path(doc["file_path"])):
+    if not doc["file_path"] or not os.path.exists(storage.abs_path(doc["file_path"])):
         raise HTTPException(status_code=404, detail="The stored file for this document is missing")
     view = ai_view(doc, patient)
     log_action(user, "view_ai_view", doc["patient_id"], {"document_id": document_id})

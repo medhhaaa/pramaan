@@ -280,6 +280,8 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("patients", "profile_filled_at", "TEXT"),   # health profile form (backend/routes/profile.py)
+    ("patients", "profile_skipped_at", "TEXT"),  # "Do it later"
     ("questions", "reminded_at", "TEXT"),   # backend/agent/reminders.py
     ("questions", "escalated_at", "TEXT"),
     ("questions", "text_hi", "TEXT"),  # the question in Hindi

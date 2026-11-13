@@ -263,6 +263,7 @@ function briefForScreen(raw) {
     })),
     allergies: (raw.allergies || []).map((a) => ({
       fact_id: a.source?.fact_id, document_id: a.source?.document_id, status: a.status,
+      patient_reported: a.source?.doc_type === 'patient_profile', // typed by the patient in their health profile
       name: a.reaction ? `${a.name} (${a.reaction})` : a.name, quote: a.source?.quote,
     })),
     conditions: (raw.conditions || []).map((c) => ({ fact_id: c.source?.fact_id, name: c.name, badge: c.badge || null })),
@@ -392,6 +393,12 @@ export async function listShares(pid) {
 }
 
 // the patient stops a share early: the doctor loses access at once
+// The patient changes what an open share shows: scope "all" or a list of groups (backend/routes/share.py)
+export async function updateShareScope(shareId, scope) {
+  if (USE_DUMMY) { await wait(); return { share_id: shareId, scope, added: [], removed: [] }; }
+  return http('PUT', `/share/${shareId}/scope`, { scope });
+}
+
 export async function stopShare(shareId) {
   if (USE_DUMMY) { await wait(); return { stopped: true }; }
   return http('DELETE', `/share/${shareId}`);
@@ -761,6 +768,21 @@ export async function getAgentSteps(docId) {
 }
 // "App not sure": facts the agent couldn't prove even after retrying (backend/routes/not_sure.py)
 // -> [{id, document_id, filename, fact: {type, name, dose, frequency, value, unit, quote}, reason, attempts}]
+// Health profile (backend/routes/profile.py): the patient's own answers, stored as patient-reported facts.
+// -> {needed, filled_at, dob, sex, blood_group, allergy_answer, allergies: [{name, reaction}], mismatches}
+export async function getProfile(pid) {
+  if (USE_DUMMY) return { needed: false, dob: null, sex: null, blood_group: null, allergy_answer: null, allergies: [], mismatches: [] };
+  return http('GET', `/patients/${pid}/profile`);
+}
+export async function saveProfile(pid, body) {  // body {dob, sex, blood_group, allergy_answer, allergies}
+  if (USE_DUMMY) return { ...body, needed: false, mismatches: [] };
+  return http('PUT', `/patients/${pid}/profile`, body);
+}
+export async function skipProfile(pid) {  // "Do it later"
+  if (USE_DUMMY) return { needed: false };
+  return http('POST', `/patients/${pid}/profile/skip`);
+}
+
 export async function getNotSure(pid) {
   if (USE_DUMMY) return [];
   return http('GET', `/patients/${pid}/not-sure`);

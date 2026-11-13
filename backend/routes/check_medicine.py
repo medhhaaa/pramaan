@@ -210,7 +210,13 @@ def medicine_warnings(patient_id, drug, access, lang="en", renewing_item=None):
         reaction = f" ({allergy['value']})" if allergy["value"] else ""
         doc_kind = doc_type_label(doc.get("doc_type"), lang) if doc.get("doc_type") else ("ದಾಖಲೆ" if kn else "record")
         doc_date = doc.get("document_date") or allergy["event_date"]
-        if kn:
+        if doc.get("doc_type") == "patient_profile":  # typed by the patient, not from a document
+            if kn:
+                text = f"ರೋಗಿಯು {doc_date} ರಂದು ತಮ್ಮ ಆರೋಗ್ಯ ವಿವರದಲ್ಲಿ {allergy['name']} ಅಲರ್ಜಿ{reaction} ಇದೆ ಎಂದು ತಿಳಿಸಿದ್ದಾರೆ: \"{allergy['quote']}\"."
+            else:
+                text = (f"The patient reported a {allergy['name']} allergy{reaction} in their health profile "
+                        f"on {doc_date}: \"{allergy['quote']}\".")
+        elif kn:
             text = f"{allergy['name']} ಅಲರ್ಜಿ{reaction} ದಾಖಲಾಗಿದೆ ({doc_date} ರ {doc_kind}): \"{allergy['quote']}\"."
         else:
             text = f"{allergy['name']} allergy{reaction} is documented in the {doc_kind} from {doc_date}: \"{allergy['quote']}\"."

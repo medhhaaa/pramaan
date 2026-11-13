@@ -48,6 +48,7 @@ DOC_TYPE_KN = {
     "prescription": "ಔಷಧ ಚೀಟಿ",
     "lab_report": "ಪ್ರಯೋಗಾಲಯ ವರದಿ",
     "discharge_summary": "ಡಿಸ್ಚಾರ್ಜ್ ಸಾರಾಂಶ",
+    "patient_profile": "ರೋಗಿಯೇ ತುಂಬಿದ ಆರೋಗ್ಯ ವಿವರ",
 }
 
 FACT_TYPE_KN = {
@@ -78,6 +79,7 @@ DOC_TYPE_HI = {
     "discharge_summary": "डिस्चार्ज सारांश",
     "final_bill": "अस्पताल का बिल",
     "pharmacy_bill": "दवा का बिल",
+    "patient_profile": "मरीज़ की अपनी भरी स्वास्थ्य प्रोफ़ाइल",
 }
 GAP_NAME_HI = {
     "blood group": "ब्लड ग्रुप",
@@ -94,6 +96,8 @@ def doc_type_label(doc_type, lang):
         return DOC_TYPE_KN.get(doc_type, "ದಾಖಲೆ")
     if lang == "hi":
         return DOC_TYPE_HI.get(doc_type, "दस्तावेज़")
+    if doc_type == "patient_profile":
+        return "health profile filled in by the patient"
     return (doc_type or "document").replace("_", " ")
 
 

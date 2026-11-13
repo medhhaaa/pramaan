@@ -35,7 +35,12 @@ def get_document(document_id: str, user=Depends(get_current_user)):
             raise HTTPException(status_code=403, detail="The patient has not shared this document with you")
 
     pdf_base64, lines = None, []
-    if os.path.exists(abs_path(doc["file_path"])):
+    if doc["doc_type"] == "patient_profile":  # no file: its lines are the patient's own answers
+        with get_conn() as conn:
+            lines = [{"page": r["page"], "line": r["line"], "text": r["quote"], "covered": True}
+                     for r in conn.execute("SELECT page, line, quote FROM facts WHERE document_id = ? ORDER BY line",
+                                           (document_id,))]
+    elif doc["file_path"] and os.path.exists(abs_path(doc["file_path"])):
         pdf_base64 = base64.b64encode(read_file(doc["file_path"])).decode()  # decrypts .enc files
         tmp = temp_copy(doc["file_path"])
         try:

@@ -2,6 +2,8 @@ import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import Layout from './components/Layout.jsx';
 import LanguagePopup from './components/LanguagePopup.jsx';
+import ProfilePopup from './components/ProfilePopup.jsx';
+import HealthProfile from './pages/HealthProfile.jsx';
 import ScanModal from './components/ScanModal.jsx';
 import Landing from './pages/Landing.jsx';
 import Login from './pages/Login.jsx';
@@ -53,6 +55,7 @@ function Shell() {
   return (
     <>
       {!user.language && <LanguagePopup username={user.username} onDone={(language) => setUser({ ...user, language })} />}
+      {user.language && user.role === 'patient' && <ProfilePopup pid={user.patientId} />}
       <Routes>
         <Route element={<RequireLogin><Layout /></RequireLogin>}>
           <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/my-patients' : '/my-records'} replace />} />
@@ -65,6 +68,7 @@ function Shell() {
           <Route path="/accuracy" element={<RoleRoute roles={['doctor']}><Accuracy /></RoleRoute>} />
           <Route path="/brief" element={<RoleRoute roles={['doctor']}><PatientGate><Brief /></PatientGate></RoleRoute>} />
           <Route path="/my-records" element={<RoleRoute roles={['patient']}><MyRecords /></RoleRoute>} />
+          <Route path="/health-profile" element={<RoleRoute roles={['patient']}><HealthProfile /></RoleRoute>} />
           <Route path="/things" element={<RoleRoute roles={['patient']}><Things /></RoleRoute>} />
           <Route path="/qr" element={<RoleRoute roles={['patient']}><GenerateQR /></RoleRoute>} />
           <Route path="/claim-documents" element={<RoleRoute roles={['patient']}><ClaimDocuments /></RoleRoute>} />

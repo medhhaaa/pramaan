@@ -3,7 +3,7 @@ import { useTranslation } from 'react-i18next';
 import { Link } from 'react-router-dom';
 import { QRCodeSVG } from 'qrcode.react';
 import { QrCode, ShieldCheck, UserRound, Clock, Eye, MessageSquareMore, TriangleAlert } from 'lucide-react';
-import { createQR, listShares, stopShare, shareOptions, listShareRequests, answerShareRequest, SHARE_MINUTES } from '../api.js';
+import { createQR, listShares, stopShare, shareOptions, listShareRequests, answerShareRequest, updateShareScope, SHARE_MINUTES } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
 import { mmss } from '../lib/format.js';
 import '../styles/share-scope.css';
@@ -28,6 +28,8 @@ export default function GenerateQR() {
   const [now, setNow] = useState(Date.now());
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [editing, setEditing] = useState(null); // share_id whose "what they see" is being changed
+  const [notice, setNotice] = useState('');
 
   const load = useCallback(() => {
     if (!pid) return;
@@ -71,6 +73,14 @@ export default function GenerateQR() {
     load();
   });
 
+  const saveScope = (shareId, scope) => run(async () => {
+    const res = await updateShareScope(shareId, scope);
+    if (qr?.share_id === shareId) setQr({ ...qr, scope: res.scope });
+    setEditing(null);
+    setNotice(t('shareScope.changed'));
+    load();
+  });
+
   const qrLive = qr && now < qr.expires_at; // stopping it clears qr (see stop)
   const active = shares.filter((s) => Date.parse(s.expires_at) > now);
 
@@ -79,6 +89,7 @@ export default function GenerateQR() {
       <div className="page-head"><h1>{t('qr.title')}</h1></div>
       <p className="muted share-intro">{t('qr.intro')}</p>
       {error && <p className="error-text">{error}</p>}
+      {notice && <p className="chip chip-doc" role="status">{notice}</p>}
 
       {requests.map((r) => (
         <ShareRequest key={r.id} request={r} labelOf={labelOf} busy={busy} onAnswer={(body) => answer(r.id, body)} />
@@ -157,6 +168,16 @@ export default function GenerateQR() {
                       {s.opened_at && <> · {t('qr.openedAt', { time: new Date(s.opened_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) })}</>}
                     </div>
                     <div className="muted small"><Eye size={13} /> {scopeText(s.sees ?? s.scope)}</div>
+                    {editing === s.share_id ? (
+                      <ScopeEditor scope={s.scope} groups={groups} labelOf={labelOf} busy={busy}
+                        onSave={(scope) => saveScope(s.share_id, scope)} onCancel={() => setEditing(null)} />
+                    ) : (
+                      groups.length > 0 && (
+                        <button className="link-btn small" disabled={busy} onClick={() => { setNotice(''); setEditing(s.share_id); }}>
+                          {t('shareScope.edit')}
+                        </button>
+                      )
+                    )}
                     {s.care_team_scope && JSON.stringify(s.sees) !== JSON.stringify(s.scope) && (
                       <p className="small share-careteam-note">
                         <TriangleAlert size={14} aria-hidden="true" />
@@ -176,6 +197,44 @@ export default function GenerateQR() {
         </div>
       </div>
     </section>
+  );
+}
+
+// Change what an open share shows: everything, or only the ticked groups. Adding and taking
+// back both work; the doctor's next screen load shows the change (PUT /share/{id}/scope).
+function ScopeEditor({ scope, groups, labelOf, busy, onSave, onCancel }) {
+  const { t } = useTranslation();
+  const [mode, setMode] = useState(scope === 'all' ? 'all' : 'some');
+  const [picked, setPicked] = useState(scope === 'all' ? groups.map((g) => g.tag) : scope || []);
+  const toggle = (tag) => setPicked((p) => (p.includes(tag) ? p.filter((x) => x !== tag) : [...p, tag]));
+  const chosen = mode === 'all' || picked.length === groups.length ? 'all' : picked;
+  return (
+    <fieldset className="scope-pick scope-edit">
+      <legend className="scope-title">{t('shareScope.title')}</legend>
+      <p className="muted small">{t('shareScope.editNote')}</p>
+      <label className={`radio-row ${mode === 'all' ? 'selected' : ''}`}>
+        <input type="radio" checked={mode === 'all'} onChange={() => setMode('all')} />
+        <span className="scope-option"><strong>{t('shareScope.everything')}</strong></span>
+      </label>
+      <label className={`radio-row ${mode === 'some' ? 'selected' : ''}`}>
+        <input type="radio" checked={mode === 'some'} onChange={() => setMode('some')} />
+        <span className="scope-option"><strong>{t('shareScope.some')}</strong></span>
+      </label>
+      {mode === 'some' && (
+        <div className="scope-groups">
+          {groups.map((g) => (
+            <GroupCheck key={g.tag} group={g} label={labelOf(g.tag)} checked={picked.includes(g.tag)} onChange={() => toggle(g.tag)} />
+          ))}
+          <p className="muted small">{t('shareScope.always')}</p>
+        </div>
+      )}
+      <div className="share-request-actions">
+        <button className="btn btn-primary btn-sm" disabled={busy || (chosen !== 'all' && chosen.length === 0)} onClick={() => onSave(chosen)}>
+          {t('shareScope.saveScope')}
+        </button>
+        <button className="btn btn-ghost btn-sm" disabled={busy} onClick={onCancel}>{t('shareScope.cancel')}</button>
+      </div>
+    </fieldset>
   );
 }
 

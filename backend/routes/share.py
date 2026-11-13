@@ -19,6 +19,10 @@ GET    /patients/{id}/shares  -> active shares: [{"share_id", "created_at", "exp
           care_team_scope  the opening doctor's care-team scope, or null if not on the care team
           sees             what that doctor really sees: scope + care_team_scope together
 DELETE /share/{share_id}      -> {"stopped": true}   (the patient stops sharing early)
+PUT    /share/{share_id}/scope {"scope": "all" | ["diabetes", ...]}   (patient only, open share)
+       -> {"share_id", "scope", "added", "removed"}
+          The patient changes what the doctor sees while the share is open: show more, or take
+          something back. A pending "share more" request is answered if this adds anything.
 
 Safety:
 - Only SHA-256 hashes of the token and code are stored, never the values themselves.
@@ -206,6 +210,34 @@ def list_shares(patient_id: str, user=Depends(get_current_user)):
         }
         for r in rows
     ]
+
+
+class ScopeBody(BaseModel):
+    scope: Union[Literal["all"], List[str]]
+
+
+@router.put("/share/{share_id}/scope")
+def change_scope(share_id: int, body: ScopeBody, user=Depends(get_current_user)):
+    if user["role"] != "patient":
+        raise HTTPException(status_code=403, detail="Only the patient decides what to share")
+    new = check_scope(body.scope)
+    with get_conn() as conn:
+        share = conn.execute("SELECT * FROM share_links WHERE id = ? AND expires_at > datetime('now')",
+                             (share_id,)).fetchone()
+        if not share or not has_full_access(conn, user, share["patient_id"]):
+            raise HTTPException(status_code=404, detail="Share not found or already ended")
+        old = parse_scope(share["scope"])
+        everything = list(SCOPE_NAMES)
+        before, after = set(everything if old == "all" else old), set(everything if new == "all" else new)
+        added, removed = sorted(after - before), sorted(before - after)
+        conn.execute("UPDATE share_links SET scope = ? WHERE id = ?", (scope_text(new), share_id))
+        if added:  # the doctor asked for more and now has it
+            conn.execute(
+                """UPDATE share_requests SET status = 'answered', added = ?, answered_at = datetime('now')
+                   WHERE share_id = ? AND status = 'pending'""", (scope_text(added), share_id))
+    log_action(user, "share_scope_changed", share["patient_id"],
+               {"share_id": share_id, "scope": new, "added": added, "removed": removed})
+    return {"share_id": share_id, "scope": new, "added": added, "removed": removed}
 
 
 @router.delete("/share/{share_id}")
