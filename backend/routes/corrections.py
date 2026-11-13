@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from backend.auth import get_current_user, require_patient_access
 from backend.db import fact_from_row, get_conn, log_action
 from backend.recompute import recompute_patient
+from backend.scope import access_scope, fact_in_scope
 
 # Only these fields can be corrected. Everything else is evidence or an ID.
 CORRECTABLE = {"name", "dose", "frequency", "value", "unit", "action", "status", "event_date"}
@@ -30,7 +31,9 @@ def correct_fact(fact_id: str, body: CorrectionBody, user=Depends(get_current_us
         fact = conn.execute("SELECT * FROM facts WHERE fact_id = ?", (fact_id,)).fetchone()
         if not fact:
             raise HTTPException(status_code=404, detail="Fact not found")
-        require_patient_access(user, fact["patient_id"])
+        access = require_patient_access(user, fact["patient_id"])
+        if not fact_in_scope(dict(fact), access_scope(access)):  # care-team scope (backend/scope.py)
+            raise HTTPException(status_code=403, detail="This fact is outside your care-team scope")
 
         conn.execute(
             """INSERT INTO corrections (fact_id, field, old_value, new_value, corrected_by, role)

@@ -30,7 +30,7 @@ export default function Login() {
       const language = res.language || null;
       if (language) { i18n.changeLanguage(language); localStorage.setItem('pramaan_lang', language); }
       setUser({ role: res.role, name: res.name, username: res.username, patientId: res.patientId, language });
-      navigate(res.role === 'doctor' ? '/patients' : '/my-records', { replace: true });
+      navigate(res.role === 'doctor' ? '/my-patients' : '/my-records', { replace: true });
     } catch {
       setError(t('auth.badLogin'));
     } finally {

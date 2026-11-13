@@ -18,6 +18,7 @@ from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel, Field
 
 from backend.auth import get_current_user, require_patient_access
+from backend.scope import scoped
 from backend.db import fact_from_row, get_conn
 from backend.routes.audit_helper import log_action
 from backend.routes.language import user_language
@@ -115,7 +116,7 @@ def ask_llm(prompt):
 
 @router.post("/patients/{patient_id}/ask")
 def ask_route(patient_id: str, body: AskBody, user=Depends(get_current_user)):
-    require_patient_access(user, patient_id)
+    access = require_patient_access(user, patient_id)
     question = body.question.strip()
     lang = user_language(user)
     not_documented = {"answer": NOT_DOCUMENTED_KN if lang == "kn" else NOT_DOCUMENTED, "fact_ids": [], "citations": []}
@@ -132,7 +133,7 @@ def ask_route(patient_id: str, body: AskBody, user=Depends(get_current_user)):
     if not patient:
         raise HTTPException(status_code=404, detail="Patient not found")
 
-    facts = [fact_from_row(r) for r in rows]
+    facts = scoped([fact_from_row(r) for r in rows], access)  # a scoped doctor's AI sees only in-scope facts
     by_id = {f["fact_id"]: f for f in facts}
     log_action(user, "ask", patient_id, question)
 

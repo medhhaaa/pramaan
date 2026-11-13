@@ -11,7 +11,7 @@
     "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
     "audit": "Audit log", "delete": "Delete data", "myRecords": "My Records",
     "thingsToCheck": "Things to check", "generateQr": "Share with doctor",
-    "claimDocuments": "Claim documents"
+    "claimDocuments": "Claim documents", "myPatients": "My patients", "careTeam": "My care team"
   },
   "auth": {
     "signup": "SIGN-UP", "login": "LOG IN", "alreadyUser": "Already a user?", "newHere": "New here?",
@@ -204,5 +204,7 @@
       "implant_invoice": "Implant invoice and sticker",
       "fir_or_mlc": "FIR or MLC copy"
     }
-  }
+  },
+  "myPatients": {"title": "MY PATIENTS", "count": "{{count}} patients", "intro": "Patients who added you to their care team. Tags show what changed in their records; what to do is your decision.", "filter": "Filter by tag", "all": "All", "empty": "No patients have added you to their care team yet.", "noMatch": "No patients match.", "noConditions": "No conditions in your scope", "scopeLimited": "you see: {{tags}}", "lastActivity": "Last activity", "followUp": "Follow-up", "taken": "{{percent}}% taken", "never": "never", "today": "today", "yesterday": "yesterday", "daysAgo": "{{count}} days ago", "careTeamChip": "Care team patient", "tag": {"refill_request": "Refill request", "new_report": "New report", "missed_doses": "Missed doses", "followup_overdue": "Follow-up overdue", "stable": "Stable"}},
+  "careTeam": {"title": "MY CARE TEAM", "intro": "Doctors on your care team can see your records until you revoke them. You choose what each doctor sees. Allergies are always visible to them, for your safety.", "yourDoctors": "Your doctors", "none": "No doctors yet. Add the doctors who treat you.", "regNo": "Reg. no.", "sees": "Can see", "scopeAllShort": "All your records", "added": "Added", "lastViewed": "Last viewed", "revoke": "Revoke", "yesRevoke": "Yes, revoke access", "cancel": "Cancel", "addTitle": "Add a doctor", "searchHint": "Doctor's name or registration number", "search": "Search", "noDoctors": "No doctor found. Check the spelling or the registration number.", "scopeQuestion": "What may {{name}} see?", "scopeAll": "All my records", "scopeSome": "Only these conditions", "allergyNote": "Your allergies are always shown to your care-team doctors.", "confirmAdd": "Add {{name}}", "already": "This doctor is already on your care team.", "reviewQuestion": "Keep {{name}} on your care team?", "reviewWhy": "There is no consultation with this doctor in Pramaan for 6 months.", "keep": "Keep", "remove": "Remove", "historyTitle": "Who viewed your records", "noHistory": "No doctor has viewed your records yet.", "viewedOn": "{{name}} viewed your records on {{date}}", "revokedTitle": "Removed doctors ({{count}})", "revokedOn": "removed on {{date}}", "tagName": {"diabetes": "Diabetes", "hypertension": "High blood pressure", "heart": "Heart", "thyroid": "Thyroid", "asthma": "Asthma and breathing", "kidney": "Kidney"}}
 }

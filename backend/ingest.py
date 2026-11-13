@@ -76,8 +76,8 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
     with get_conn() as conn:
         conn.execute(
             "INSERT INTO documents (id, patient_id, filename, doc_type, document_date, file_path,"
-            " held_back, doc_type_quote, doc_type_page, doc_type_line)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+            " held_back, doc_type_quote, doc_type_page, doc_type_line, uploaded_at)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
             (document_id, patient_id, filename, doc_type, result.get("document_date"), rel_path,
              int(bool(conflicts)), evidence.get("doc_type_quote"), evidence.get("doc_type_page"),
              evidence.get("doc_type_line")),
