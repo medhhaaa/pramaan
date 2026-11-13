@@ -41,7 +41,7 @@ from backend.routes.audit_helper import log_action
 from backend.routes.fact_helpers import (
     describe, load_documents, load_facts, medication_summaries, source_label,
 )
-from backend.routes.language import gap_name, user_language
+from backend.routes.language import gap_name, question_language, user_language
 
 router = APIRouter()
 
@@ -63,12 +63,15 @@ def contradiction_questions(facts, docs):
             if fact_type == "allergy":
                 ask = f"Are you allergic to {pos['name']}?"
                 ask_kn = f"ನಿಮಗೆ {pos['name']} ಅಲರ್ಜಿ ಇದೆಯೇ?"
+                ask_hi = f"क्या आपको {pos['name']} से एलर्जी है?"
             elif fact_type == "condition":
                 ask = f"Have you been told you have {pos['name']}?"
                 ask_kn = f"ನಿಮಗೆ {pos['name']} ಇದೆ ಎಂದು ವೈದ್ಯರು ಹೇಳಿದ್ದಾರೆಯೇ?"
+                ask_hi = f"क्या डॉक्टर ने आपको बताया है कि आपको {pos['name']} है?"
             else:
                 ask = "Which one is correct?"
                 ask_kn = "ಇವುಗಳಲ್ಲಿ ಯಾವುದು ಸರಿ?"
+                ask_hi = "इनमें से कौन-सा सही है?"
             if negatives:
                 neg = negatives[0]
                 text = (
@@ -79,11 +82,16 @@ def contradiction_questions(facts, docs):
                     f'ನಿಮ್ಮ ದಾಖಲೆಗಳು ಒಂದಕ್ಕೊಂದು ಹೊಂದುತ್ತಿಲ್ಲ. {source_label(neg, docs, "kn")}: "{neg["quote"]}". '
                     f'ಆದರೆ {source_label(pos, docs, "kn")}: "{pos["quote"]}". {ask_kn}'
                 )
+                text_hi = (
+                    f'आपके रिकॉर्ड आपस में मेल नहीं खाते। {source_label(neg, docs, "hi")} में लिखा है "{neg["quote"]}", '
+                    f'लेकिन {source_label(pos, docs, "hi")} में लिखा है "{pos["quote"]}"। {ask_hi}'
+                )
             else:
                 text = f'Your records disagree about {describe(pos)} ("{pos["quote"]}"). {ask}'
                 text_kn = f'{describe(pos)} ಬಗ್ಗೆ ನಿಮ್ಮ ದಾಖಲೆಗಳು ಹೊಂದುತ್ತಿಲ್ಲ ("{pos["quote"]}"). {ask_kn}'
+                text_hi = f'{describe(pos)} के बारे में आपके रिकॉर्ड मेल नहीं खाते ("{pos["quote"]}")। {ask_hi}'
             fact_ids = [pos["fact_id"]] + [n["fact_id"] for n in negatives]
-            questions.append((fact_ids, {"en": text, "kn": text_kn}))
+            questions.append((fact_ids, {"en": text, "kn": text_kn, "hi": text_hi}))
     return questions
 
 
@@ -107,7 +115,13 @@ def echo_medicine_questions(facts, docs):
             f"ಇದರ ಕೊನೆಯ ಹೊಸ ದಾಖಲೆ: {med['last_fresh_evidence_date'] or 'ದಿನಾಂಕ ತಿಳಿದಿಲ್ಲ'}. "
             f"ನೀವು ಈಗಲೂ {med['name']} ತೆಗೆದುಕೊಳ್ಳುತ್ತಿದ್ದೀರಾ?"
         )
-        questions.append(([e["fact_id"] for e in med["entries"]], {"en": text, "kn": text_kn}))
+        text_hi = (
+            f"{describe(fresh)} {med['mentions']} दस्तावेज़ों में है, लेकिन उनमें से {copies} आपके "
+            f"{source_label(fresh, docs, 'hi')} की नकल {'है' if copies == 1 else 'हैं'}। "
+            f"इसका आख़िरी नया रिकॉर्ड {med['last_fresh_evidence_date'] or 'अज्ञात तारीख़'} का है। "
+            f"क्या आप अब भी {med['name']} ले रहे हैं?"
+        )
+        questions.append(([e["fact_id"] for e in med["entries"]], {"en": text, "kn": text_kn, "hi": text_hi}))
     return questions
 
 
@@ -121,6 +135,11 @@ GAP_TEXT_KN = {
     "demographic": "ನಿಮ್ಮ ದಾಖಲೆಗಳಲ್ಲಿ ನಿಮ್ಮ {what} ಉಲ್ಲೇಖವಿಲ್ಲ. ನಿಮಗೆ ಅದು ಗೊತ್ತೇ?",
 }
 GAP_TEXT_OTHER_KN = "ನಿಮ್ಮ ದಾಖಲೆಗಳಲ್ಲಿ {what} ಬಗ್ಗೆ ಉಲ್ಲೇಖವಿಲ್ಲ. ನೀವು ತಿಳಿಸಬಹುದೇ?"
+GAP_TEXT_HI = {
+    "allergy": "आपके रिकॉर्ड में कहीं नहीं लिखा कि आपको कोई एलर्जी है या नहीं। क्या आपको किसी दवा से एलर्जी है?",
+    "demographic": "आपके रिकॉर्ड में आपका {what} नहीं लिखा है। क्या आप इसे जानते हैं?",
+}
+GAP_TEXT_OTHER_HI = "आपके रिकॉर्ड में {what} का ज़िक्र नहीं है। क्या आप बता सकते हैं?"
 
 
 def gap_questions(facts):
@@ -130,7 +149,8 @@ def gap_questions(facts):
     for gap in find_gaps(facts):
         text = GAP_TEXT.get(gap["type"], GAP_TEXT_OTHER).format(what=gap_name(gap["name"], "en"))
         text_kn = GAP_TEXT_KN.get(gap["type"], GAP_TEXT_OTHER_KN).format(what=gap_name(gap["name"], "kn"))
-        questions.append(([gap["fact_id"]], {"en": text, "kn": text_kn}))
+        text_hi = GAP_TEXT_HI.get(gap["type"], GAP_TEXT_OTHER_HI).format(what=gap_name(gap["name"], "hi"))
+        questions.append(([gap["fact_id"]], {"en": text, "kn": text_kn, "hi": text_hi}))
     return questions
 
 
@@ -161,7 +181,8 @@ def sync_questions(conn, patient_id):
     existing = {
         question_key(json.loads(r["fact_ids"] or "[]"), r["text"]): dict(r)
         for r in conn.execute(
-            "SELECT id, fact_ids, text, text_kn, status, stay_id FROM questions WHERE patient_id = ?", (patient_id,)
+            "SELECT id, fact_ids, text, text_kn, text_hi, status, stay_id FROM questions WHERE patient_id = ?",
+            (patient_id,)
         )
     }
     current = set()  # keys of the questions that still apply now
@@ -172,15 +193,18 @@ def sync_questions(conn, patient_id):
         if row is None:
             to, reason = route(fact_ids, facts_by_id)
             cur = conn.execute(
-                """INSERT INTO questions (patient_id, fact_ids, text, text_kn, status, routed_to, route_reason)
-                   VALUES (?, ?, ?, ?, ?, ?, ?)""",
-                (patient_id, json.dumps(sorted(fact_ids)), texts["en"], texts["kn"],
+                """INSERT INTO questions (patient_id, fact_ids, text, text_kn, text_hi, status, routed_to,
+                   route_reason) VALUES (?, ?, ?, ?, ?, ?, ?, ?)""",
+                (patient_id, json.dumps(sorted(fact_ids)), texts["en"], texts["kn"], texts.get("hi"),
                  "sent_to_doctor" if to == "doctor" else "open", to, reason),
             )
             new.append({"id": cur.lastrowid, "text": texts["en"], "routed_to": to, "route_reason": reason})
             existing[key] = {"text_kn": texts["kn"]}
-        elif not row["text_kn"]:
-            conn.execute("UPDATE questions SET text_kn = ? WHERE id = ?", (texts["kn"], row["id"]))
+        else:
+            if not row["text_kn"]:
+                conn.execute("UPDATE questions SET text_kn = ? WHERE id = ?", (texts["kn"], row["id"]))
+            if not row.get("text_hi") and texts.get("hi") and row.get("id"):
+                conn.execute("UPDATE questions SET text_hi = ? WHERE id = ?", (texts["hi"], row["id"]))
     # unanswered questions that no longer apply (a newer document changed the picture, e.g. a
     # third copy of a medicine replaces the "two copies" question) are retired by the agent;
     # answered or resolved ones and claim questions are never touched
@@ -200,7 +224,8 @@ def question_out(row, facts_by_id, lang="en"):
     fact_ids = json.loads(row["fact_ids"] or "[]")
     return {
         "id": row["id"],
-        "text": row["text_kn"] if lang == "kn" and row["text_kn"] else row["text"],
+        "text": (row["text_kn"] if lang == "kn" and row["text_kn"]
+                 else row["text_hi"] if lang == "hi" and row["text_hi"] else row["text"]),
         "status": row["status"],
         "answer": json.loads(row["answer"]) if row["answer"] else None,
         "fact_ids": fact_ids,
@@ -235,7 +260,7 @@ def list_questions_for(conn, patient_id, lang="en"):
 def list_questions(patient_id: str, user=Depends(get_current_user)):
     access = require_patient_access(user, patient_id)
     with get_conn() as conn:
-        questions = scoped_questions(list_questions_for(conn, patient_id, user_language(user)), access)
+        questions = scoped_questions(list_questions_for(conn, patient_id, question_language(user)), access)
     log_action(user, "view_questions", patient_id, "")
     return questions
 
@@ -287,6 +312,10 @@ def answer_question(question_id: int, body: AnswerBody, user=Depends(get_current
             "UPDATE questions SET status = ?, answer = ? WHERE id = ?",
             (new_status, json.dumps(stored), question_id),
         )
+        if not row["claim_condition"]:  # the agent updates the record from the answer
+            from backend.agent.answers import apply_answer
+
+            apply_answer(conn, row, stored, user)
     # badges.py counts facts in "answered" questions as patient_reported: rerun the checks now
     if not row["claim_condition"]:
         recompute_patient(patient_id)

@@ -52,6 +52,15 @@ for module in [
     app.include_router(module.router)
 
 
+@app.on_event("startup")
+def start_agent_scheduler():
+    """Question reminders and escalation every 15 minutes (backend/agent/reminders.py)."""
+    if os.getenv("AGENT_SCHEDULER", "on").lower() != "off":
+        from backend.agent.reminders import start_scheduler
+
+        start_scheduler()
+
+
 @app.get("/health")
 def health():
     return {"ok": True}

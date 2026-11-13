@@ -51,7 +51,9 @@ def wrong_patient_questions(conn, patient_id, docs):
                 f"from the timeline. Please check the original and decide if it belongs to this patient.")
         text_kn = (f"{label_kn} ಬೇರೆಯವರದ್ದಾಗಿರಬಹುದು{f' ({found})' if found else ''}, ಆದ್ದರಿಂದ ಅದನ್ನು ಟೈಮ್‌ಲೈನ್‌ನಿಂದ "
                    f"ತಡೆಹಿಡಿಯಲಾಗಿದೆ. ಮೂಲ ದಾಖಲೆಯನ್ನು ನೋಡಿ, ಇದು ಈ ರೋಗಿಯದ್ದೇ ಎಂದು ನಿರ್ಧರಿಸಿ.")
-        questions.append(([f["fact_id"] for f in doc_facts], {"en": text, "kn": text_kn}))
+        text_hi = (f"{source_label(first, docs, 'hi')} शायद किसी और का है{f' ({found})' if found else ''}, इसलिए "
+                   f"इसे टाइमलाइन से रोक दिया गया है। कृपया मूल दस्तावेज़ देखकर तय करें कि यह इसी मरीज़ का है या नहीं।")
+        questions.append(([f["fact_id"] for f in doc_facts], {"en": text, "kn": text_kn, "hi": text_hi}))
     return questions
 
 
@@ -64,7 +66,9 @@ def implausible_questions(conn, patient_id, docs):
                 f"It may be a typing or unit error. Please check the original report.")
         text_kn = (f'{source_label(f, docs, "kn")}ಯಲ್ಲಿನ {describe(f)} ("{f["quote"]}") ಸಾಧ್ಯವಿರುವ ಮೌಲ್ಯವಲ್ಲ. '
                    f"ಇದು ಟೈಪಿಂಗ್ ಅಥವಾ ಘಟಕದ ತಪ್ಪಾಗಿರಬಹುದು. ದಯವಿಟ್ಟು ಮೂಲ ವರದಿಯನ್ನು ನೋಡಿ.")
-        questions.append(([f["fact_id"]], {"en": text, "kn": text_kn}))
+        text_hi = (f'{source_label(f, docs, "hi")} में {describe(f)} ("{f["quote"]}") संभव मान नहीं है। '
+                   f"यह टाइपिंग या यूनिट की गलती हो सकती है। कृपया मूल रिपोर्ट देखें।")
+        questions.append(([f["fact_id"]], {"en": text, "kn": text_kn, "hi": text_hi}))
     return questions
 
 
