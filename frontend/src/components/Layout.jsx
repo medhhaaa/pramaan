@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, FolderOpen } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
@@ -12,6 +12,7 @@ const DOCTOR_NAV = [
   { to: '/accuracy', key: 'nav.accuracy', icon: Gauge },
   { to: '/scan', key: 'nav.scan', icon: Scan, action: 'scan' },
   { to: '/timeline', key: 'nav.timeline', icon: Clock, gated: true },
+  { to: '/records', key: 'nav.records', icon: FolderOpen, gated: true },
   { to: '/medication', key: 'nav.medication', icon: Pill, gated: true },
   { to: '/flags', key: 'nav.flags', icon: Flag, gated: true },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare, gated: true },

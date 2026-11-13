@@ -389,3 +389,25 @@ a { color: var(--brand); }
 .share-row { align-items: center; gap: 12px; }
 .share-who-name { display: flex; align-items: center; gap: 6px; }
 .share-who .muted.small svg { vertical-align: -2px; }
+
+/* In-page search (Medications, Records): related items move up, the rest stay dimmed below */
+.ips-bar { margin-bottom: 14px; }
+.ips-input { position: relative; margin-bottom: 0; }
+.ips-input input[type="search"]::-webkit-search-cancel-button { display: none; }
+.ips-clear { flex-shrink: 0; }
+.ips-status { min-height: 1.2em; margin: 6px 2px 0; }
+.ips-section-title { font-size: 1rem; margin: 6px 0 10px; }
+.ips-section-title.muted { margin-top: 22px; }
+.ips-dim > * { opacity: 0.55; transition: opacity 200ms ease-out; }
+.ips-dim > *:hover, .ips-dim > *:focus-within { opacity: 1; }
+.ips-match { box-shadow: inset 3px 0 0 var(--brand); }
+.ips-why { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 2px 0 8px; }
+.ips-reason { cursor: help; }
+.ips-source { color: var(--text-muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+mark { background: rgba(245, 185, 74, 0.32); color: inherit; border-radius: 3px; padding: 0 2px; }
+.record-list { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 10px; }
+.record-card { padding-top: 14px; padding-bottom: 12px; }
+.record-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.record-title { display: flex; flex-direction: column; flex: 1; min-width: 12em; }
+.record-file { margin: 6px 0 4px; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .ips-dim > * { transition: none; } }

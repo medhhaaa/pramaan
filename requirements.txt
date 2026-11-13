@@ -12,3 +12,4 @@ openai
 requests
 segno
 pytest
+numpy
