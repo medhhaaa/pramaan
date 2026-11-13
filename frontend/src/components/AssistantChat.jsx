@@ -4,10 +4,14 @@ import { Link } from 'react-router-dom';
 import { Send, Loader2, ShieldCheck, FileText, EyeOff, CheckCircle2, XCircle, Wrench, Upload, ClipboardCheck } from 'lucide-react';
 import { askAssistant, privacyPreview, confirmAssistantAction, cancelAssistantAction } from '../api.js';
 import DocDrawer from './DocDrawer.jsx';
+import { useApp } from '../context/AppContext.jsx';
+import { useCachedState } from '../lib/sessionCache.js';
 import { fmtDate } from '../lib/format.js';
 import '../styles/assistant.css';
 
 const HISTORY_TURNS = 6;
+const KEPT_TURNS = 60; // chat kept in the browser cache: the newest 60 messages
+const keep = (turns) => turns.slice(-KEPT_TURNS);
 const SUGGESTIONS = {
   doctor: ['brief', 'redFlags', 'diabetes', 'augmentin'],
   patient: ['medicines', 'sugar', 'claim', 'who'],
@@ -19,7 +23,11 @@ const SUGGESTIONS = {
 // source line). A write (save to claim pack) comes back as a card: nothing happens until Confirm.
 export default function AssistantChat({ pid, persona }) {
   const { t, i18n } = useTranslation();
-  const [turns, setTurns] = useState([]); // {role: 'user'|'assistant'|'note', text, ...}
+  const { user } = useApp();
+  // {role: 'user'|'assistant'|'note', text, ...}. Cached in the browser (lib/sessionCache.js), per
+  // user, persona and patient: the chat is still here after you open another page or refresh.
+  const [turns, setTurns] = useCachedState(`assistant:${user?.username}:${persona}:${pid}`, [],
+    (saved) => (Array.isArray(saved) ? keep(saved) : []));
   const [text, setText] = useState('');
   const [busy, setBusy] = useState(false);
   const [preview, setPreview] = useState(null); // {original, redacted} waiting for "Send"
@@ -38,11 +46,11 @@ export default function AssistantChat({ pid, persona }) {
     setError(null);
     setPreview(null);
     const past = history();
-    setTurns((all) => [...all, { role: 'user', text: message }]);
+    setTurns((all) => keep([...all, { role: 'user', text: message }]));
     setText('');
     try {
       const out = await askAssistant(pid, message, past);
-      setTurns((all) => [...all, { role: 'assistant', text: out.answer, ...out }]);
+      setTurns((all) => keep([...all, { role: 'assistant', text: out.answer, ...out }]));
     } catch (e) {
       setTurns((all) => all.slice(0, -1));
       setText(message);
@@ -87,7 +95,11 @@ export default function AssistantChat({ pid, persona }) {
 
   return (
     <div className="assistant">
-      <p className="muted small assistant-note"><ShieldCheck size={14} aria-hidden="true" /> {t('assistant.note')}</p>
+      <p className="muted small assistant-note"><ShieldCheck size={14} aria-hidden="true" /> {t('assistant.note')}
+        {turns.length > 0 && (
+          <> · <button type="button" className="link-btn small" disabled={busy} onClick={() => setTurns([])}>{t('assistant.clear')}</button></>
+        )}
+      </p>
 
       <div className="assistant-log" aria-live="polite">
         {turns.length === 0 && (

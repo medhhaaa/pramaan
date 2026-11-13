@@ -3,7 +3,8 @@ import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText, Copy } from 'lucide-react';
 import { upload } from '../api.js';
-import { useActivePatientId } from '../context/AppContext.jsx';
+import { useActivePatientId, useApp } from '../context/AppContext.jsx';
+import { useCachedState } from '../lib/sessionCache.js';
 import PatientGate from '../components/PatientGate.jsx';
 import { StatusChip, FlagChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
@@ -12,6 +13,11 @@ import { fmtDate } from '../lib/format.js';
 const CONSENT_KEY = 'pramaan_consent_v1';
 // what the backend reads: PDFs (digital or scanned) and phone photos of documents
 const ACCEPT = ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'];
+
+// After a page refresh the browser has lost the reply of an upload that was still running: say so
+// (the server may still have saved it: the timeline shows what was kept).
+const reviveItems = (items) => (Array.isArray(items) ? items : []).map((it) => (
+  it.state === 'waiting' || it.state === 'working' ? { ...it, state: 'interrupted' } : it));
 
 // "Metformin · 1000mg BD" or "HbA1c · 8.1 %": doses and values exactly as written
 function what(f) {
@@ -146,10 +152,13 @@ function UploadInner() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const pid = useActivePatientId();
+  const { user } = useApp();
   const [consented, setConsented] = useState(() => localStorage.getItem(CONSENT_KEY) === 'yes');
   const [ticks, setTicks] = useState([false, false, false]);
-  const [items, setItems] = useState([]); // one per file: {name, state: waiting|working|done|failed, res, error}
-  const [busy, setBusy] = useState(false);
+  // one per file: {name, state: waiting|working|done|failed|interrupted, res, error}. Cached in the
+  // browser (lib/sessionCache.js): the report is still here after you open another page or refresh.
+  const [items, setItems] = useCachedState(`upload:${user?.username}:${pid}`, [], reviveItems);
+  const busy = items.some((it) => it.state === 'waiting' || it.state === 'working');
   const [dragging, setDragging] = useState(false);
 
   const acceptConsent = () => {
@@ -163,8 +172,8 @@ function UploadInner() {
   const run = async (list) => {
     const files = list.filter((f) => ACCEPT.includes(f.type));
     if (files.length === 0 || busy) return;
-    setBusy(true);
-    setItems(files.map((f) => ({ name: f.name, state: 'waiting' })));
+    // new files go on top; earlier reports from this session stay below them
+    setItems((prev) => [...files.map((f) => ({ name: f.name, state: 'waiting' })), ...prev]);
     for (let i = 0; i < files.length; i += 1) {
       update(i, { state: 'working' });
       try {
@@ -173,7 +182,6 @@ function UploadInner() {
         update(i, { state: 'failed', error: e.message });
       }
     }
-    setBusy(false);
   };
 
   if (!consented) {
@@ -219,12 +227,18 @@ function UploadInner() {
           {it.state === 'waiting' && <p className="muted small">{t('upload.waiting')}</p>}
           {it.state === 'working' && <p className="muted small">{t('upload.working', { name: it.name })}</p>}
           {it.state === 'failed' && <p className="error-text">{t('upload.failed', { error: it.error })}</p>}
+          {it.state === 'interrupted' && <p className="muted small">{t('upload.interrupted')}</p>}
           {it.state === 'done' && <Report res={it.res} />}
         </div>
       ))}
 
-      {!busy && items.some((it) => it.state === 'done') && (
-        <button className="btn btn-primary" onClick={() => navigate('/timeline')}>{t('upload.openTimeline')}</button>
+      {!busy && items.length > 0 && (
+        <div className="btn-row">
+          {items.some((it) => it.state === 'done' || it.state === 'interrupted') && (
+            <button className="btn btn-primary" onClick={() => navigate('/timeline')}>{t('upload.openTimeline')}</button>
+          )}
+          <button className="btn btn-ghost" onClick={() => setItems([])}>{t('upload.clearList')}</button>
+        </div>
       )}
     </section>
   );
