@@ -1,7 +1,9 @@
 """The assistant loop: the AI picks tools, our code runs them, the AI writes the answer. (Ashil)
 
-    run_assistant(ctx, message, history) -> {"answer", "fact_ids", "citations", "tools_used",
-                                              "pending_action", "hidden"}
+    run_assistant(ctx, message, history) -> {"answer", "fact_ids", "citations", "sources", "documents",
+                                              "tools_used", "pending_action", "hidden"}
+    fact_ids / citations: cited facts. sources: other cited ids (document ids, stay_3, question_7,
+    share_2, careteam_1). documents: the cited documents, for click-to-proof.
 
 AGENTIC_PLAN section C, at most MAX_STEPS tool steps per message:
 1. Prompt = rules + tool list + history + the message. The message and history go through
@@ -43,7 +45,8 @@ How to reply, ALWAYS one JSON object and nothing else:
 - To look something up: {"tool": "<tool name>", "args": {...}}   (only tools from the list)
 - To answer: {"answer": "...", "fact_ids": ["...", "..."]}
 Rules for the answer:
-- Use only the tool results. List every fact_id your answer relies on; only fact_ids that appear in them.
+- Use only the tool results. In "fact_ids" list every id your answer relies on: fact_id, or the
+  document id / stay_id / question_id / share_id / care_team_id shown in the results. Only ids that appear there.
 - If the tool results do not answer the message: {"answer": "<<NOT_DOCUMENTED>>", "fact_ids": []}
 - status "negated" means the records explicitly say it is absent. Something simply missing is NOT
   documented: never say the patient does not have it.
@@ -124,6 +127,19 @@ def _citations(ctx, ids):
     return [by_id[i] for i in ids if i in by_id]
 
 
+def _documents(ctx, ids):
+    """Cited document ids -> {id, filename, doc_type, document_date} (click-to-proof)."""
+    ids = [i for i in ids if not i.split("_")[0] in ("stay", "question", "share", "careteam", "sharing")]
+    if not ids:
+        return []
+    with get_conn() as conn:
+        rows = conn.execute(
+            f"SELECT id, filename, doc_type, document_date FROM documents WHERE patient_id = ? AND held_back = 0 "
+            f"AND id IN ({','.join('?' * len(ids))})", (ctx.patient_id, *ids)).fetchall()
+    by_id = {r["id"]: dict(r) for r in rows}
+    return [by_id[i] for i in ids if i in by_id]
+
+
 def hidden_info(ctx):
     """The counts-only hidden summary (backend/routes/share_requests.py) for a scoped doctor."""
     from backend.routes.share_requests import hidden_summary
@@ -159,7 +175,7 @@ def run_assistant(ctx, message, history=None):
             .replace("<<HISTORY>>", history_part)
             .replace("<<MESSAGE>>", message_r.text))
 
-    results, valid_ids, tools_used, pending = [], set(), [], None
+    results, valid_ids, valid_sources, tools_used, pending = [], set(), set(), [], None
     data = {}
     for step in range(MAX_STEPS + 1):
         last = step == MAX_STEPS
@@ -185,6 +201,7 @@ def run_assistant(ctx, message, history=None):
         else:
             payload = result["data"]
             valid_ids.update(result.get("fact_ids") or [])
+            valid_sources.update(result.get("source_ids") or [])
         try:
             result_r = protect(json.dumps(payload, ensure_ascii=False, default=str), identity, mapping)
         except PrivacyBlocked:  # the result still holds a personal detail: never send it
@@ -195,11 +212,15 @@ def run_assistant(ctx, message, history=None):
         results.append(f"[{step + 1}] {name}({json.dumps(args, ensure_ascii=False)}) ->\n{result_r.text}")
 
     answer = str(data.get("answer") or "").strip()
-    cited = list(dict.fromkeys(f for f in (data.get("fact_ids") or []) if isinstance(f, str) and f in valid_ids))
+    cited_all = list(dict.fromkeys(i for i in (data.get("fact_ids") or [])
+                                   if isinstance(i, str) and (i in valid_ids or i in valid_sources)))
+    cited = [i for i in cited_all if i in valid_ids]
+    sources = [i for i in cited_all if i not in valid_ids]
     out = {"tools_used": tools_used, "pending_action": pending, "hidden": hidden}
+    found = {"fact_ids": cited, "citations": _citations(ctx, cited), "sources": sources, "documents": _documents(ctx, sources)}
     if pending and answer and answer != NOT_DOCUMENTED:
         # a proposal needs no citation: it is a question to the user, not a statement about the records
-        return {**out, "answer": restore(answer, mapping), "fact_ids": cited, "citations": _citations(ctx, cited)}
-    if not answer or not cited or answer in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN, NOT_DOCUMENTED_HI):
-        return {**out, "answer": not_documented(ctx.lang), "fact_ids": [], "citations": []}
-    return {**out, "answer": restore(answer, mapping), "fact_ids": cited, "citations": _citations(ctx, cited)}
+        return {**out, **found, "answer": restore(answer, mapping)}
+    if not answer or not cited_all or answer in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN, NOT_DOCUMENTED_HI):
+        return {**out, "answer": not_documented(ctx.lang), "fact_ids": [], "citations": [], "sources": [], "documents": []}
+    return {**out, **found, "answer": restore(answer, mapping)}

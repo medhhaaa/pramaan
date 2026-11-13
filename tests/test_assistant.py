@@ -201,3 +201,129 @@ def test_shared_doctor_may_ask_and_the_audit_row_has_no_content(client, sunita, 
     detail = json.loads(row["detail"])
     assert detail["tools"] == ["disease_search"] and detail["cited"] == 1
     assert "HbA1c" not in row["detail"] and "sugar" not in row["detail"]
+
+
+# ---------- patient assistant, confirm flow (AGENTIC_PLAN C, E) ----------
+
+def patient_ctx():
+    from backend.auth import current_request
+
+    current_request.set(("GET", "/patients/p1/timeline"))
+    return agent_context(_user("sunita"), "p1")
+
+
+def make_stay(client, sunita):
+    r = client.post("/patients/p1/hospital-stays", json={"admitted_on": "2022-08-03", "discharged_on": "2022-08-05"},
+                    headers=sunita)
+    assert r.status_code == 200, r.text
+    return r.json()["id"]
+
+
+def pack_rows(stay_id):
+    with get_conn() as conn:
+        return [r["document_id"] for r in conn.execute("SELECT document_id FROM claim_pack_items WHERE stay_id = ?",
+                                                       (stay_id,))]
+
+
+def test_patient_tools(client, sunita, doctor):
+    share(client, sunita, doctor)
+    ctx = patient_ctx()
+    tools = TOOLS["patient"]
+    meds = tools["my_medicines"].run(ctx, {})
+    assert {m["name"] for m in meds["data"]} >= {"Metformin", "Atenolol"} and meds["fact_ids"]
+    sugar = tools["explain_records"].run(ctx, {"topic": "sugar"})
+    assert "p1_d1_f002" in sugar["fact_ids"] and "p1_d2_f001" in sugar["fact_ids"]  # T2DM, HbA1c
+    assert "p1_d1_f004" not in sugar["fact_ids"]  # Atenolol is not about sugar
+    who = tools["who_can_see"].run(ctx, {})
+    assert who["data"]["qr_shares"] and who["source_ids"][0].startswith("share_")
+    assert isinstance(tools["things_to_check"].run(ctx, {})["data"], (list, dict))
+    assert "save_to_claim_pack" not in TOOLS["doctor"]  # a doctor never gets write tools
+
+
+def test_a_write_tool_only_acts_after_confirm(client, sunita, fake):
+    stay = make_stay(client, sunita)
+    fake({"tool": "claim_checklist", "args": {}},
+         {"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p1_d3"]}},
+         {"answer": "Shall I add your discharge summary to the claim pack?", "fact_ids": []})
+    out = ask(client, sunita, "Save my discharge summary for the August hospital stay").json()
+    action = out["pending_action"]
+    assert action and action["action"] == "save_to_claim_pack" and "Add 1 document" in action["summary"]
+    assert [t["tool"] for t in out["tools_used"]] == ["claim_checklist", "save_to_claim_pack"]
+    assert out["answer"].startswith("Shall I add")
+    assert pack_rows(stay) == []  # nothing saved yet
+
+    r = client.post("/patients/p1/assistant/confirm", json={"action_id": action["action_id"]}, headers=sunita)
+    assert r.status_code == 200, r.text
+    assert r.json()["result"]["added"] == ["p1_d3"] and pack_rows(stay) == ["p1_d3"]
+    again = client.post("/patients/p1/assistant/confirm", json={"action_id": action["action_id"]}, headers=sunita)
+    assert again.status_code == 409
+
+
+def test_cancel_saves_nothing(client, sunita, fake):
+    stay = make_stay(client, sunita)
+    fake({"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p1_d2"]}},
+         {"answer": "Add your lab report?", "fact_ids": []})
+    action = ask(client, sunita, "Add my lab report to the pack").json()["pending_action"]
+    r = client.post("/patients/p1/assistant/cancel", json={"action_id": action["action_id"]}, headers=sunita)
+    assert r.json()["status"] == "cancelled" and pack_rows(stay) == []
+    assert client.post("/patients/p1/assistant/confirm", json={"action_id": action["action_id"]},
+                       headers=sunita).status_code == 409
+
+
+def test_a_shared_doctor_cannot_confirm_writes(client, sunita, doctor, fake):
+    share(client, sunita, doctor)
+    stay = make_stay(client, sunita)
+    fake({"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p1_d1"]}},
+         {"answer": "Add it?", "fact_ids": []})
+    action = ask(client, sunita, "Add my prescription").json()["pending_action"]
+    r = client.post("/patients/p1/assistant/confirm", json={"action_id": action["action_id"]}, headers=doctor)
+    assert r.status_code == 403 and pack_rows(stay) == []
+    # and the doctor's assistant has no write tool to call at all
+    f = fake({"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p1_d1"]}},
+             {"answer": "ok", "fact_ids": []})
+    out = ask(client, doctor, "Add her prescription to the claim pack").json()
+    assert out["pending_action"] is None and out["tools_used"] == [] and "unknown tool" in f.prompts[1]
+
+
+def test_confirm_checks_again(client, sunita, fake):
+    stay = make_stay(client, sunita)
+    fake({"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p1_d4"]}},
+         {"answer": "Add it?", "fact_ids": []})
+    action = ask(client, sunita, "Add my January prescription").json()["pending_action"]
+    with get_conn() as conn:
+        conn.execute("UPDATE documents SET held_back = 1 WHERE id = 'p1_d4'")  # held back meanwhile
+    try:
+        r = client.post("/patients/p1/assistant/confirm", json={"action_id": action["action_id"]}, headers=sunita)
+        assert r.status_code == 422 and pack_rows(stay) == []
+    finally:
+        with get_conn() as conn:
+            conn.execute("UPDATE documents SET held_back = 0 WHERE id = 'p1_d4'")
+
+
+def test_another_patients_document_is_never_proposed(client, sunita, fake):
+    stay = make_stay(client, sunita)
+    f = fake({"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p2_d1"]}},
+             {"answer": "Sorry", "fact_ids": []})
+    out = ask(client, sunita, "Add p2_d1").json()
+    assert out["pending_action"] is None and "not this patient" in f.prompts[1]
+
+
+def test_claim_answers_cite_the_stay_and_documents(client, sunita, fake):
+    stay = make_stay(client, sunita)
+    fake({"tool": "claim_checklist", "args": {"stay": f"stay_{stay}"}},
+         {"answer": "Your discharge summary is saved; the final bill is not saved yet.",
+          "fact_ids": [f"stay_{stay}", "p1_d3", "stay_99999"]})
+    out = ask(client, sunita, "What is missing for my claim?").json()
+    assert out["answer"].startswith("Your discharge summary")
+    assert out["sources"] == [f"stay_{stay}", "p1_d3"]  # stay_99999 was never in a result
+    assert [d["id"] for d in out["documents"]] == ["p1_d3"]
+
+
+def test_delete_my_data_removes_assistant_rows(client, sunita):
+    """Last test in this file: deletes p1."""
+    with get_conn() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM assistant_actions WHERE patient_id = 'p1'").fetchone()[0]
+    assert client.delete("/patients/p1", headers=sunita).status_code == 200
+    with get_conn() as conn:
+        assert conn.execute("SELECT COUNT(*) FROM assistant_actions WHERE patient_id = 'p1'").fetchone()[0] == 0
+        assert conn.execute("SELECT COUNT(*) FROM claim_pack_items").fetchone()[0] == 0
