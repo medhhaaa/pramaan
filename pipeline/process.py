@@ -32,6 +32,7 @@ from rapidfuzz import fuzz
 
 from pipeline.ocr import handwriting_confidences, handwritten_pages, unread_pages
 from pipeline.privacy_layer import PrivacyBlocked, protect
+from pipeline.self_check import retry_dropped
 from pipeline.plausibility import check_plausibility
 from pipeline.read_pdf import read_pdf
 from pipeline.verify import verify_facts
@@ -125,6 +126,12 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
     verified = verify_facts(facts, lines, dropped)
     t = _step(trace, "check", t, f"{len(verified)} quotes found in the document, {len(dropped)} not found",
               "warn" if dropped else "ok")
+    # the agent checks its own work: re-read OCR pages, then a stronger model, then "App not sure"
+    recovered, dropped, retry_trace = retry_dropped(dropped, lines, pdf_path, clean_text, receipt, mapping,
+                                                    _reidentify_fact)
+    verified += recovered
+    trace += retry_trace
+    t = time.perf_counter()
 
     document_date = document_date or result["document_date"]
     document_date_raw = result["document_date_raw"]

@@ -75,6 +75,18 @@ CREATE TABLE IF NOT EXISTS agent_steps (
     ms INTEGER,
     created_at TEXT DEFAULT CURRENT_TIMESTAMP
 );
+-- facts the agent could not prove even after retrying (backend/routes/not_sure.py)
+CREATE TABLE IF NOT EXISTS not_sure_items (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    document_id TEXT NOT NULL,
+    fact TEXT NOT NULL,       -- JSON: type, name, dose, frequency, value, unit, action, status, event_date, quote
+    reason TEXT,              -- why the quote check failed
+    attempts TEXT,            -- JSON list of what was tried
+    status TEXT NOT NULL DEFAULT 'open' CHECK (status IN ('open', 'accepted', 'rejected')),
+    resolved_by INTEGER, resolved_at TEXT,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id TEXT, fact_ids TEXT, text TEXT,

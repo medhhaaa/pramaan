@@ -35,6 +35,7 @@ from pipeline import handwriting
 HANDWRITING_MARK = "pramaan:handwriting-pages="
 CONFIDENCE_MARK = "pramaan:handwriting-confidence="
 UNREAD_MARK = "pramaan:unread-pages="
+OCR_MARK = "pramaan:ocr-pages="  # printed pages read by Tesseract (pipeline/self_check.py re-reads them)
 OCR_DPI = 300      # Tesseract reads small print best at about 300 dpi
 LANGUAGE = "eng"   # add "+kan" for Kannada once its language pack is installed
 PAGE_WIDTH = 595   # A4 width in points; a photo's page gets its own height
@@ -67,6 +68,7 @@ def make_searchable(pdf_bytes):
     handwritten = []
     confidences = {}  # page -> [[line text, 0-100, [unsure words]], ...] for handwritten pages
     unread = []       # handwritten pages no model could safely read: a person must
+    ocr_done = []     # printed pages read by Tesseract
     for page in src:
         if page_has_text(page):
             out.insert_pdf(src, from_page=page.number, to_page=page.number)
@@ -112,10 +114,13 @@ def make_searchable(pdf_bytes):
         pix = page.get_pixmap(dpi=OCR_DPI, colorspace=pymupdf.csRGB)
         pix.set_dpi(OCR_DPI, OCR_DPI)  # so the new page gets the original size in points
         ocr_pdf = pymupdf.open("pdf", pix.pdfocr_tobytes(language=LANGUAGE, tessdata=pymupdf.get_tessdata()))
+        ocr_done.append(page.number + 1)
         out.insert_pdf(ocr_pdf)
 
     if unread:
         out.set_metadata({**out.metadata, "title": UNREAD_MARK + ",".join(map(str, unread))})
+    if ocr_done:
+        out.set_metadata({**out.metadata, "author": OCR_MARK + ",".join(map(str, ocr_done))})
     if handwritten:  # remembered inside the PDF, so process_document can flag those facts
         out.set_metadata({**out.metadata, "keywords": f"{HANDWRITING_MARK}{','.join(map(str, handwritten))}",
                           "subject": CONFIDENCE_MARK + json.dumps(confidences)})

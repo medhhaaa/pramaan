@@ -15,6 +15,7 @@ import json
 import os
 
 from backend.agent import steps
+from backend.routes.not_sure import save_not_sure
 from backend.db import fact_from_row, get_conn, insert_fact
 from backend.logic.wrong_patient import find_conflicts
 from backend.recompute import recompute_patient
@@ -100,6 +101,8 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
                      ("held back from the timeline: " + "; ".join(conflicts)) if conflicts
                      else "blood group and sex match this patient's records")
         steps.record(conn, patient_id, document_id, "save", "ok", f"{len(facts)} facts saved, file encrypted")
+        # facts the agent couldn't prove even after retrying: kept for a person ("App not sure")
+        save_not_sure(conn, patient_id, document_id, result.get("dropped"))
 
     recompute_patient(patient_id)
     with get_conn() as conn:  # flags raised on this document after merging with the other records
