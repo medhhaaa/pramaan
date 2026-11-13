@@ -43,7 +43,13 @@ export default function MyRecords() {
 
       <article className="card patient-card card-lift">
         <h2>{patient.name}</h2>
-        <p className="muted">{patient.sex} · {t('patients.born')} {patient.dob} · {t('patients.bloodGroup')} {patient.blood_group}</p>
+        {/* a new account has no sex / DOB / blood group until documents say so: show only what is known */}
+        {(patient.sex || patient.dob || patient.blood_group) && (
+          <p className="muted">
+            {[patient.sex, patient.dob && `${t('patients.born')} ${patient.dob}`,
+              patient.blood_group && `${t('patients.bloodGroup')} ${patient.blood_group}`].filter(Boolean).join(' · ')}
+          </p>
+        )}
         <div className="btn-row">
           <Link className="btn btn-primary" to="/things">
             {t('myRecords.thingsButton')} {openQ > 0 && <span className="count-badge">{openQ}</span>}
@@ -57,6 +63,9 @@ export default function MyRecords() {
 
       <div className="card mt">
         <h3>{t('myRecords.latest')}</h3>
+        {latest.length === 0 && (
+          <p className="muted">{t('myRecords.empty')} <Link to="/upload" className="link-btn">{t('myRecords.uploadFirst')}</Link></p>
+        )}
         <ul className="list">
           {latest.map((f) => (
             <li key={f.fact_id} className="list-row">

@@ -14,6 +14,7 @@
     "claimDocuments": "क्लेम दस्तावेज़", "myPatients": "मेरे मरीज़", "careTeam": "मेरी केयर टीम", "myMedicines": "मेरी दवाइयाँ", "consultRecords": "परामर्श रिकॉर्ड"
   },
   "auth": {
+    "iAm": "मैं हूँ", "role_patient": "मरीज़", "role_doctor": "डॉक्टर", "fullName": "पूरा नाम", "regNo": "मेडिकल रजिस्ट्रेशन नंबर", "usernameRule": "यूज़रनेम: 3 से 30 अक्षर, अंक, बिंदु, डैश या अंडरस्कोर।", "passwordRule": "पासवर्ड: कम से कम 6 अक्षर।", "fullNameRule": "कृपया अपना पूरा नाम लिखें।", "regNoRule": "कृपया अपना मेडिकल रजिस्ट्रेशन नंबर लिखें।", "usernameTaken": "यह यूज़रनेम पहले से लिया गया है। कोई दूसरा चुनें।", "signupFailed": "खाता नहीं बन सका। कृपया फिर से कोशिश करें।", "signupPatientNote": "आपके रिकॉर्ड खाली शुरू होंगे। साइन-अप के बाद अपने दस्तावेज़ अपलोड करें।", "signupDoctorNote": "मरीज़ आपको अपनी केयर टीम में जोड़ें या रिकॉर्ड साझा करें, तभी आप उन्हें देख पाएँगे।",
     "signup": "साइन-अप", "login": "लॉग इन", "alreadyUser": "पहले से उपयोगकर्ता हैं?", "newHere": "नए हैं?",
     "loginLink": "लॉग इन", "signupLink": "साइन अप करें", "username": "उपयोगकर्ता नाम", "password": "पासवर्ड",
     "demoHint": "डेमो: sunita / sunita123 QR बनाती हैं · doctor / doctor123 उसे स्कैन करते हैं", "signupDemoOnly": "साइन-अप अभी केवल डेमो के लिए है।",
@@ -90,7 +91,7 @@
     "types": {"medication": "दवा", "allergy": "एलर्जी", "condition": "बीमारी", "lab_test": "जाँच", "event": "घटना", "demographic": "व्यक्तिगत विवरण"}
   },
   "doc": { "title": "स्रोत", "held": "रोका गया", "close": "बंद करें" },
-  "myRecords": { "title": "मेरे रिकॉर्ड", "shareButton": "डॉक्टर से साझा करें", "thingsButton": "जाँचने योग्य बातें", "latest": "नवीनतम जानकारी", "viewTimeline": "समयरेखा देखें" },
+  "myRecords": { "empty": "अभी कोई दस्तावेज़ नहीं।", "uploadFirst": "अपना पहला दस्तावेज़ अपलोड करें", "title": "मेरे रिकॉर्ड", "shareButton": "डॉक्टर से साझा करें", "thingsButton": "जाँचने योग्य बातें", "latest": "नवीनतम जानकारी", "viewTimeline": "समयरेखा देखें" },
   "things": {
     "title": "जाँचने योग्य बातें", "problem": "समस्या", "yes": "हाँ", "no": "नहीं", "dontKnow": "पता नहीं", "skip": "छोड़ें",
     "other": "अन्य", "send": "भेजें", "why": "हम यह क्यों पूछ रहे हैं?", "sentDoctor": "आपके डॉक्टर इसकी जाँच करेंगे।",
