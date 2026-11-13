@@ -50,7 +50,7 @@ stretch that slightly, so we keep it tight:
    `backend.routes.privacy.identity_for` + `backend.routes.language.user_language`.
 2. **Tool shape:** `def tool(ctx, args: dict) -> {"data": ..., "fact_ids": [...]}`.
    Write tools return `{"proposal": {"action", "args", "summary"}}` instead of doing anything.
-3. **Question statuses** (Akanksha adds `to_doctor`, meaning sent straight to the doctor): read them, don't change them.
+3. **Question routing** (built by Akanksha): statuses stay `open | answered | sent_to_doctor | resolved`. Each question also has `routed_to` (`patient` | `doctor`) and `route_reason`; a question routed to the doctor starts as `sent_to_doctor`. Questions the agent retires as outdated are `resolved` with answer `{"answer": "superseded", "by": "agent"}`. Read these, don't change them.
 4. **New tables** go through Akanksha (she owns the database). Agreed here: `claim_pack_items`
    (stay_id, document_id, added_by, created_at) and `assistant_actions` (id, user_id, patient_id,
    action, args JSON, status `proposed|done|cancelled`, created_at).
@@ -154,7 +154,7 @@ sending. Put it behind a feature switch `ASSISTANT_ON` like `ASK_ON`.
 - Retry (5): failed quotes are retried with a higher-resolution re-read / the vision model, then a
   stronger model; what still fails goes to a stored **"App not sure"** list.
 - Routing (7): clinical conflicts (allergy / medicine contradictions, wrong patient, impossible values)
-  go straight to the doctor (`to_doctor`); everything else asks the patient first.
+  go straight to the doctor (`routed_to = doctor`, status `sent_to_doctor`); everything else asks the patient first.
 - Hindi question templates (8).
 - Reminder after 48 h and escalation to the doctor's Open Questions (9–10), with a background job and a
   demo switch to jump ahead 48 hours.
