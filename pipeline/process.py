@@ -29,6 +29,7 @@ from pipeline.extract import extract_document
 from rapidfuzz import fuzz
 
 from pipeline.ocr import handwriting_confidences, handwritten_pages, unread_pages
+from pipeline.privacy_layer import PrivacyBlocked, protect
 from pipeline.plausibility import check_plausibility
 from pipeline.read_pdf import read_pdf
 from pipeline.verify import verify_facts
@@ -75,7 +76,7 @@ def _contract_fact(fact, number, patient_id, document_id, document_date, documen
     }
 
 
-def process_document_full(pdf_path, patient_id, document_id, known_names=(), document_date=None):
+def process_document_full(pdf_path, patient_id, document_id, known_names=(), document_date=None, identity=None):
     lines = read_pdf(pdf_path)
     if not lines:  # scanned image PDF: we do no OCR for the demo
         return {"facts": [], "dropped": [], "not_captured": [], "document_date": document_date,
@@ -84,8 +85,19 @@ def process_document_full(pdf_path, patient_id, document_id, known_names=(), doc
 
     original_text = "\n".join(line["text"] for line in lines)
     clean_text, mapping = deidentify(original_text, known_names)
+    # second layer before the AI: known identity, patterns, local NER, context cues; fail closed
+    identity = identity or ({"name": known_names[0]} if known_names else None)
+    try:
+        receipt = protect(clean_text, identity, mapping)
+    except PrivacyBlocked as blocked:
+        # something identifying is still there: never send it; keep the document for a person
+        return {"facts": [], "dropped": [], "not_captured": [], "document_date": document_date,
+                "document_date_raw": None, "document_date_verified": False, **UNKNOWN,
+                "stay_dates": {"admitted_on": None, "discharged_on": None}, "redactions": len(mapping),
+                "unread_pages": [], "privacy_blocked": [{"kind": f.kind, "text": f.text} for f in blocked.findings]}
+    clean_text, mapping = receipt.text, receipt.mapping
 
-    result = extract_document(clean_text)  # the only step that talks to the AI
+    result = extract_document(clean_text, receipt)  # the only step that talks to the AI
 
     facts = [_reidentify_fact(f, mapping) for f in result["facts"]]
     dropped = []

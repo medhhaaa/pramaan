@@ -224,6 +224,8 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("patients", "phone", "TEXT"),    # optional: the privacy layer removes it anywhere in text
+    ("patients", "address", "TEXT"),
     ("audit_log", "prev_hash", "TEXT"),
     ("audit_log", "row_hash", "TEXT"),
     ("facts", "confidence", "INTEGER"),

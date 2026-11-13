@@ -72,9 +72,12 @@ def seed(with_sample_facts=True):
         for patient_id in PATIENT_IDS:
             p = load_answer_key(patient_id)["patient"]
             conn.execute(
-                "INSERT INTO patients VALUES (?, ?, ?, ?, ?)",
+                "INSERT INTO patients (id, name, dob, sex, blood_group) VALUES (?, ?, ?, ?, ?)",
                 (patient_id, p["name"], p["dob"], p["sex"], p["blood_group"]),
             )
+        # contact details the privacy layer removes anywhere in text (from p1's synthetic documents)
+        conn.execute("UPDATE patients SET phone = ?, address = ? WHERE id = 'p1'",
+                     ("+91 98765 43210", "14, Shanthi Nilaya, Bejai, Mangaluru - 575004"))
 
         for username, password, role, patient_ids in USERS:
             full_name, registration = DOCTOR_PROFILES.get(username, (None, None))

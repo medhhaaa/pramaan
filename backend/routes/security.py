@@ -32,6 +32,7 @@ from backend import storage
 from backend.auth import get_current_user, require_patient_access
 from backend.db import get_conn, log_action, verify_audit_chain
 from pipeline.deidentify import deidentify
+from pipeline.privacy_layer import redact
 from pipeline.ocr import handwritten_pages, unread_pages
 from pipeline.read_pdf import read_pdf
 
@@ -85,7 +86,11 @@ def ai_view(doc, patient, with_images=True):
         lines = read_pdf(tmp)
         hand, unread = handwritten_pages(tmp), unread_pages(tmp)
         original = "\n".join(line["text"] for line in lines)
-        sent, mapping = deidentify(original, [patient["name"]])  # same call as pipeline/process.py
+        # same two steps as pipeline/process.py: document de-identification, then the privacy layer
+        sent, mapping = deidentify(original, [patient["name"]])
+        identity = {k: patient.get(k) for k in ("name", "dob", "phone", "address")}
+        redaction = redact(sent, identity, mapping)
+        sent, mapping = redaction.text, redaction.mapping
         sent_lines = sent.split("\n")
         if len(sent_lines) != len(lines):  # a replacement spanned lines: show the text as one block
             rows = [{"page": 1, "line": 1, "original": original, "sent": sent, "changed": original != sent}]

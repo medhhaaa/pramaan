@@ -57,7 +57,9 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         tmp = temp_copy(rel_path)
         try:
             # known_names makes sure the patient's own name is redacted before the AI call
-            result = process.process_document_full(tmp, patient_id, document_id, known_names=[patient["name"]])
+            identity = {k: patient.get(k) for k in ("name", "dob", "phone", "address")}
+            result = process.process_document_full(tmp, patient_id, document_id, known_names=[patient["name"]],
+                                                   identity=identity)
         except Exception:
             delete_file(rel_path)
             raise
@@ -84,7 +86,7 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         )
         for fact in facts:
             insert_fact(conn, fact)
-        if result.get("unread_pages"):
+        if result.get("unread_pages") or result.get("privacy_blocked"):
             # handwriting no model could safely read: kept, and listed for a person to read
             conn.execute("UPDATE documents SET needs_reading = 1 WHERE id = ?", (document_id,))
 
@@ -101,7 +103,8 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         "dropped_facts": result.get("dropped") or [],
         "not_captured": result.get("not_captured") or [],
         "document_id": document_id,
-        "needs_reading": bool(result.get("unread_pages")),
+        "needs_reading": bool(result.get("unread_pages") or result.get("privacy_blocked")),
+        "privacy_blocked": result.get("privacy_blocked") or [],
         "facts_added": len(facts),
         "held_back": bool(conflicts),
         "reasons": conflicts,
