@@ -10,6 +10,7 @@ import Timeline from './pages/Timeline.jsx';
 import Medication from './pages/Medication.jsx';
 import Flags from './pages/Flags.jsx';
 import Ask from './pages/Ask.jsx';
+import { ASK_ON } from './lib/features.js';
 import Upload from './pages/Upload.jsx';
 import Accuracy from './pages/Accuracy.jsx';
 import Audit from './pages/Audit.jsx';
@@ -55,7 +56,7 @@ function Shell() {
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/medication" element={<Medication />} />
           <Route path="/flags" element={<Flags />} />
-          <Route path="/ask" element={<Ask />} />
+          {ASK_ON && <Route path="/ask" element={<Ask />} />}
           <Route path="/upload" element={<Upload />} />
           <Route path="/audit" element={<Audit />} />
           <Route path="/delete" element={<Delete />} />
