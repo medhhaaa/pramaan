@@ -383,20 +383,29 @@ def log_action(user, action, patient_id=None, detail=None):
 
 
 def verify_audit_chain():
-    """{"entries", "intact", "broken_at", "reason", "latest_hash"}: recomputes every row's hash."""
+    """{"entries", "chained", "before_chain", "intact", "broken_at", "reason", "latest_hash"}:
+    recomputes every row's hash.
+    before_chain: rows at the very START of the log with no hashes at all, written by a database
+    made before the hash chain existed. They can't be checked, so they are counted and reported,
+    never passed off as checked. The first chained row follows them with prev_hash = GENESIS
+    (append_audit). A row with no hashes anywhere after that still breaks the chain."""
     with get_conn() as conn:
         rows = conn.execute("SELECT * FROM audit_log ORDER BY id").fetchall()
+    before = 0
+    while before < len(rows) and rows[before]["prev_hash"] is None and rows[before]["row_hash"] is None:
+        before += 1
+    base = {"entries": len(rows), "chained": len(rows) - before, "before_chain": before}
     prev = GENESIS_HASH
-    for row in rows:
+    for row in rows[before:]:
+        broken = {**base, "intact": False, "broken_at": row["id"], "latest_hash": None,
+                  "broken_entry": {"action": row["action"], "created_at": row["created_at"]}}
         if row["prev_hash"] != prev:
-            return {"entries": len(rows), "intact": False, "broken_at": row["id"],
-                    "reason": "a row before this one was changed, removed or added", "latest_hash": None}
+            return {**broken, "reason": "a row before this one was changed, removed or added"}
         expected = _audit_hash(prev, row["user_id"], row["action"], row["patient_id"], row["detail"], row["created_at"])
         if row["row_hash"] != expected:
-            return {"entries": len(rows), "intact": False, "broken_at": row["id"],
-                    "reason": "this row's contents were changed", "latest_hash": None}
+            return {**broken, "reason": "this row's contents were changed"}
         prev = row["row_hash"]
-    return {"entries": len(rows), "intact": True, "broken_at": None, "reason": None, "latest_hash": prev}
+    return {**base, "intact": True, "broken_at": None, "reason": None, "latest_hash": prev}
 
 
 def insert_fact(conn, fact):
