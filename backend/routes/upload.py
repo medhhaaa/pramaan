@@ -12,7 +12,9 @@
 
 Accepts a PDF (digital or scanned) or a photo of a document (JPG, PNG, WEBP). Everything
 is turned into a searchable PDF first (pipeline.ocr.prepare_document), so storage, the
-PDF viewer and click-to-proof highlighting work the same for scans and photos.
+PDF viewer and click-to-proof highlighting work the same for scans and photos. A photo is ALSO
+kept as itself (pipeline/original_image.py: metadata removed, encrypted), so Source shows the
+picture a doctor can check the reading against (GET /documents/{id}/original).
 
 All the steps (encrypt, pipeline, wrong-patient check, save, recompute) are in
 backend/ingest.py, shared with the demo loader.
@@ -27,6 +29,7 @@ from backend.db import log_action
 from backend.ingest import ingest_document
 from backend.upload_report import where_else
 from pipeline.ocr import prepare_document
+from pipeline.original_image import original_image
 
 router = APIRouter()
 MAX_UPLOAD_MB = 20
@@ -36,9 +39,9 @@ MAX_UPLOAD_MB = 20
 _ingest_lock = threading.Lock()
 
 
-def _ingest_one(patient_id, filename, data, doc_type):
+def _ingest_one(patient_id, filename, data, doc_type, original=None):
     with _ingest_lock:
-        return ingest_document(patient_id, filename, data, doc_type)
+        return ingest_document(patient_id, filename, data, doc_type, original=original)
 
 
 @router.post("/patients/{patient_id}/upload")
@@ -48,6 +51,8 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
     data = await file.read()
     if len(data) > MAX_UPLOAD_MB * 1024 * 1024:
         raise HTTPException(status_code=413, detail=f"File is larger than {MAX_UPLOAD_MB} MB")
+    # a photo is also kept as itself (metadata removed) so Source can show it: None for a PDF
+    original = await run_in_threadpool(original_image, data)
     try:
         prepared = await run_in_threadpool(prepare_document, data)  # PDF, scan or photo -> searchable PDF
     except ValueError as e:  # not a PDF or image, or a damaged PDF
@@ -59,7 +64,10 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
     data = prepared
 
     try:
-        result = await run_in_threadpool(_ingest_one, patient_id, file.filename, data, doc_type or None)
+        if original:  # (a PDF keeps the 4-argument call that tests replace _ingest_one with)
+            result = await run_in_threadpool(_ingest_one, patient_id, file.filename, data, doc_type or None, original)
+        else:
+            result = await run_in_threadpool(_ingest_one, patient_id, file.filename, data, doc_type or None)
     except NotImplementedError:
         raise HTTPException(status_code=503, detail="The extraction pipeline is not built yet")
     except Exception as e:

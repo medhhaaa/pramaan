@@ -217,12 +217,16 @@ def scorecard(run_tests: bool = False, user=Depends(get_current_user)):
         })
 
     # 4. files encrypted at rest
-    files = [doc["file_path"] for doc in docs]
+    # the working PDFs, and the original photos kept for photo uploads (pipeline/original_image.py)
+    files = [doc["file_path"] for doc in docs] + [doc["original_path"] for doc in docs if doc.get("original_path")]
     encrypted, plain = [], []
     for rel in files:
         try:
             raw = open(storage.abs_path(rel), "rb").read()
-            ok = rel.endswith(".enc") and not raw.startswith(b"%PDF") and storage.read_file(rel).startswith(b"%PDF")
+            if ".original." in rel:  # a photo: it decrypts with our key (Fernet checks that), so it was encrypted
+                ok = rel.endswith(".enc") and len(storage.read_file(rel)) > 0
+            else:
+                ok = rel.endswith(".enc") and not raw.startswith(b"%PDF") and storage.read_file(rel).startswith(b"%PDF")
         except Exception:
             ok = False
         (encrypted if ok else plain).append(rel)

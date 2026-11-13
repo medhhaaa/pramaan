@@ -1,7 +1,8 @@
 """ingest_document(): everything that happens to one uploaded PDF. (Core backend)
 
 Used by the upload route AND by backend/load_demo.py, so both run exactly the same steps:
-1. save the PDF ENCRYPTED under storage/<patient>/
+1. save the PDF ENCRYPTED under storage/<patient>/ (and, for a photo upload, the original
+   photo next to it, metadata removed, also encrypted: shown in Source)
 2. run Ashil's pipeline on a temporary decrypted copy (deleted right after)
 3. wrong-patient check: if the document's blood group / sex disagree with the patient
    record, its facts get the wrong_patient flag and the document is held back
@@ -21,6 +22,7 @@ from backend.logic.wrong_patient import find_conflicts
 from backend.recompute import recompute_patient
 from backend.storage import delete_file, save_encrypted, temp_copy
 from pipeline import process
+from pipeline.original_image import EXTENSION
 
 
 def new_document_id(conn, patient_id):
@@ -42,19 +44,26 @@ def _use_saved(saved, patient_id, document_id):
     return result
 
 
-def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
+def ingest_document(patient_id, filename, data, doc_type=None, saved=None, original=None):
     """data = the PDF bytes. Returns {"document_id", "facts_added", "held_back", "reasons",
     "dropped", "doc_type", "document_date"} plus, for the upload report, "added_facts"
     (the saved facts), "dropped_facts" (left out by quote verification, with drop_reason)
     and "not_captured" (medical lines no fact quotes).
     saved = optional saved pipeline output for this document: then the AI is not called
-    (used by load_demo --saved), and every other step still runs."""
+    (used by load_demo --saved), and every other step still runs.
+    original = (bytes, mime) of the photo as uploaded, metadata removed
+    (pipeline/original_image.py): kept encrypted next to the PDF for Source."""
     with get_conn() as conn:
         patient = dict(conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone())
         document_id = new_document_id(conn, patient_id)
 
     rel_path = f"storage/{patient_id}/{document_id}.pdf.enc"
     save_encrypted(data, rel_path)
+    original_path = original_mime = None
+    if original:
+        original_bytes, original_mime = original
+        original_path = f"storage/{patient_id}/{document_id}.original.{EXTENSION[original_mime]}.enc"
+        save_encrypted(original_bytes, original_path)
     if saved is not None:
         result = _use_saved(saved, patient_id, document_id)
     else:
@@ -66,6 +75,8 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
                                                    identity=identity)
         except Exception:
             delete_file(rel_path)
+            if original_path:
+                delete_file(original_path)
             raise
         finally:
             os.remove(tmp)
@@ -82,11 +93,11 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
     with get_conn() as conn:
         conn.execute(
             "INSERT INTO documents (id, patient_id, filename, doc_type, document_date, file_path,"
-            " held_back, doc_type_quote, doc_type_page, doc_type_line, uploaded_at)"
-            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'))",
+            " held_back, doc_type_quote, doc_type_page, doc_type_line, uploaded_at, original_path, original_mime)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, datetime('now'), ?, ?)",
             (document_id, patient_id, filename, doc_type, result.get("document_date"), rel_path,
              int(bool(conflicts)), evidence.get("doc_type_quote"), evidence.get("doc_type_page"),
-             evidence.get("doc_type_line")),
+             evidence.get("doc_type_line"), original_path, original_mime),
         )
         for fact in facts:
             insert_fact(conn, fact)
