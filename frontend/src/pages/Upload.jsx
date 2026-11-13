@@ -1,8 +1,8 @@
-import { useCallback, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText, Copy } from 'lucide-react';
-import { upload } from '../api.js';
+import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText, Copy, FileText, Trash2, Pencil, Check } from 'lucide-react';
+import { upload, listDocuments, deleteDocument, renameDocument } from '../api.js';
 import { useActivePatientId, useApp } from '../context/AppContext.jsx';
 import { useCachedState } from '../lib/sessionCache.js';
 import PatientGate from '../components/PatientGate.jsx';
@@ -148,6 +148,134 @@ function Report({ res }) {
   );
 }
 
+// Delete one document, with an inline "are you sure" step (no browser pop-up). onDeleted(docId).
+function DeleteDoc({ docId, name, label, onDeleted }) {
+  const { t } = useTranslation();
+  const [step, setStep] = useState('idle'); // idle | confirm | working
+  const [error, setError] = useState('');
+  const remove = async () => {
+    setStep('working');
+    setError('');
+    try {
+      await deleteDocument(docId);
+      onDeleted(docId);
+    } catch (e) {
+      setError(t('upload.deleteFailed', { error: e.message }));
+      setStep('idle');
+    }
+  };
+  if (step === 'idle') {
+    return (
+      <span className="doc-delete">
+        <button type="button" className="btn btn-ghost btn-sm" onClick={() => setStep('confirm')}>
+          <Trash2 size={15} aria-hidden="true" /> {label || t('upload.delete')}
+        </button>
+        {error && <span className="error-text small" role="alert"> {error}</span>}
+      </span>
+    );
+  }
+  return (
+    <div className="doc-delete-confirm" role="alert">
+      <p className="small">{t('upload.deleteConfirm', { name })}</p>
+      <div className="row">
+        <button type="button" className="btn btn-danger btn-sm" disabled={step === 'working'} onClick={remove}>
+          {step === 'working' ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <Trash2 size={15} aria-hidden="true" />}
+          {' '}{t('upload.deleteYes')}
+        </button>
+        <button type="button" className="btn btn-ghost btn-sm" disabled={step === 'working'} onClick={() => setStep('idle')}>
+          {t('upload.deleteCancel')}
+        </button>
+      </div>
+    </div>
+  );
+}
+
+// The file name, with a Rename button that turns it into a text box (Enter saves, Esc cancels).
+function DocName({ doc, onRenamed }) {
+  const { t } = useTranslation();
+  const [editing, setEditing] = useState(false);
+  const [value, setValue] = useState(doc.filename);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState('');
+  const start = () => { setValue(doc.filename); setError(''); setEditing(true); };
+  const save = async () => {
+    if (!value.trim() || value === doc.filename) { setEditing(false); return; }
+    setSaving(true);
+    setError('');
+    try {
+      const out = await renameDocument(doc.id, value);
+      onRenamed(doc.id, out.filename);
+      setEditing(false);
+    } catch (e) {
+      setError(e.message);
+    } finally { setSaving(false); }
+  };
+  if (!editing) {
+    return (
+      <p className="muted small record-file doc-name">
+        <span>{doc.filename}</span>
+        <button type="button" className="link-btn small" onClick={start} aria-label={t('upload.renameLabel', { name: doc.filename })}>
+          <Pencil size={13} aria-hidden="true" /> {t('upload.rename')}
+        </button>
+      </p>
+    );
+  }
+  return (
+    <form className="doc-rename" onSubmit={(e) => { e.preventDefault(); save(); }}>
+      <label className="sr-only" htmlFor={`rename-${doc.id}`}>{t('upload.renameLabel', { name: doc.filename })}</label>
+      <input id={`rename-${doc.id}`} className="input" value={value} maxLength={120} autoFocus disabled={saving}
+        onChange={(e) => setValue(e.target.value)} onKeyDown={(e) => { if (e.key === 'Escape') setEditing(false); }} />
+      <button type="submit" className="btn btn-primary btn-sm" disabled={saving || !value.trim()}>
+        {saving ? <Loader2 size={15} className="spin" aria-hidden="true" /> : <Check size={15} aria-hidden="true" />} {t('upload.renameSave')}
+      </button>
+      <button type="button" className="btn btn-ghost btn-sm" disabled={saving} onClick={() => setEditing(false)}>{t('upload.deleteCancel')}</button>
+      {error && <span className="error-text small" role="alert">{error}</span>}
+    </form>
+  );
+}
+
+// Everything uploaded so far (the health profile is not a document here), newest first.
+function AllDocuments({ docs, error, onDeleted, onRenamed }) {
+  const { t, i18n } = useTranslation();
+  const [open, setOpen] = useState(null);
+  const closeDoc = useCallback(() => setOpen(null), []);
+  const typeLabel = (type) => t(`records.types.${type}`, { defaultValue: (type || '').replace(/_/g, ' ') });
+  return (
+    <section className="all-docs">
+      <h2>{t('upload.allDocsTitle')} {docs && <span className="muted small">({docs.length})</span>}</h2>
+      <p className="muted small">{t('upload.allDocsHint')}</p>
+      {error && <p className="error-text">{error}</p>}
+      {!docs && !error && <div className="skeleton" />}
+      {docs && docs.length === 0 && <p className="muted">{t('upload.allDocsEmpty')}</p>}
+      {docs && docs.length > 0 && (
+        <ul className="list record-list">
+          {docs.map((d) => (
+            <li key={d.id} className="card record-card">
+              <div className="record-head">
+                <FileText size={20} aria-hidden="true" />
+                <div className="record-title">
+                  <strong>{typeLabel(d.doc_type)}</strong>
+                  <span className="muted small">{d.document_date ? fmtDate(d.document_date, i18n.language) : t('records.noDate')}</span>
+                </div>
+                <div className="chip-row">
+                  <span className="chip chip-neutral">{t('records.facts', { count: d.facts })}</span>
+                  {d.held_back && <span className="chip chip-danger">{t('doc.held')}</span>}
+                </div>
+              </div>
+              <DocName doc={d} onRenamed={onRenamed} />
+              <div className="row">
+                <button type="button" className="link-btn small" onClick={() => setOpen(d.id)}>{t('records.open')}</button>
+                <DeleteDoc docId={d.id} name={d.filename} onDeleted={onDeleted} />
+              </div>
+            </li>
+          ))}
+        </ul>
+      )}
+      {open && <DocDrawer docId={open} onClose={closeDoc} />}
+    </section>
+  );
+}
+
 function UploadInner() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -160,6 +288,21 @@ function UploadInner() {
   const [items, setItems] = useCachedState(`upload:${user?.username}:${pid}`, [], reviveItems);
   const busy = items.some((it) => it.state === 'waiting' || it.state === 'working');
   const [dragging, setDragging] = useState(false);
+  const [docs, setDocs] = useState(null); // everything uploaded so far
+  const [docsError, setDocsError] = useState('');
+
+  const refreshDocs = useCallback(() => {
+    listDocuments(pid)
+      .then((all) => { setDocs(all.filter((d) => d.doc_type !== 'patient_profile')); setDocsError(''); })
+      .catch((e) => setDocsError(e.message));
+  }, [pid]);
+  useEffect(() => { refreshDocs(); }, [refreshDocs]);
+
+  // a document deleted here or in the list: its upload report says so, and the list reloads
+  const markDeleted = (docId) => {
+    setItems((prev) => prev.map((it) => (it.res?.document_id === docId ? { ...it, state: 'deleted' } : it)));
+    refreshDocs();
+  };
 
   const acceptConsent = () => {
     localStorage.setItem(CONSENT_KEY, 'yes');
@@ -181,6 +324,7 @@ function UploadInner() {
       } catch (e) {
         update(i, { state: 'failed', error: e.message });
       }
+      refreshDocs();
     }
   };
 
@@ -228,7 +372,14 @@ function UploadInner() {
           {it.state === 'working' && <p className="muted small">{t('upload.working', { name: it.name })}</p>}
           {it.state === 'failed' && <p className="error-text">{t('upload.failed', { error: it.error })}</p>}
           {it.state === 'interrupted' && <p className="muted small">{t('upload.interrupted')}</p>}
+          {it.state === 'deleted' && <p className="muted small"><Trash2 size={14} aria-hidden="true" /> {t('upload.deleted')}</p>}
           {it.state === 'done' && <Report res={it.res} />}
+          {it.state === 'done' && it.res?.document_id && (
+            <div className="upload-item-actions">
+              <DeleteDoc docId={it.res.document_id} name={it.name} onDeleted={markDeleted}
+                label={it.res.copy_of_document ? t('upload.deleteCopy') : t('upload.deleteUpload')} />
+            </div>
+          )}
         </div>
       ))}
 
@@ -240,6 +391,9 @@ function UploadInner() {
           <button className="btn btn-ghost" onClick={() => setItems([])}>{t('upload.clearList')}</button>
         </div>
       )}
+
+      <AllDocuments docs={docs} error={docsError} onDeleted={markDeleted}
+        onRenamed={(id, filename) => setDocs((all) => all.map((d) => (d.id === id ? { ...d, filename } : d)))} />
     </section>
   );
 }

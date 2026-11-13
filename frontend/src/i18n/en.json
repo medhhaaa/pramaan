@@ -72,6 +72,8 @@
   "ask": { "title": "Ask my records", "placeholder": "Ask about your records", "send": "Ask", "footer": "Answers come only from your stored records.", "notMentioned": "The records don't mention this." },
   "upload": {
     "interrupted": "The page was refreshed before this upload finished. Open the timeline to see if it was saved, or upload it again.", "clearList": "Clear this list",
+    "delete": "Delete", "deleteUpload": "Delete this upload", "deleteCopy": "Delete this copy", "deleteConfirm": "Delete {{name}}? Its facts leave your records and every check runs again without it. This cannot be undone.", "deleteYes": "Yes, delete", "deleteCancel": "Cancel", "deleted": "Deleted. Its facts are no longer in your records.", "deleteFailed": "Could not delete: {{error}}", "allDocsTitle": "All your documents", "allDocsHint": "Everything you have uploaded so far, newest first. Added one twice by mistake? Delete the extra copy.", "allDocsEmpty": "Nothing uploaded yet.",
+    "rename": "Rename", "renameLabel": "New name for {{name}}", "renameSave": "Save",
     "fromDate": "from {{date}}",
     "copyOf": "This looks like a copy of a document you already saved: {{doc}}. All {{n}} facts in it are already stored there.",
     "openStored": "Open the stored copy",
