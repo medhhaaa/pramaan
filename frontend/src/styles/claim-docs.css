@@ -5,3 +5,9 @@
 .claim-item .row { display: flex; gap: 10px; align-items: center; justify-content: space-between; }
 .claim-item .link-btn { display: block; margin-top: 6px; }
 .claim-not_needed { opacity: 0.6; }
+.claim-upload { margin-top: 8px; }
+.claim-upload .btn { display: inline-flex; align-items: center; gap: 6px; }
+.claim-outcome { margin: 6px 0 0; }
+.claim-outcome-counted { color: var(--verified); }
+.claim-outcome-held, .claim-outcome-otherType, .claim-outcome-outsideStay, .claim-outcome-notRecognised { color: var(--warn); }
+.claim-outcome-failed { color: var(--danger); }

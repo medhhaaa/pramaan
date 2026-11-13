@@ -4,6 +4,8 @@ Before the share: no patient in the list, 403 on the brief and the timeline.
 During the share: reading plus review work (correct a fact); never upload, delete or share.
 After the patient stops the share: 403 again.
 """
+import gc
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -12,6 +14,9 @@ from backend import seed
 
 @pytest.fixture(scope="module")
 def client():
+    # earlier test files leave sqlite connections open until garbage collection; on Windows
+    # an open connection stops seed() from deleting the test database
+    gc.collect()
     seed.seed(with_sample_facts=True)  # p1's sample facts, so there is something to correct
     from backend.main import app
     return TestClient(app)

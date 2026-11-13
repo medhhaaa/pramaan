@@ -116,6 +116,15 @@
   },
   "common": { "back": "Back", "close": "Close", "loading": "Loading…", "error": "Something went wrong. Please try again." },
   "claimDocs": {
+    "uploadHere": "Upload it here",
+    "uploadAnother": "Add another",
+    "uploading": "Reading the document… about 20–40 seconds",
+    "upload_counted": "Saved. It now counts for this item.",
+    "upload_otherType": "Saved to your records, but it was read as: {{type}}. It does not count for this item. Check you picked the right file.",
+    "upload_outsideStay": "Saved, but its date ({{date}}) is outside this hospital stay, so it does not count here. Check the stay dates below.",
+    "upload_notRecognised": "Saved to your records, but Pramaan could not confirm what kind of document it is, so it does not count here.",
+    "upload_held": "Saved but held back for review: it may belong to someone else.",
+    "uploadFailed": "Upload failed: {{error}}",
     "title": "Claim documents",
     "stayDates": "Hospital stay: {{from}} to {{to}}",
     "dateUnknown": "date not known",
@@ -129,7 +138,7 @@
       "unsure": "Not sure if needed",
       "not_needed": "Not needed"
     },
-    "tipNotSaved": "Ask the hospital billing desk",
+    "tipNotSaved": "Ask the hospital billing desk, then upload it here",
     "question": {
       "surgery": "Did you have surgery during this hospital stay?",
       "implant_used": "Was an implant used (e.g. stent, plate, lens, joint)?",
