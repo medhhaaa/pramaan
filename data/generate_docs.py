@@ -1357,8 +1357,8 @@ P8 = {
     "patient": {"name": "Meena Shenoy", "dob": "1966-07-02", "sex": "F", "blood_group": "A+"},
     "traps": [
         {"type": "refill_review", "documents": ["p8_d1", "p8_d2", "p8_d3"],
-         "note": "Sulfa allergy documented in the 2024 discharge summary. A refill review re-runs "
-                 "the allergy check, so a sulfonylurea (e.g. Glimepiride) would warn."},
+         "note": "Sulfa allergy documented in the 2024 discharge summary. Prescribing or refill "
+                 "review re-runs the allergy check, so a sulfa drug (e.g. co-trimoxazole) warns."},
     ],
     "documents": [
         {

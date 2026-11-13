@@ -197,10 +197,9 @@ def red_flags(all_facts, docs, meds, gaps, lang="en"):
     return flags
 
 
-@router.get("/patients/{patient_id}/brief")
-def brief_route(patient_id: str, user=Depends(get_current_user)):
-    access = require_patient_access(user, patient_id)
-    lang = user_language(user)
+def build_brief(patient_id, access, lang="en"):
+    """The 60-second brief as this user may see it (scoped for a care-team doctor). No audit
+    row: the caller logs. Consult records (backend/routes/consult_records.py) store exactly this."""
     with get_conn() as conn:
         patient = conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone()
         if not patient:
@@ -212,7 +211,6 @@ def brief_route(patient_id: str, user=Depends(get_current_user)):
         questions = scoped_questions(list_questions_for(conn, patient_id, lang), access)
 
     meds = current_medicines(facts, docs)
-    log_action(user, "view_brief", patient_id, "")
     return {
         "patient": dict(patient),
         "current_medicines": meds,
@@ -227,3 +225,11 @@ def brief_route(patient_id: str, user=Depends(get_current_user)):
             if q["status"] != "resolved" and not q["claim_condition"]  # claim questions are the patient's
         ],
     }
+
+
+@router.get("/patients/{patient_id}/brief")
+def brief_route(patient_id: str, user=Depends(get_current_user)):
+    access = require_patient_access(user, patient_id)
+    brief = build_brief(patient_id, access, user_language(user))
+    log_action(user, "view_brief", patient_id, "")
+    return brief

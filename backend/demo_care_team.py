@@ -24,6 +24,7 @@ from datetime import date, datetime, timedelta, timezone
 
 from backend.db import get_conn
 from backend.prescriptions import create_prescription
+from backend.routes.consult_records import build_snapshot, create_consult_record
 
 DEMO_PATIENTS = ["p1", "p2", "p3", "p4", "p8"]
 DEMO_DOCTORS = ["drrao", "drkotian"]
@@ -86,6 +87,18 @@ def reminder_ids(conn, prescription_id):
            WHERE i.prescription_id = ?""", (prescription_id,))}
 
 
+def prescribed(conn, doctor_id, patient_id, scope, prescription_id, days_ago):
+    """The consult record every prescription gets (snapshot of the brief as of today's data)."""
+    items = [dict(r) for r in conn.execute(
+        "SELECT medicine, dose, frequency, duration_days FROM prescription_items WHERE prescription_id = ?",
+        (prescription_id,))]
+    conn.commit()  # the brief syncs questions on its own connection: let it see (and not wait on) our writes
+    snapshot = build_snapshot(patient_id, {"kind": "care_team", "scope": scope})
+    create_consult_record(conn, doctor_id, patient_id, "prescription", snapshot,
+                          {"action": "prescribe", "prescription_id": prescription_id, "items": items},
+                          created_at=at(days_ago))
+
+
 def build():
     with get_conn() as conn:
         rao, kotian = user_id(conn, "drrao"), user_id(conn, "drkotian")
@@ -110,6 +123,7 @@ def build():
         pres = create_prescription(conn, "p8", rao, [
             {"medicine": "Metformin", "dose": "500mg", "frequency": "BD", "duration_days": 30}],
             start_date=day(26), created_at=at(26))
+        prescribed(conn, rao, "p8", ["diabetes"], pres, 26)
         times = reminder_ids(conn, pres)
         log_doses(conn, "p8", times["08:00"], 26, taken_days=range(1, 27))
         evening_taken = {1, 2, 4, 5, 7, 9, 12, 13} | set(range(15, 27))   # 8 of the last 14
@@ -134,6 +148,7 @@ def build():
         pres = create_prescription(conn, "p2", rao, [
             {"medicine": "Telmisartan", "dose": "40mg", "frequency": "OD", "duration_days": 90}],
             start_date=day(40), created_at=at(40))
+        prescribed(conn, rao, "p2", ["hypertension"], pres, 40)
         log_doses(conn, "p2", reminder_ids(conn, pres)["08:00"], 14,
                   taken_days={1, 3, 4, 6, 8, 9, 12, 13}, skipped_days={2, 7})
         viewed(conn, rao, "p2", 4)

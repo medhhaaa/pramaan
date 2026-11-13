@@ -1,0 +1,55 @@
+/* My Medicines (patient), Refill review and Consult records (doctor), notifications */
+.med-card { display: flex; flex-direction: column; gap: 4px; }
+.small-heading { font-size: 0.9rem; margin: 0 0 6px; }
+.dose-row { display: flex; align-items: center; gap: 12px; padding: 4px 0; }
+.btn-row.tight { margin-top: 0; }
+.refill-form textarea, .decision-card textarea, .record-detail textarea { width: 100%; resize: vertical; }
+.doctor-note { border-left: 3px solid var(--info); padding: 4px 10px; margin: 6px 0 0; }
+
+.records-only { border-left: 4px solid var(--info); padding: 6px 12px; background: rgba(110, 168, 255, 0.08); border-radius: 6px; }
+.refill-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 12px; margin-top: 12px; }
+.facts-dl { display: grid; grid-template-columns: auto 1fr; gap: 2px 12px; margin: 8px 0 0; }
+.facts-dl dt { color: var(--text-muted); }
+.facts-dl dd { margin: 0; }
+.big-number { font-size: 2rem; font-weight: 700; margin: 0; }
+.brief-compact { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; }
+.brief-compact h4 { margin: 0 0 4px; font-size: 0.9rem; }
+.brief-compact .list li { padding: 2px 0; }
+
+/* 30-day dose strip: one column per day, track = doses due, fill = doses taken */
+.dose-strip { display: flex; align-items: flex-end; gap: 2px; height: 56px; margin-top: 10px; }
+.dose-day { flex: 1; height: 100%; display: flex; align-items: flex-end; cursor: default; min-width: 4px; }
+.dose-track { width: 100%; height: 100%; background: var(--border, rgba(127, 127, 127, 0.25)); border-radius: 4px 4px 0 0; display: flex; align-items: flex-end; overflow: hidden; }
+.dose-fill { width: 100%; background: var(--brand); border-radius: 4px 4px 0 0; }
+.dose-none { width: 100%; height: 2px; background: var(--border, rgba(127, 127, 127, 0.25)); }
+.dose-day:hover .dose-track { outline: 2px solid var(--text-muted); outline-offset: 1px; }
+.strip-axis { display: flex; justify-content: space-between; margin-top: 4px; }
+
+/* consult records */
+.consult-grid { display: grid; grid-template-columns: minmax(240px, 1fr) 2fr; gap: 12px; align-items: start; }
+.record-list { padding: 0; list-style: none; }
+.record-row { display: flex; flex-direction: column; align-items: flex-start; gap: 2px; width: 100%; text-align: left; background: none;
+  border: 1px solid transparent; border-radius: 8px; padding: 8px; color: inherit; cursor: pointer; font: inherit; }
+.record-row:hover, .record-row.active { border-color: var(--brand); }
+.record-detail h4 { margin: 12px 0 4px; font-size: 0.9rem; }
+.hash { word-break: break-all; }
+.rx-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; margin-bottom: 8px; }
+.rx-field { display: flex; flex-direction: column; flex: 1 1 90px; }
+.rx-wide { flex: 3 1 180px; }
+.rx-remove { margin-bottom: 4px; }
+
+/* notifications */
+.notif { position: relative; }
+.notif-btn { position: relative; }
+.notif-count { position: absolute; top: -4px; right: -4px; background: var(--danger); color: #1a0a10; border-radius: 999px;
+  font-size: 0.7rem; min-width: 18px; height: 18px; display: grid; place-items: center; padding: 0 4px; font-weight: 700; }
+/* fixed to the window (the header wraps on narrow screens, so anchoring to the bell can overflow) */
+.notif-panel { position: fixed; right: 16px; top: 64px; width: min(340px, calc(100vw - 32px)); z-index: 50; max-height: 60vh; overflow: auto; }
+.notif-panel h3 { margin-top: 0; }
+.notif-item { display: flex; flex-direction: column; gap: 2px; width: 100%; text-align: left; background: none; border: 0;
+  padding: 8px 4px; color: inherit; cursor: pointer; font: inherit; border-bottom: 1px solid var(--border, rgba(127, 127, 127, 0.2)); }
+.notif-item.unread { font-weight: 600; }
+
+@media (max-width: 760px) {
+  .consult-grid { grid-template-columns: 1fr; }
+}
