@@ -319,6 +319,37 @@ def test_claim_answers_cite_the_stay_and_documents(client, sunita, fake):
     assert [d["id"] for d in out["documents"]] == ["p1_d3"]
 
 
+def test_the_claim_pack_zip_includes_what_the_patient_confirmed(client, sunita, fake):
+    import io
+    import os
+    import shutil
+    import zipfile
+
+    from backend.storage import abs_path
+
+    with get_conn() as conn:  # the sample seed has rows but no stored files: put the synthetic PDF there
+        stored = conn.execute("SELECT file_path FROM documents WHERE id = 'p1_d2'").fetchone()["file_path"]
+    os.makedirs(os.path.dirname(abs_path(stored)), exist_ok=True)
+    root = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    shutil.copy(os.path.join(root, "data", "patients", "p1", "d2_lab_2021.pdf"), abs_path(stored))
+
+    stay = make_stay(client, sunita)
+    fake({"tool": "save_to_claim_pack", "args": {"stay": f"stay_{stay}", "document_ids": ["p1_d2"]}},
+         {"answer": "Add your 2021 lab report?", "fact_ids": []})
+    action = ask(client, sunita, "Add my 2021 lab report to the claim pack").json()["pending_action"]
+    assert client.post("/patients/p1/assistant/confirm", json={"action_id": action["action_id"]},
+                       headers=sunita).status_code == 200
+    r = client.get(f"/patients/p1/hospital-stays/{stay}/claim-pack", headers=sunita)
+    assert r.status_code == 200, r.text
+    pack = zipfile.ZipFile(io.BytesIO(r.content))
+    added = [n for n in pack.namelist() if n.startswith("added_")]
+    assert added == ["added_01_lab_report.pdf"]
+    checklist = pack.read("checklist.txt").decode()
+    assert "Added by you: added_01_lab_report.pdf" in checklist
+    for word in ("eligible", "approved", "guaranteed"):  # Medha's wording rule
+        assert word not in checklist.lower()
+
+
 def set_language(username, lang):
     with get_conn() as conn:
         conn.execute("UPDATE users SET language = ? WHERE username = ?", (lang, username))
