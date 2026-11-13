@@ -713,3 +713,9 @@ export async function getScorecard(runTests = false) {
 export async function getAiView(docId) {
   return http('GET', `/documents/${docId}/ai-view`);
 }
+
+// ---------- document agent (core backend: backend/routes/agent.py) ----------
+// -> {document_id, filename, steps: [{step, status: ok|warn|blocked|retry, detail, ms, created_at}]}
+export async function getAgentSteps(docId) {
+  return http('GET', `/documents/${docId}/agent-steps`);
+}

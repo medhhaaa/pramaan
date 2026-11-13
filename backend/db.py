@@ -64,6 +64,17 @@ CREATE TABLE IF NOT EXISTS audit_log (
     created_at TEXT DEFAULT CURRENT_TIMESTAMP,
     prev_hash TEXT, row_hash TEXT  -- tamper-evident chain (log_action / verify_audit_chain)
 );
+-- "What the agent did" for each document (backend/agent/steps.py)
+CREATE TABLE IF NOT EXISTS agent_steps (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    patient_id TEXT NOT NULL,
+    document_id TEXT,
+    step TEXT NOT NULL,      -- read, protect, extract, check, retry, classify, patient_check, save, merge, ...
+    status TEXT NOT NULL,    -- ok | warn | blocked | retry
+    detail TEXT,
+    ms INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 CREATE TABLE IF NOT EXISTS questions (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id TEXT, fact_ids TEXT, text TEXT,

@@ -11,8 +11,10 @@ Used by the upload route AND by backend/load_demo.py, so both run exactly the sa
    if the patient has no open stay (backend/routes/claims.py)
 If the pipeline fails, the stored file is removed, nothing is saved, and the error is raised.
 """
+import json
 import os
 
+from backend.agent import steps
 from backend.db import fact_from_row, get_conn, insert_fact
 from backend.logic.wrong_patient import find_conflicts
 from backend.recompute import recompute_patient
@@ -89,8 +91,25 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         if result.get("unread_pages") or result.get("privacy_blocked"):
             # handwriting no model could safely read: kept, and listed for a person to read
             conn.execute("UPDATE documents SET needs_reading = 1 WHERE id = ?", (document_id,))
+        # "What the agent did": the pipeline's steps, then this function's own
+        if saved is not None:
+            steps.record(conn, patient_id, document_id, "extract", "ok",
+                         f"used saved extraction results ({len(saved.get('facts') or [])} facts), no AI call")
+        steps.record_trace(conn, patient_id, document_id, result.get("trace"))
+        steps.record(conn, patient_id, document_id, "patient", "blocked" if conflicts else "ok",
+                     ("held back from the timeline: " + "; ".join(conflicts)) if conflicts
+                     else "blood group and sex match this patient's records")
+        steps.record(conn, patient_id, document_id, "save", "ok", f"{len(facts)} facts saved, file encrypted")
 
     recompute_patient(patient_id)
+    with get_conn() as conn:  # flags raised on this document after merging with the other records
+        counts = {}
+        for row in conn.execute("SELECT flags FROM facts WHERE document_id = ?", (document_id,)):
+            for flag in json.loads(row["flags"] or "[]"):
+                counts[flag] = counts.get(flag, 0) + 1
+        steps.record(conn, patient_id, document_id, "merge", "warn" if counts else "ok",
+                     ("flags: " + ", ".join(f"{n} {k.replace('_', ' ')}" for k, n in sorted(counts.items())))
+                     if counts else "merged into the timeline, no conflicts, duplicates or unit problems")
     if doc_type == "discharge_summary" and evidence.get("doc_type_quote") and not conflicts:
         from backend.routes.claims import stay_from_discharge_summary  # avoids an import loop
         stay_from_discharge_summary(patient_id, document_id, result.get("stay_dates") or {})

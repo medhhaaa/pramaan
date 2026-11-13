@@ -439,3 +439,12 @@ tr.ai-changed td { background: rgba(245, 185, 74, 0.05); }
 .ai-compare { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 .ai-compare img { width: 100%; border: 1px solid rgba(140, 151, 181, 0.3); border-radius: 6px; }
 @media (max-width: 760px) { .ai-compare { grid-template-columns: 1fr; } }
+
+/* "What the agent did" in the document drawer */
+.agent-steps { margin: 0 0 12px; border: 1px solid rgba(140, 151, 181, 0.25); border-radius: 8px; padding: 8px 12px; }
+.agent-steps summary { cursor: pointer; font-weight: 600; }
+.agent-step-list { list-style: none; margin: 8px 0 0; padding: 0; display: flex; flex-direction: column; gap: 6px; }
+.agent-step { display: grid; grid-template-columns: 18px 80px 1fr auto; gap: 8px; align-items: start; font-size: 0.9rem; }
+.agent-ok svg { color: var(--verified); }
+.agent-warn svg, .agent-retry svg { color: var(--warn); }
+.agent-blocked svg { color: var(--danger); }
