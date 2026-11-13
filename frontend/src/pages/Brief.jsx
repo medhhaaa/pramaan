@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { getBrief, checkMedicine, correctFact, answerQuestion } from '../api.js';
+import { getBrief, checkMedicine, answerQuestion } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
 import { StatusChip, BadgeChip, FlagChip } from '../components/Chip.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
@@ -24,13 +24,21 @@ export default function Brief() {
   const onCheck = async (e) => {
     e.preventDefault();
     if (!drug.trim()) return;
-    setResult(await checkMedicine(pid, drug));
+    try {
+      setResult(await checkMedicine(pid, drug));
+    } catch (err) {
+      setResult({ warning: false, error: err.message });
+    }
   };
 
+  // a doctor's answers to an open question: confirm | correct | unclear (backend/routes/questions.py)
   const resolve = async (q, action) => {
-    if (action === 'confirm') await correctFact(q.fact_ids[0], 'doctor_verified', true);
-    await answerQuestion(q.id, action === 'unclear' ? 'dont_know' : 'yes');
-    setQuestions(questions.filter((x) => x.id !== q.id));
+    try {
+      await answerQuestion(q.id, action);
+      setQuestions(questions.filter((x) => x.id !== q.id));
+    } catch (e) {
+      window.alert(e.message);
+    }
   };
 
   const allFlagTypes = Object.entries(b.flags).filter(([, list]) => list.length > 0);
@@ -53,18 +61,19 @@ export default function Brief() {
           </form>
           {result && (result.warning
             ? <div className="alert alert-danger" role="alert"><p>{result.text}</p><button className="link-btn" onClick={() => setSrc(result.source)}>{t('doc.title')}</button></div>
-            : <p className="muted small mt">{t('brief.noMatch')}</p>)}
+            : <p className="muted small mt">{result.error || t('brief.noMatch')}</p>)}
         </div>
 
         <div className="card">
           <h3>{t('brief.flags')}</h3>
           {allFlagTypes.length === 0 && <p className="muted">—</p>}
           <div className="chip-row">
-            {allFlagTypes.map(([type, list]) => list.map((f) => (
-              <button key={f.fact_id} className="link-btn" onClick={() => setSrc(f.document_id)}>
-                <FlagChip flag={type} />
+            {/* one chip per flag type with how many facts carry it; the Flags page lists them all */}
+            {allFlagTypes.map(([type, list]) => (
+              <button key={type} className="link-btn" onClick={() => setSrc(list[0].document_id)}>
+                <FlagChip flag={type} /> <span className="muted small">× {new Set(list.map((f) => f.fact_id)).size}</span>
               </button>
-            )))}
+            ))}
           </div>
         </div>
 
@@ -77,7 +86,9 @@ export default function Brief() {
               return (
                 <li key={m.name} className="list-row">
                   <div><strong>{m.name}</strong> <span className="mono">{last.dose}</span> <span className="muted">{last.frequency}</span></div>
-                  <div className="muted small">{t('brief.since')} {fmtDate(m.entries[0].date, i18n.language)}</div>
+                  <div className="muted small">
+                    {m.last_fresh_evidence_date ? t('brief.lastEvidence') : t('brief.since')} {fmtDate(m.entries[0].date, i18n.language)}
+                  </div>
                 </li>
               );
             })}
@@ -124,9 +135,24 @@ export default function Brief() {
 
         <div className="card">
           <h3>{t('brief.keyEvents')}</h3>
-          <p className="muted">—</p>
+          {(b.key_events || []).length === 0 && <p className="muted">—</p>}
+          <ul className="list">
+            {(b.key_events || []).map((e) => (
+              <li key={e.fact_id || e.name} className="list-row">
+                <span>{e.name}</span>
+                {e.document_id
+                  ? <button className="link-btn small" onClick={() => setSrc(e.document_id)}>{e.date || e.event_date}</button>
+                  : <span className="muted small">{e.date || e.event_date}</span>}
+              </li>
+            ))}
+          </ul>
           <h3 className="mt">{t('brief.redFlags')}</h3>
-          <p className="muted">—</p>
+          {(b.red_flags || []).length === 0 && <p className="muted">—</p>}
+          <ul className="list">
+            {(b.red_flags || []).map((rf, i) => (
+              <li key={i} className="list-row brief-redflag"><FlagChip flag={rf.flag} /> <span className="small">{rf.text}</span></li>
+            ))}
+          </ul>
         </div>
       </section>
 
@@ -136,7 +162,7 @@ export default function Brief() {
         {questions.map((q) => (
           <div key={q.id} className="question">
             <p>{q.text}</p>
-            <button className="link-btn small" onClick={() => setSrc(q.source)}>{q.source}</button>
+            {q.source && <button className="link-btn small" onClick={() => setSrc(q.source)}>{q.source}</button>}
             <div className="btn-row">
               <button className="btn btn-sm btn-primary" onClick={() => resolve(q, 'confirm')}>{t('brief.confirm')}</button>
               <button className="btn btn-sm btn-ghost" onClick={() => resolve(q, 'correct')}>{t('brief.correct')}</button>

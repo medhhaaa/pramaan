@@ -149,7 +149,42 @@ export async function getBrief(pid) {
       open_questions: QUESTIONS_P1.filter((q) => q.patient_id === pid && q.status !== 'resolved'),
     };
   }
-  return http('GET', `/patients/${pid}/brief`);
+  return briefForScreen(await http('GET', `/patients/${pid}/brief`));
+}
+
+// fact ids look like "p1_d3_f009": the document is everything before "_f009"
+const docOf = (factId) => (factId || '').replace(/_f\d+$/, '');
+
+// The backend brief (backend/routes/brief.py) -> the shape the Brief screen uses (the same
+// shape the dummy data has). Values, units, doses and quotes are passed through unchanged.
+function briefForScreen(raw) {
+  const flags = {};
+  (raw.red_flags || []).forEach((rf) => {
+    (rf.fact_ids || []).forEach((id) => {
+      (flags[rf.flag] = flags[rf.flag] || []).push({ fact_id: id, document_id: docOf(id) });
+    });
+  });
+  return {
+    patient: raw.patient,
+    flags,
+    current_medicines: (raw.current_medicines || []).map((m) => ({
+      name: m.name,
+      last_fresh_evidence_date: m.last_fresh_evidence_date,
+      entries: [{ date: m.last_fresh_evidence_date, dose: m.dose, frequency: m.frequency }],
+      document_id: m.source?.document_id,
+    })),
+    allergies: (raw.allergies || []).map((a) => ({
+      fact_id: a.source?.fact_id, document_id: a.source?.document_id, status: a.status,
+      name: a.reaction ? `${a.name} (${a.reaction})` : a.name, quote: a.source?.quote,
+    })),
+    conditions: (raw.conditions || []).map((c) => ({ fact_id: c.source?.fact_id, name: c.name, badge: c.badge || null })),
+    latest_results: (raw.latest_results || []).map((r) => ({
+      fact_id: r.source?.fact_id, name: r.name, value: r.value, unit: r.unit, date_raw: r.date,
+    })),
+    key_events: (raw.events || []).map((e) => ({ fact_id: e.source?.fact_id, name: e.name, date: e.date, document_id: e.source?.document_id })),
+    red_flags: raw.red_flags || [],
+    open_questions: (raw.open_questions || []).map((q) => ({ ...q, source: null })),
+  };
 }
 
 export async function checkMedicine(pid, name) {
@@ -163,7 +198,11 @@ export async function checkMedicine(pid, name) {
     }
     return { warning: false, text: null };
   }
-  return http('POST', `/patients/${pid}/check-medicine`, { name });
+  // backend: {"warnings": [{"kind", "text", "source": {document_id...}}], ...}
+  const res = await http('POST', `/patients/${pid}/check-medicine`, { drug: name });
+  const warnings = res.warnings || [];
+  if (!warnings.length) return { warning: false, text: null };
+  return { warning: true, text: warnings.map((w) => w.text).join(' '), source: warnings[0].source?.document_id };
 }
 
 export async function ask(pid, question) {
@@ -258,8 +297,13 @@ export async function scanQR(code) {
     if (!code || !code.startsWith('demo-')) throw new Error('expired');
     return { session_id: 'demo-session', patient_id: code.split('-')[1], expires_at: Date.now() + 30 * 60 * 1000 };
   }
-  // a scanned QR holds the long token; a typed code is 8 letters/digits, e.g. K7P3-QXM9
-  const value = (code || '').trim();
+  // a scanned QR holds a link like http://localhost:5173/?share=<token>; a typed code is
+  // 8 letters/digits, e.g. K7P3-QXM9. Sending the whole link as the token never matched.
+  let value = (code || '').trim();
+  try {
+    const token = new URL(value).searchParams.get('share');
+    if (token) value = token;
+  } catch { /* not a link: a code or a bare token */ }
   const isCode = value.replace(/[^a-z0-9]/gi, '').length === 8;
   const res = await http('POST', '/share/open', isCode ? { code: value } : { token: value });
   return { ...res, patient_id: res.patient.id, expires_at: Date.parse(res.expires_at) };

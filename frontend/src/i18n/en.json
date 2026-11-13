@@ -20,9 +20,11 @@
     "badLogin": "Username or password is not right.", "logout": "Log out"
   },
   "scan": {
+    "locked": "Too many wrong codes. Try again in 10 minutes.",
+    "camStarting": "Starting the camera…", "camHint": "Hold the patient's QR code in front of the camera.", "cam_denied": "The camera is blocked for this site. Allow it with the camera icon in the address bar, or type the code below.", "cam_none": "No camera found on this computer. Type the code below.", "cam_error": "The camera could not start. Another app (Teams, Zoom…) may be using it. Type the code below.", "cam_insecure": "The camera only works on https or localhost. Type the code below.",
     "title": "Scan the patient's QR", "orCode": "Or enter the code", "check": "Check",
-    "simulate": "Simulate scan (demo)", "granted": "Access granted for 30 minutes",
-    "expired": "This code has expired. Ask the patient to generate a new one.",
+    "simulate": "Simulate scan (demo)", "granted": "Access granted until the patient's share ends",
+    "expired": "This code has expired or is not valid. Ask the patient to make a new one.",
     "sessionChip": "Session active", "endSession": "End session", "needScan": "Scan the patient's QR to open this."
   },
   "patients": { "emptyDoctor": "Patients appear here only while they share their records with you. Ask the patient to open Pramaan and show you their QR code or share code.", "scanButton": "Scan QR or enter code", "title": "PATIENTS", "count": "{{count}} patients", "empty": "No patients yet. Upload records to start.", "search": "Search patients", "brief": "BRIEF", "timeline": "TIMELINE", "upload": "UPLOAD", "born": "Born", "bloodGroup": "Blood group", "sex": "Sex" },
@@ -31,7 +33,7 @@
     "noMatch": "No match in the records. This does not mean the medicine is safe.",
     "flags": "Flags", "currentMeds": "Current medicines", "allergies": "Allergies", "conditions": "Conditions in the record",
     "latestResults": "Latest results", "keyEvents": "Key events", "redFlags": "Red flags", "openQuestions": "Open questions",
-    "confirm": "Confirm", "correct": "Correct", "markUnclear": "Mark unclear", "since": "since"
+    "confirm": "Confirm", "correct": "Correct", "markUnclear": "Mark unclear", "since": "since", "lastEvidence": "last real evidence"
   },
   "status": {
     "documented": "Documented", "negated": "Explicitly absent", "not_documented": "Not in your records"
@@ -45,11 +47,13 @@
     "single_document": "Only one document mentions this.", "patient_reported": "You told us this.", "conflicting": "Two documents disagree. Both are shown."
   },
   "flagNames": {
+    "echo": "Copied (echo)",
     "handwriting": "Extracted from handwriting",
     "contradiction": "Contradiction", "duplicate": "Duplicate", "unit_mismatch": "Unit mismatch",
     "ambiguous_date": "Ambiguous date", "wrong_patient": "Wrong patient", "implausible_value": "Implausible value", "gap": "Gap"
   },
   "flagTips": {
+    "echo": "This medicine block was copied word for word from an older document. It is not new evidence.",
     "handwriting": "Read from a handwritten page by an AI model on this computer. Doctor: check it against the original image.",
     "contradiction": "Two documents disagree. Both are shown. Your doctor will check it.",
     "duplicate": "This document is an exact copy of another. It is counted once.",
