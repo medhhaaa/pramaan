@@ -62,4 +62,15 @@ def recompute_patient(patient_id):
                 "UPDATE facts SET echo_of = ?, flags = ?, badge = ? WHERE fact_id = ?",
                 (f["echo_of"], json.dumps(f["flags"]), f["badge"], f["fact_id"]),
             )
+    _reindex(patient_id)
     return facts
+
+
+def _reindex(patient_id):
+    """Keep the in-page search (backend/search.py) in step with the records. A failure here
+    never stops records from being saved: the search just stays as it was."""
+    try:
+        from backend.search import index_patient  # imported here: loads numpy / the embedding model
+        index_patient(patient_id)
+    except Exception as e:
+        print(f"search index for {patient_id} not updated: {e}")
