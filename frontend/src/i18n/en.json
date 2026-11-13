@@ -70,6 +70,7 @@
   "flagsPage": { "title": "Flags", "allergen": "Allergen", "details": "Details", "held": "Held back, waiting for review" },
   "ask": { "title": "Ask my records", "placeholder": "Ask about your records", "send": "Ask", "footer": "Answers come only from your stored records.", "notMentioned": "The records don't mention this." },
   "upload": {
+    "interrupted": "The page was refreshed before this upload finished. Open the timeline to see if it was saved, or upload it again.", "clearList": "Clear this list",
     "fromDate": "from {{date}}",
     "copyOf": "This looks like a copy of a document you already saved: {{doc}}. All {{n}} facts in it are already stored there.",
     "openStored": "Open the stored copy",
@@ -220,6 +221,7 @@
     "source": "Open source"
   },
   "assistant": {
+    "clear": "Clear chat",
     "links": {"upload": "Upload a document", "claim_upload": "Upload what's missing for the claim"},
     "note": "Answers come only from the records, with sources. Not medical advice. Personal details are removed before anything reaches the AI.",
     "blocked": "Please remove these personal details before sending:",

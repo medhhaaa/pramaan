@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useCallback, useEffect } from 'react';
 import { setToken, hasToken } from '../api.js';
+import { clearSessionCache } from '../lib/sessionCache.js';
 
 // user: { role, name, username, patientId }   session: { patientId, expiresAt } (doctor only)
 const Ctx = createContext(null);
@@ -30,6 +31,7 @@ export function AppProvider({ children }) {
     setUser(null);
     setSession(null);
     setToken(null);
+    clearSessionCache(); // cached upload reports and assistant chats (lib/sessionCache.js)
   }, []);
 
   const value = { user, setUser, session, setSession, logout, scanOpen, setScanOpen, pendingPath, setPendingPath };
