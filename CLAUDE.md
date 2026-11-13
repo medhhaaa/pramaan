@@ -137,8 +137,10 @@ Every part of the system passes facts in exactly this shape:
 | `page`, `line` | 1-based position of the quote, set by quote verification |
 | `echo_of` | `fact_id` of the original if this fact is a copy-paste |
 | `badge` | `doctor_verified`, `independent_2plus`, `single_document`, `patient_reported`, `conflicting` |
-| `flags` | any of `contradiction`, `duplicate`, `unit_mismatch`, `ambiguous_date`, `wrong_patient`, `implausible_value` |
+| `flags` | any of `contradiction`, `duplicate`, `unit_mismatch`, `ambiguous_date`, `wrong_patient`, `implausible_value`, `handwriting` |
 | `corrected` | `true` if a reviewer corrected it (original kept in `corrections` table) |
+| `confidence` | 0–100, only for facts read from handwriting: how closely the vision model and Tesseract agree on that line (low = check against the image); otherwise `null` |
+| `unsure` | Words the handwriting reader marked as a best guess (highlighted for review; confidence capped at 50); `[]` otherwise |
 
 ## 6. API list
 
@@ -168,6 +170,9 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `POST /share/open` | Doctor opens a share by QR token or code: read-only until it expires | Core backend |
 | `GET /patients/{id}/shares` | Patient's active shares (who opened, time left) | Core backend |
 | `DELETE /share/{id}` | Patient stops a share early | Core backend |
+| `GET /patients/{id}/needs-reading` | Handwritten pages kept for a person to read (not sent to any AI) | Core backend |
+| `POST /documents/{id}/facts` | A person types a fact read from the image (kept in corrections) | Core backend |
+| `POST /documents/{id}/read` | Mark a handwritten page as read | Core backend |
 
 ## 7. Database tables (owned by core backend)
 

@@ -84,6 +84,9 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         )
         for fact in facts:
             insert_fact(conn, fact)
+        if result.get("unread_pages"):
+            # handwriting no model could safely read: kept, and listed for a person to read
+            conn.execute("UPDATE documents SET needs_reading = 1 WHERE id = ?", (document_id,))
 
     recompute_patient(patient_id)
     if doc_type == "discharge_summary" and evidence.get("doc_type_quote") and not conflicts:
@@ -98,6 +101,7 @@ def ingest_document(patient_id, filename, data, doc_type=None, saved=None):
         "dropped_facts": result.get("dropped") or [],
         "not_captured": result.get("not_captured") or [],
         "document_id": document_id,
+        "needs_reading": bool(result.get("unread_pages")),
         "facts_added": len(facts),
         "held_back": bool(conflicts),
         "reasons": conflicts,

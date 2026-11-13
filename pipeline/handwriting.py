@@ -13,19 +13,39 @@ highlight it on the page.
 Facts from such pages get the flag "handwriting" (pipeline/process.py): the transcription
 itself was made by an AI, so a person must check those facts against the image.
 
+Cloud option (faster, much better at handwriting): set VISION_MODEL in .env (e.g. qwen-vl on
+free.ai). Before a page leaves this machine, mask_personal() blacks out the patient's name,
+UHID, phone and address (found by Tesseract next to labels like "Patient:" or "Mobile:"), the
+letterhead and the doctor's signature line. If no such label is found, the page is NOT sent:
+it falls back to the local model, or to plain Tesseract.
+
+Detection: a page counts as handwritten (mixed pages too) when at least 4.5% of its words have
+Tesseract confidence below 80. Measured on our test pages: handwritten 5-42%, clean printed
+scans 0-4%; a blurry photo of print may also go to the model, which reads print fine.
+
 tesseract_lines(page) -> [{"text", "rect", "confs"}]      where Tesseract found text lines
 needs_vision(lines) -> bool                                Tesseract unsure -> use the model
 vision_available() -> bool                                 is the model installed in Ollama?
-transcribe(page) -> [str]                                  the model's line-by-line copy
-place_lines(texts, lines) -> [{"text", "rect"}]            each copied line with a position
+mask_personal(page, lines) -> png bytes | None             page with personal details blacked out
+transcribe(page, lines) -> [str] | None                    the model's line-by-line copy (None: no
+                                                           model can safely read it)
+place_lines(texts, lines) -> [{"text", "rect", "confidence"}]  each copied line with a position
+                                                           and a 0-100 confidence (below)
 
-Settings (.env): HANDWRITING_MODEL (default qwen2.5vl:7b), OLLAMA_URL, HANDWRITING=off
+Confidence of a handwritten line: two independent readers, the vision model and Tesseract,
+read the same line. How closely they agree (rapidfuzz, 0-100) is the confidence. A line
+Tesseract couldn't match at all (messy real handwriting) scores 70 ("one reader only");
+a best guess the model marked [[like this]] caps it at 50, and [?] (unreadable) at 40.
+
+Settings (.env): VISION_MODEL (cloud, optional), HANDWRITING_MODEL (local, default
+qwen2.5vl:7b), OLLAMA_URL, HANDWRITING=off
 """
 import base64
 import csv
 import io
 import os
 import re
+import shutil
 import subprocess
 import tempfile
 
@@ -33,18 +53,28 @@ import pymupdf
 import requests
 from rapidfuzz import fuzz
 
+from pipeline import llm
+
 TESS_DPI = 300
 VISION_WIDTH_PX = 1000          # page width sent to the model: handwriting still readable, much faster
-MIN_MEAN_CONFIDENCE = 90        # printed scans and photos score 92-96
-MAX_UNSURE_SHARE = 0.05         # printed: 0-4% of words below 60; handwriting: more
+UNSURE_CONFIDENCE = 80          # a word Tesseract is unsure about
+HANDWRITTEN_SHARE = 0.045       # handwritten pages: 5-42% unsure words; clean printed scans: 0-4%
+# (word confidence limit, share of unsure words) per OCR engine
+THRESHOLDS = {"tesseract": (UNSURE_CONFIDENCE, HANDWRITTEN_SHARE)}
 MIN_MATCH = 35                  # rapidfuzz score to trust a line position
 
 PROMPT = """You are copying a medical document that may be handwritten.
 Write out ALL of its text exactly as written, top to bottom, one line of the document per line of output.
 Rules:
 - Copy spelling, numbers, units, doses and abbreviations exactly. Do not correct, expand or translate anything.
-- If a word cannot be read, write [?] in its place. Never guess a medicine name or a number.
+- If you are not sure of a word or number, still write your best reading, but wrap it in double
+  square brackets, e.g. Tab. [[Amoxyclav]] [[625]]mg BD. Do this for every uncertain word.
+- Only if a word is completely unreadable, write [?] in its place.
 - Output only the copied text, nothing else."""
+
+
+# Windows: the installer doesn't always put Tesseract on PATH
+TESSERACT = shutil.which("tesseract") or r"C:\Program Files\Tesseract-OCR\tesseract.exe"
 
 
 def _model():
@@ -55,12 +85,31 @@ def _ollama_url():
     return os.getenv("OLLAMA_URL", "http://localhost:11434")
 
 
+def ocr_engine():
+    """OCR_ENGINE in .env: tesseract (default) or paddleocr (trial)."""
+    return os.getenv("OCR_ENGINE", "tesseract").lower()
+
+
+def ocr_lines(page):
+    """The page's text lines from the chosen OCR engine (same shape either way), each with
+    its 1-based page and line number in reading order."""
+    if ocr_engine() == "paddleocr":
+        from pipeline.paddle_ocr import paddle_lines
+
+        lines = paddle_lines(page)
+    else:
+        lines = tesseract_lines(page)
+    for n, line in enumerate(lines, start=1):
+        line["page"], line["line"] = page.number + 1, n
+    return lines
+
+
 def tesseract_lines(page):
     """Tesseract's text lines with positions (PDF points) and word confidences."""
     png = os.path.join(tempfile.gettempdir(), f"pramaan_tess_{os.getpid()}.png")
     page.get_pixmap(dpi=TESS_DPI).save(png)
     try:
-        tsv = subprocess.run(["tesseract", png, "stdout", "tsv"], capture_output=True, text=True,
+        tsv = subprocess.run([TESSERACT, png, "stdout", "tsv"], capture_output=True, text=True, encoding="utf-8", errors="replace",
                              check=True).stdout
     finally:
         os.remove(png)
@@ -72,11 +121,14 @@ def tesseract_lines(page):
         left, top = int(row["left"]) * scale, int(row["top"]) * scale
         right, bottom = left + int(row["width"]) * scale, top + int(row["height"]) * scale
         if row["level"] == "4":  # a line: its box
-            lines[key] = {"rect": pymupdf.Rect(left, top, right, bottom), "words": [], "confs": []}
+            lines[key] = {"rect": pymupdf.Rect(left, top, right, bottom), "words": [], "confs": [],
+                          "boxes": []}
         elif row["level"] == "5" and key in lines and row["text"].strip():  # a word on that line
             lines[key]["words"].append(row["text"])
             lines[key]["confs"].append(float(row["conf"]))
-    result = [{"text": " ".join(l["words"]), "rect": l["rect"], "confs": l["confs"]}
+            lines[key]["boxes"].append(pymupdf.Rect(left, top, right, bottom))
+    result = [{"text": " ".join(l["words"]), "rect": l["rect"], "confs": l["confs"], "words": l["words"],
+               "boxes": l["boxes"]}
               for l in lines.values() if l["words"]]
     return sorted(result, key=lambda l: (round(l["rect"].y0), l["rect"].x0))
 
@@ -86,9 +138,9 @@ def needs_vision(lines):
              if sum(ch.isalnum() for ch in word) >= 2]
     if not confs:
         return True  # Tesseract found no words at all
-    mean = sum(confs) / len(confs)
-    unsure = sum(c < 60 for c in confs) / len(confs)
-    return mean < MIN_MEAN_CONFIDENCE or unsure > MAX_UNSURE_SHARE
+    limit, share = THRESHOLDS.get(ocr_engine(), (UNSURE_CONFIDENCE, HANDWRITTEN_SHARE))
+    unsure = sum(c < limit for c in confs) / len(confs)
+    return unsure >= share
 
 
 def enabled():
@@ -106,7 +158,79 @@ def vision_available():
     return any(m["name"] == _model() for m in models)
 
 
-def transcribe(page):
+# labels whose VALUE identifies the patient: blacked out before a page goes to a cloud model
+PERSONAL_LABELS = {"patient", "name", "pt", "uhid", "mrn", "reg", "ip", "op", "mobile", "mob",
+                   "phone", "ph", "tel", "contact", "address", "addr", "aadhaar", "aadhar", "abha"}
+# a page goes to a cloud model ONLY if one of these is found (so the patient's own name/ID is
+# what gets blacked out). A clinic phone or address in the letterhead is not enough.
+PATIENT_LABELS = {"patient", "name", "pt", "uhid", "mrn", "reg", "ip", "op"}
+# other labels: the blacked-out area stops here ("Patient: Sunita Rao   Date: 12/03/2019")
+OTHER_LABELS = {"date", "sex", "gender", "dob", "age", "blood", "diagnosis", "rx", "weight", "bp"}
+MASK_PAD = 2  # points around each blacked-out box
+
+
+def _label(word):
+    """'Patient:' -> 'patient' if it looks like a known label (small OCR slips allowed)."""
+    w = re.sub(r"[^a-z]", "", word.lower())
+    if not w:
+        return None
+    for label in PERSONAL_LABELS | OTHER_LABELS:
+        if w == label or (len(label) >= 5 and fuzz.ratio(w, label) >= 80):
+            return label
+    return None
+
+
+def personal_boxes(page, lines):
+    """Boxes (PDF points) to black out: personal values next to their labels, the letterhead
+    above the first patient label, and the doctor's signature line ("Dr. ...") below it.
+    Empty list = no PATIENT label (name/ID) found, so the page must not go to a cloud model."""
+    boxes, first_label_y, found_patient_label = [], None, False
+    for line in lines:
+        words, rects = line["words"], line["boxes"]
+        for i, word in enumerate(words):
+            label = _label(word)
+            if label not in PERSONAL_LABELS:
+                continue
+            found_patient_label = found_patient_label or label in PATIENT_LABELS
+            y = line["rect"].y0
+            first_label_y = y if first_label_y is None else min(first_label_y, y)
+            end = page.rect.width  # the value runs to the next label on the line, or to the edge
+            for later_word, later_rect in zip(words[i + 1:], rects[i + 1:]):
+                if _label(later_word):
+                    end = later_rect.x0 - MASK_PAD
+                    break
+            boxes.append(pymupdf.Rect(rects[i].x1, line["rect"].y0, end, line["rect"].y1))
+    if first_label_y is None or not found_patient_label:
+        return []
+    for line in lines:
+        first = re.sub(r"[^a-z]", "", line["text"].split()[0].lower())
+        if first == "dr" and line["rect"].y0 > first_label_y:  # signature under the details
+            boxes.append(pymupdf.Rect(line["rect"]))
+    # letterhead (clinic name, address, phone, doctor): everything above the first patient label.
+    # The whole band, not line by line: on a tilted photo the letterhead lines overlap.
+    boxes.append(pymupdf.Rect(0, 0, page.rect.width, first_label_y))
+    return [b + (-MASK_PAD, -MASK_PAD, MASK_PAD, MASK_PAD) for b in boxes]
+
+
+def mask_personal(page, lines):
+    """PNG of the page (VISION_WIDTH_PX wide) with personal details blacked out, or None if
+    no patient label was found (then it is not safe to send the page anywhere)."""
+    boxes = personal_boxes(page, lines)
+    if not boxes:
+        return None
+    zoom = VISION_WIDTH_PX / page.rect.width
+    pix = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom), colorspace=pymupdf.csRGB, alpha=False)
+    for box in boxes:  # paint black straight onto the picture: nothing underneath survives
+        pix.set_rect((box * zoom).irect & pix.irect, (0, 0, 0))
+    return pix.tobytes("png")
+
+
+def _clean(text):
+    text = re.sub(r"^```\w*|```$", "", text.strip(), flags=re.MULTILINE)  # stray code fences
+    return [line.strip() for line in text.splitlines() if line.strip()]
+
+
+def _transcribe_local(page):
     zoom = VISION_WIDTH_PX / page.rect.width
     png = page.get_pixmap(matrix=pymupdf.Matrix(zoom, zoom)).tobytes("png")
     response = requests.post(
@@ -121,14 +245,49 @@ def transcribe(page):
         timeout=900,
     )
     response.raise_for_status()
-    text = response.json()["message"]["content"]
-    text = re.sub(r"^```\w*|```$", "", text.strip(), flags=re.MULTILINE)  # stray code fences
-    return [line.strip() for line in text.splitlines() if line.strip()]
+    return _clean(response.json()["message"]["content"])
+
+
+def transcribe(page, lines):
+    """Copy a handwritten page line by line.
+    1. the cloud model (VISION_MODEL set) on the MASKED page, if personal details were found
+    2. else the local Ollama model, if installed
+    3. else None: the caller falls back to plain Tesseract"""
+    if enabled() and llm.vision_enabled():
+        png = mask_personal(page, lines)
+        if png is not None:
+            return _clean(llm.call_vision(PROMPT, png))
+    if vision_available():
+        return _transcribe_local(page)
+    return None
 
 
 def _similarity(a, b):
     a, b = a.lower(), b.lower()
     return max(fuzz.ratio(a, b), fuzz.partial_ratio(a, b) if min(len(a), len(b)) >= 6 else 0)
+
+
+UNREADABLE_CAP = 40  # the model itself said a word was unreadable
+UNSURE_CAP = 50      # the model marked a best guess as uncertain: [[word]]
+ONE_READER = 70      # Tesseract couldn't read the line at all (real handwriting): only the model read it
+
+
+def split_unsure(texts):
+    """['Tab. [[Amoxyclav]] 625mg'] -> (['Tab. Amoxyclav 625mg'], [['Amoxyclav']]).
+    The marks come off the text (so quotes still match); the unsure words are kept per line."""
+    clean, unsure = [], []
+    for text in texts:
+        words = re.findall(r"\[\[(.+?)\]\]", text)
+        clean.append(re.sub(r"\[\[(.+?)\]\]", r"\1", text))
+        unsure.append(words)
+    return clean, unsure
+
+
+def _confidence(text, agreement, unsure_words=()):
+    score = round(agreement)
+    if unsure_words:
+        score = min(score, UNSURE_CAP)
+    return min(score, UNREADABLE_CAP) if "[?]" in text else score
 
 
 def place_lines(texts, lines):
@@ -147,12 +306,14 @@ def place_lines(texts, lines):
     while i < n:
         score = _similarity(texts[i], lines[j]["text"]) if j < m else 0
         if j < m and score >= MIN_MATCH and best[i][j] == best[i + 1][j + 1] + score:
-            placed.append({"text": texts[i], "rect": pymupdf.Rect(lines[j]["rect"])})
+            placed.append({"text": texts[i], "rect": pymupdf.Rect(lines[j]["rect"]),
+                           "confidence": _confidence(texts[i], score)})
             i, j = i + 1, j + 1
         elif j < m and best[i][j] == best[i][j + 1]:
             j += 1
         else:  # no matching Tesseract line: put it under the previous one
             prev = placed[-1]["rect"] if placed else pymupdf.Rect(40, 40, 400, 52)
-            placed.append({"text": texts[i], "rect": pymupdf.Rect(prev.x0, prev.y1 + 2, prev.x1, prev.y1 + 2 + prev.height)})
+            placed.append({"text": texts[i], "rect": pymupdf.Rect(prev.x0, prev.y1 + 2, prev.x1, prev.y1 + 2 + prev.height),
+                           "confidence": ONE_READER})
             i += 1
     return placed

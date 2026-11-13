@@ -4,6 +4,8 @@
 
 Then open http://localhost:8000/docs to try every route in the browser.
 """
+import os
+
 from dotenv import load_dotenv
 
 load_dotenv()  # must run before importing modules that read env vars
@@ -14,8 +16,9 @@ from fastapi.middleware.cors import CORSMiddleware  # noqa: E402
 from backend import auth  # noqa: E402
 from backend.db import init_db  # noqa: E402
 from backend.routes import (  # noqa: E402
-    ask, audit, brief, care_team, check_medicine, claims, consult_records, corrections, delete, documents, flags,
-    language, medications, metrics, patients, questions, refills, search, share, timeline, upload,
+    ask, audit, brief, care_team, check_medicine, claims, consult_records, corrections, delete, documents,
+    flags, language, medications, metrics, patients, questions, reading, refills, search, share,
+    timeline, upload,
 )
 
 # remember_request runs first on every request so shared (QR) access can be kept read-only
@@ -30,10 +33,16 @@ app.add_middleware(
 
 init_db()
 
+# trial OCR engine: load PaddleOCR's model now, not on the first upload
+if os.getenv("OCR_ENGINE", "").lower() == "paddleocr":
+    from pipeline.paddle_ocr import warm_up
+
+    warm_up()
+
 for module in [
     auth,
     # core backend
-    patients, upload, timeline, medications, flags, documents, corrections, share,
+    patients, upload, timeline, medications, flags, documents, corrections, share, reading,
     # Medha
     ask, questions, brief, check_medicine, metrics, audit, delete, language, claims, care_team,
     refills, consult_records,

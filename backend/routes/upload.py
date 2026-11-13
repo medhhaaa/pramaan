@@ -59,7 +59,7 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
         raise HTTPException(status_code=500, detail=f"Could not process the document: {e}")
 
     summary = {key: result[key] for key in ("document_id", "facts_added", "held_back", "reasons",
-                                            "dropped", "doc_type", "document_date")}
+                                            "dropped", "doc_type", "document_date", "needs_reading")}
     log_action(user, "upload_document", patient_id, {"filename": file.filename, **summary})
     return {
         **summary,

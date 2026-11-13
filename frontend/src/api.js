@@ -617,3 +617,17 @@ export async function correctConsultRecord(id, note) {
 }
 
 export const isDummy = USE_DUMMY;
+
+// ---------- handwritten pages a person must read (core backend: backend/routes/reading.py) ----------
+// -> [{id, filename, doc_type, document_date, facts_added}]
+export async function getNeedsReading(pid) {
+  if (USE_DUMMY) return [];
+  return http('GET', `/patients/${pid}/needs-reading`);
+}
+// body {type, name, dose, frequency, action, event_date} -> the new fact (typed in by this person)
+export async function addFactFromImage(docId, body) {
+  return http('POST', `/documents/${docId}/facts`, body);
+}
+export async function markDocumentRead(docId) {
+  return http('POST', `/documents/${docId}/read`);
+}

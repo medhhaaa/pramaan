@@ -46,7 +46,9 @@ CREATE TABLE IF NOT EXISTS facts (
     quote_verified INTEGER DEFAULT 0,
     echo_of TEXT, badge TEXT,
     flags TEXT DEFAULT '[]',
-    corrected INTEGER DEFAULT 0
+    corrected INTEGER DEFAULT 0,
+    confidence INTEGER,  -- 0-100, only for facts read from handwriting
+    unsure TEXT DEFAULT '[]'  -- JSON list of best-guess words in this fact (handwriting)
 );
 CREATE TABLE IF NOT EXISTS corrections (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -207,6 +209,7 @@ FACT_FIELDS = [
     "fact_id", "patient_id", "document_id", "type", "name", "dose", "frequency",
     "value", "unit", "action", "status", "event_date", "document_date", "date_raw",
     "quote", "page", "line", "quote_verified", "echo_of", "badge", "flags", "corrected",
+    "confidence", "unsure",
 ]
 
 
@@ -218,6 +221,9 @@ def get_conn():
 
 # columns added after the first version: init_db adds them to an existing pramaan.db
 ADDED_COLUMNS = [
+    ("facts", "confidence", "INTEGER"),
+    ("facts", "unsure", "TEXT DEFAULT '[]'"),
+    ("documents", "needs_reading", "INTEGER DEFAULT 0"),
     ("users", "language", "TEXT"),
     ("questions", "text_kn", "TEXT"),
     ("questions", "stay_id", "INTEGER"),
@@ -245,6 +251,8 @@ def init_db():
 def fact_from_row(row):
     fact = dict(row)
     fact["flags"] = json.loads(fact["flags"] or "[]")
+    if "unsure" in fact:
+        fact["unsure"] = json.loads(fact["unsure"] or "[]")
     fact["quote_verified"] = bool(fact["quote_verified"])
     fact["corrected"] = bool(fact["corrected"])
     return fact
@@ -269,6 +277,7 @@ def insert_fact(conn, fact):
     """Save one contract-format fact (replaces an existing one with the same fact_id)."""
     row = dict(fact)
     row["flags"] = json.dumps(row.get("flags") or [])
+    row["unsure"] = json.dumps(row.get("unsure") or [])
     row["quote_verified"] = int(bool(row.get("quote_verified")))
     row["corrected"] = int(bool(row.get("corrected")))
     columns = ", ".join(FACT_FIELDS)

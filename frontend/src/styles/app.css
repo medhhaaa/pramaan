@@ -371,6 +371,14 @@ a { color: var(--brand); }
 .report-type { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); min-width: 6.5em; }
 .report-quote { display: inline; color: var(--text-muted); font-size: 0.9rem; overflow-wrap: anywhere; }
 
+/* handwriting review: best-guess words, rows to check, inline edit, pages a person must read */
+mark.unsure { background: rgba(245, 185, 74, 0.35); color: inherit; border-bottom: 2px dotted var(--warn); padding: 0 2px; border-radius: 3px; }
+tr.row-check td { background: rgba(245, 185, 74, 0.07); }
+.edit-form { display: flex; flex-wrap: wrap; gap: 6px; align-items: center; margin-top: 6px; }
+.edit-form input, .edit-form select { min-width: 0; max-width: 11rem; }
+.review-card { border-left: 4px solid var(--warn); margin-bottom: 16px; }
+.review-doc { padding: 8px 0; border-top: 1px solid var(--border, rgba(140, 151, 181, 0.2)); }
+
 /* Brief: red flag rows read left to right (chip, then its explanation) */
 .brief-redflag { justify-content: flex-start; align-items: flex-start; gap: 10px; }
 .brief-redflag .chip { flex-shrink: 0; }
