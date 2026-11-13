@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react';
 import { ASK_ON, ASSISTANT_ON } from '../lib/features.js';
-import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, Users, Stethoscope, FolderOpen, Tablets, FileCheck, Lock, SearchCheck, Bot } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, QrCode, FileText, Sun, Moon, ClipboardCheck, Users, FolderOpen, Tablets, FileCheck, Lock, SearchCheck, Bot } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
 import HiddenNotice from './HiddenNotice.jsx';
@@ -13,7 +13,6 @@ import { getTheme, toggleTheme } from '../lib/theme.js';
 const DOCTOR_NAV = [
   { to: '/my-patients', key: 'nav.myPatients', icon: Users },
   { to: '/patients', key: 'nav.patients', icon: LayoutDashboard },
-  { to: '/accuracy', key: 'nav.accuracy', icon: Gauge },
   { to: '/scan', key: 'nav.scan', icon: Scan, action: 'scan' },
   { to: '/timeline', key: 'nav.timeline', icon: Clock, gated: true },
   { to: '/records', key: 'nav.records', icon: FolderOpen, gated: true },
@@ -29,14 +28,14 @@ const DOCTOR_NAV = [
 ];
 
 const PATIENT_NAV = [
-  { to: '/my-records', key: 'nav.myRecords', icon: FileText },
+  // Things to check opens from My Records (its button shows the open count), so My Records stays lit there
+  { to: '/my-records', key: 'nav.myRecords', icon: FileText, also: ['/things'] },
   { to: '/assistant', key: 'nav.assistant', icon: Bot },
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
-  { to: '/my-medicines', key: 'nav.myMedicines', icon: Tablets },
-  { to: '/care-team', key: 'nav.careTeam', icon: Stethoscope },
-  { to: '/things', key: 'nav.thingsToCheck', icon: ListChecks },
+  // one entry for My medicines + My care team: two tabs on one page (pages/CareTeamHub.jsx)
+  { to: '/my-medicines', key: 'nav.careAndMedicines', icon: Tablets, also: ['/care-team'] },
   { to: '/claim-documents', key: 'nav.claimDocuments', icon: ClipboardCheck },
   { to: '/medication', key: 'nav.medication', icon: Pill },
   { to: '/flags', key: 'nav.flags', icon: Flag },
@@ -66,6 +65,7 @@ export default function Layout() {
   const [dataVersion, setDataVersion] = useState(0);
   const onMoreShared = useCallback(() => setDataVersion((v) => v + 1), []);
   const navigate = useNavigate();
+  const location = useLocation();
   // Ask my records only when switched on (VITE_ENABLE_ASK=true in .env.local)
   const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => (i.to !== '/ask' || ASK_ON) && (i.to !== '/assistant' || ASSISTANT_ON));
   const sessionActive = session && session.expiresAt > Date.now();
@@ -107,7 +107,7 @@ export default function Layout() {
             </button>
           </div>
           <nav aria-label="Main">
-            {items.map(({ to, key, icon: Icon, action, gated }) => {
+            {items.map(({ to, key, icon: Icon, action, gated, also }) => {
               if (action === 'scan') {
                 return (
                   <button key={key} className="nav-item" onClick={() => setScanOpen(true)} title={t(key)}>
@@ -119,7 +119,7 @@ export default function Layout() {
                 <NavLink
                   key={key + to}
                   to={to}
-                  className={({ isActive }) => `nav-item ${isActive ? 'active' : ''}`}
+                  className={({ isActive }) => `nav-item ${isActive || also?.includes(location.pathname) ? 'active' : ''}`}
                   title={t(key)}
                   onClick={(e) => {
                     if (gated && !sessionActive && user.role === 'doctor') {

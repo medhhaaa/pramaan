@@ -6,7 +6,7 @@
   "langPopupTitle": "Choose your language",
   "langs": { "en": "English", "hi": "हिंदी", "kn": "ಕನ್ನಡ" },
   "translatedNote": "Medicine names, doses and values are shown as written in the original.",
-  "nav": { "assistant": "Assistant", "diseaseSearch": "Disease search",
+  "nav": { "careAndMedicines": "Doctors & medicines", "myDoctors": "My care team", "careSections": "Medicines and doctors", "assistant": "Assistant", "diseaseSearch": "Disease search",
     "security": "Privacy & security",
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
     "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",

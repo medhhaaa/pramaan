@@ -71,7 +71,7 @@ function Dose({ dose, onTap }) {
   );
 }
 
-export default function MyMedicines() {
+export default function MyMedicines({ embedded = false }) {
   const { t } = useTranslation();
   const pid = useActivePatientId();
   const ago = useAgo();
@@ -98,7 +98,7 @@ export default function MyMedicines() {
 
   return (
     <section className="my-medicines">
-      <div className="page-head"><h1>{t('myMeds.title')}</h1></div>
+      {!embedded && <div className="page-head"><h1>{t('myMeds.title')}</h1></div>}
       <p className="muted small">{t('myMeds.intro')}</p>
       {error && <p className="error-text" role="alert">{error}</p>}
       {data.medicines.length === 0 && <div className="empty-state card"><p>{t('myMeds.empty')}</p></div>}

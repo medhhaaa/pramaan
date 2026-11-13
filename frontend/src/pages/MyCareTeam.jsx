@@ -106,7 +106,7 @@ function AddDoctor({ pid, tags, onAdded }) {
   );
 }
 
-export default function MyCareTeam() {
+export default function MyCareTeam({ embedded = false }) {
   const { t } = useTranslation();
   const pid = useActivePatientId();
   const ago = useAgo();
@@ -138,7 +138,7 @@ export default function MyCareTeam() {
 
   return (
     <section className="care-team">
-      <div className="page-head"><h1>{t('careTeam.title')}</h1></div>
+      {!embedded && <div className="page-head"><h1>{t('careTeam.title')}</h1></div>}
       <p className="muted small">{t('careTeam.intro')}</p>
 
       {active.filter((e) => e.review_due).map((e) => (
