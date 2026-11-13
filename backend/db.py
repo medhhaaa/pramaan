@@ -209,6 +209,25 @@ CREATE TABLE IF NOT EXISTS consult_records (
     created_at TEXT NOT NULL,
     sha256 TEXT NOT NULL
 );
+-- ---- assistants (backend/agent/, AGENTIC_PLAN.md section A.4, agreed with core backend) ----
+-- Documents the patient chose to add to a hospital stay's claim pack (confirmed in the assistant).
+CREATE TABLE IF NOT EXISTS claim_pack_items (
+    stay_id INTEGER NOT NULL,
+    document_id TEXT NOT NULL,
+    added_by INTEGER,
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP,
+    PRIMARY KEY (stay_id, document_id)
+);
+-- A write the assistant proposed; it only happens when the user confirms it. args is JSON.
+CREATE TABLE IF NOT EXISTS assistant_actions (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    patient_id TEXT NOT NULL,
+    action TEXT NOT NULL,
+    args TEXT NOT NULL DEFAULT '{}',
+    status TEXT NOT NULL DEFAULT 'proposed' CHECK (status IN ('proposed', 'done', 'cancelled')),
+    created_at TEXT DEFAULT CURRENT_TIMESTAMP
+);
 -- In-app notifications (refill decisions).
 CREATE TABLE IF NOT EXISTS notifications (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
