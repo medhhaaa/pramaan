@@ -239,7 +239,7 @@
     "sendAnyway": "Send",
     "edit": "Edit",
     "send": "Send",
-    "doctor": {
+    "doctor": { "noPatient": "Open a patient first: scan their QR code or pick them from My patients. The assistant answers only from that patient's shared records.",
       "title": "Assistant",
       "empty": "Ask about this patient's records. Every answer cites its source.",
       "placeholder": "e.g. Any red flags? Can I give Augmentin?",
