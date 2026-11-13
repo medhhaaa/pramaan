@@ -46,6 +46,7 @@ def needs_reading(patient_id: str, user=Depends(get_current_user)):
                ORDER BY d.id""",
             (patient_id,),
         ).fetchall()
+    log_action(user, "list_needs_reading", patient_id)
     return [dict(r) for r in rows]
 
 

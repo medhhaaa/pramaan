@@ -28,6 +28,8 @@ import MyMedicines from './pages/MyMedicines.jsx';
 import RefillReview from './pages/RefillReview.jsx';
 import ConsultRecords from './pages/ConsultRecords.jsx';
 import PatientGate from './components/PatientGate.jsx';
+import Security from './pages/Security.jsx';
+import AiView from './pages/AiView.jsx';
 
 const CLAIM_ON = import.meta.env.VITE_ENABLE_CLAIM_READY === 'true';
 
@@ -72,6 +74,8 @@ function Shell() {
           {ASK_ON && <Route path="/ask" element={<Ask />} />}
           <Route path="/upload" element={<Upload />} />
           <Route path="/audit" element={<Audit />} />
+          <Route path="/security" element={<Security />} />
+          <Route path="/ai-view/:docId" element={<AiView />} />
           <Route path="/delete" element={<Delete />} />
           {CLAIM_ON && <Route path="/claim" element={<Claim />} />}
           <Route path="*" element={<Navigate to="/" replace />} />

@@ -631,3 +631,14 @@ export async function addFactFromImage(docId, body) {
 export async function markDocumentRead(docId) {
   return http('POST', `/documents/${docId}/read`);
 }
+
+// ---------- privacy & security scorecard (core backend: backend/routes/security.py) ----------
+// -> {generated_at, patients, checks: [{key, title, result, passed, how, details, ran_at}], documents}
+export async function getScorecard(runTests = false) {
+  return http('GET', `/security/scorecard${runTests ? '?run_tests=true' : ''}`);
+}
+// -> {document_id, filename, lines: [{page, line, original, sent, changed}], removed: [{token, original}],
+//     leaks, images: [{page, original_png, masked_png, leaks}], handwritten_pages, unread_pages}
+export async function getAiView(docId) {
+  return http('GET', `/documents/${docId}/ai-view`);
+}
