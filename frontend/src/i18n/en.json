@@ -15,6 +15,7 @@
     "claimDocuments": "Claim documents", "myPatients": "My patients", "careTeam": "My care team", "myMedicines": "My medicines", "consultRecords": "Consult records"
   },
   "auth": {
+    "iAm": "I am a", "role_patient": "Patient", "role_doctor": "Doctor", "fullName": "Full name", "regNo": "Medical registration number", "usernameRule": "Username: 3 to 30 letters, numbers, dots, dashes or underscores.", "passwordRule": "Password: at least 6 characters.", "fullNameRule": "Please type your full name.", "regNoRule": "Please type your medical registration number.", "usernameTaken": "This username is taken. Try another one.", "signupFailed": "Could not create the account. Please try again.", "signupPatientNote": "Your records start empty. Upload your own documents after signing up.", "signupDoctorNote": "You will see a patient only after they add you to their care team or share their records with you.",
     "signup": "SIGN-UP", "login": "LOG IN", "alreadyUser": "Already a user?", "newHere": "New here?",
     "loginLink": "Login", "signupLink": "Sign up", "username": "Username", "password": "Password",
     "demoHint": "Demo: sunita / sunita123 makes a QR · doctor / doctor123 scans it", "signupDemoOnly": "Sign-up is demo only for now.",
@@ -93,7 +94,7 @@
     "types": {"medication": "Medicine", "allergy": "Allergy", "condition": "Condition", "lab_test": "Test", "event": "Event", "demographic": "Personal detail"}
   },
   "doc": { "title": "Source", "held": "Held back", "close": "Close" },
-  "myRecords": { "title": "My Records", "shareButton": "Share with a doctor", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
+  "myRecords": { "empty": "No documents yet.", "uploadFirst": "Upload your first document", "title": "My Records", "shareButton": "Share with a doctor", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
   "things": {
     "title": "Things to check", "problem": "Problem", "yes": "Yes", "no": "No", "dontKnow": "I don't know", "skip": "Skip",
     "other": "Other", "send": "SEND", "why": "Why are we asking?", "sentDoctor": "Your doctor will check this.",
