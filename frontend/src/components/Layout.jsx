@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ASK_ON } from '../lib/features.js';
+import { ASK_ON, AUDIT_ON } from '../lib/features.js';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, QrCode, FileText, Sun, Moon, ClipboardCheck, Users, FolderOpen, Tablets, FileCheck, Lock, SearchCheck, HeartPulse } from 'lucide-react';
@@ -65,8 +65,9 @@ export default function Layout() {
   const onMoreShared = useCallback(() => setDataVersion((v) => v + 1), []);
   const navigate = useNavigate();
   const location = useLocation();
-  // Ask my records only when switched on (VITE_ENABLE_ASK=true in .env.local)
-  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => i.to !== '/ask' || ASK_ON);
+  // Ask my records and the audit log only when switched on (VITE_ENABLE_ASK / VITE_ENABLE_AUDIT=true in .env.local)
+  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV)
+    .filter((i) => (i.to !== '/ask' || ASK_ON) && (i.to !== '/audit' || AUDIT_ON));
   const sessionActive = session && session.expiresAt > Date.now();
 
   const onLang = (e) => {

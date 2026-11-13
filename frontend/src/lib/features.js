@@ -3,3 +3,6 @@
 export const ASK_ON = import.meta.env.VITE_ENABLE_ASK === 'true';
 // Doctor and patient assistants (AGENTIC_PLAN point 15): hidden unless VITE_ENABLE_ASSISTANT=true.
 export const ASSISTANT_ON = import.meta.env.VITE_ENABLE_ASSISTANT === 'true';
+// Audit log screen: hidden unless VITE_ENABLE_AUDIT=true. Every action is still recorded, and its
+// backend route (GET /patients/{id}/audit) stays.
+export const AUDIT_ON = import.meta.env.VITE_ENABLE_AUDIT === 'true';
