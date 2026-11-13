@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck } from 'lucide-react';
-import Logo from './Logo.jsx';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
@@ -79,12 +78,12 @@ export default function Layout() {
         {drawer && <div className="sidebar-backdrop" aria-hidden="true" onClick={() => setDrawer(false)} />}
         <aside className={`sidebar ${open ? '' : 'collapsed'} ${drawer ? 'drawer-open' : ''}`}>
           <div className="sidebar-top">
-            {open && <Logo />}
-            {!open && <Logo compact />}
-            {/* on phones this button shows X and closes the menu; on desktop it collapses the sidebar */}
+            {/* desktop: expands / collapses the sidebar. Phones: the menu is open here, so it shows X and closes it. */}
             <button
-              className="icon-btn"
-              aria-label={drawer ? t('common.close') : 'Toggle sidebar'}
+              className="icon-btn sidebar-toggle"
+              aria-label={drawer ? t('common.close') : open ? 'Collapse menu' : 'Expand menu'}
+              aria-expanded={drawer || open}
+              title={drawer ? t('common.close') : open ? 'Collapse menu' : 'Expand menu'}
               onClick={() => (drawer ? setDrawer(false) : setOpen(!open))}
             >
               {drawer ? <X size={20} /> : <Menu size={20} />}

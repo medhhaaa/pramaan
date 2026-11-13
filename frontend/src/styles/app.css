@@ -41,7 +41,12 @@ a { color: var(--brand); }
   position: sticky; top: 0; height: 100vh; overflow-y: auto;
 }
 .sidebar.collapsed { width: 72px; }
-.sidebar-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+.sidebar-top { display: flex; align-items: center; justify-content: flex-start; gap: 8px; }
+/* the ☰ that expands / collapses the sidebar, lined up with the nav icons below it */
+.sidebar-toggle { width: 44px; height: 44px; align-items: center; justify-content: center; margin-left: 2px; color: var(--text); }
+.sidebar-toggle:hover { background: var(--surface-2); }
+.sidebar.collapsed .sidebar-top { justify-content: center; }
+.sidebar.collapsed .sidebar-toggle { margin-left: 0; }
 .sidebar nav { display: flex; flex-direction: column; gap: 4px; }
 .nav-item {
   display: flex; align-items: center; gap: 12px; padding: 10px 12px; border-radius: 10px;
@@ -98,7 +103,10 @@ a { color: var(--brand); }
 }
 .content { padding: 24px 24px 40px; max-width: 1200px; width: 100%; margin: 0 auto; }
 .app-footer { text-align: center; font-size: 0.8rem; color: var(--text-muted); padding: 14px; border-top: 1px solid var(--border); }
-.mobile-only { display: none; }
+/* .icon-btn (declared later) sets display too, so this needs the extra class to win:
+   without it the header ☰ showed on desktop, where it did nothing */
+.mobile-only,
+.icon-btn.mobile-only { display: none; }
 .sidebar-backdrop { display: none; }
 
 /* Logo (placeholder, replace with the supplied file) */
@@ -321,7 +329,8 @@ a { color: var(--brand); }
   /* tap outside the open menu to close it */
   .sidebar-backdrop { display: block; position: fixed; inset: 0; z-index: 25; background: rgba(5, 8, 20, 0.55); }
   .sidebar.collapsed { width: 260px; }
-  .mobile-only { display: inline-flex; }
+  .mobile-only,
+  .icon-btn.mobile-only { display: inline-flex; }
   .content { padding: 16px 14px 32px; }
   .brief-layout { grid-template-columns: 1fr; }
   .brief-side { position: static; }
