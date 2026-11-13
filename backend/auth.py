@@ -35,7 +35,7 @@ from typing import Literal, Optional
 
 from pydantic import BaseModel, Field
 
-from backend.db import get_conn
+from backend.db import append_audit, get_conn
 
 JWT_SECRET = os.getenv("JWT_SECRET", "dev-only-secret-change-me-in-dotenv-file")
 TOKEN_HOURS = 12
@@ -205,6 +205,6 @@ def signup(body: SignupBody):
                          (patient_id, full_name))
             conn.execute("INSERT INTO user_patients (user_id, patient_id) VALUES (?, ?)", (user_id, patient_id))
         user = conn.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
-        conn.execute("INSERT INTO audit_log (user_id, action, patient_id, detail) VALUES (?, 'signup', ?, ?)",
-                     (user_id, patient_id if body.role == "patient" else None, body.role))
+        # through the tamper-evident chain (a plain INSERT would leave row_hash empty and break it)
+        append_audit(conn, user_id, "signup", patient_id if body.role == "patient" else None, body.role)
     return {"token": create_token(user), "role": user["role"], "username": user["username"], "language": None}
