@@ -1,11 +1,12 @@
 import { useCallback, useEffect, useState } from 'react';
-import { ASK_ON, ASSISTANT_ON } from '../lib/features.js';
+import { ASK_ON } from '../lib/features.js';
 import { Link, NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, QrCode, FileText, Sun, Moon, ClipboardCheck, Users, FolderOpen, Tablets, FileCheck, Lock, SearchCheck, Bot } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, QrCode, FileText, Sun, Moon, ClipboardCheck, Users, FolderOpen, Tablets, FileCheck, Lock, SearchCheck } from 'lucide-react';
 import logoTransparent from '../assets/pramaan-logo-transparent.png';
 import Notifications from './Notifications.jsx';
 import HiddenNotice from './HiddenNotice.jsx';
+import AssistantDock from './AssistantDock.jsx';
 import { useApp } from '../context/AppContext.jsx';
 import { isDummy, saveLanguage } from '../api.js';
 import { getTheme, toggleTheme } from '../lib/theme.js';
@@ -17,7 +18,6 @@ const DOCTOR_NAV = [
   { to: '/timeline', key: 'nav.timeline', icon: Clock, gated: true },
   { to: '/records', key: 'nav.records', icon: FolderOpen, gated: true },
   { to: '/disease-search', key: 'nav.diseaseSearch', icon: SearchCheck, gated: true },
-  { to: '/assistant', key: 'nav.assistant', icon: Bot, gated: true },
   { to: '/medication', key: 'nav.medication', icon: Pill, gated: true },
   { to: '/flags', key: 'nav.flags', icon: Flag, gated: true },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare, gated: true },
@@ -30,7 +30,6 @@ const DOCTOR_NAV = [
 const PATIENT_NAV = [
   // Things to check opens from My Records (its button shows the open count), so My Records stays lit there
   { to: '/my-records', key: 'nav.myRecords', icon: FileText, also: ['/things'] },
-  { to: '/assistant', key: 'nav.assistant', icon: Bot },
   { to: '/timeline', key: 'nav.timeline', icon: Clock },
   { to: '/upload', key: 'nav.upload', icon: Upload },
   { to: '/qr', key: 'nav.generateQr', icon: QrCode },
@@ -67,7 +66,7 @@ export default function Layout() {
   const navigate = useNavigate();
   const location = useLocation();
   // Ask my records only when switched on (VITE_ENABLE_ASK=true in .env.local)
-  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => (i.to !== '/ask' || ASK_ON) && (i.to !== '/assistant' || ASSISTANT_ON));
+  const items = (user.role === 'doctor' ? DOCTOR_NAV : PATIENT_NAV).filter((i) => i.to !== '/ask' || ASK_ON);
   const sessionActive = session && session.expiresAt > Date.now();
 
   const onLang = (e) => {
@@ -167,6 +166,8 @@ export default function Layout() {
           <main className="content"><Outlet key={dataVersion} /></main>
           <footer className="app-footer">{t('disclaimer')}</footer>
         </div>
+        {/* the assistant: round button bottom-right on every page, not a sidebar entry */}
+        <AssistantDock />
       </div>
     </div>
   );
