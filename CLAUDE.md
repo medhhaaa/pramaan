@@ -179,7 +179,7 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 - `questions` (id, patient_id, fact_ids, text, status `open`|`answered`|`sent_to_doctor`|`resolved`, answer, created_at)
 - `share_links` (id, patient_id, created_by, token_hash, code_hash, expires_at, opened_by, opened_at, created_at): QR / code sharing; only hashes stored; expired rows deleted
 
-Seed users: `doctor` / `doctor123` (role doctor), `sunita` / `sunita123` (role patient, access to p1), `guestdoctor` / `guest123` (role doctor, no patients: sees a patient only after opening their QR / code).
+Seed users: patients `sunita` (p1), `iqbal` (p2), `lakshmi` (p3), `arjun` (p4), `gopal` (p5), `ravi` (p6), password = username + `123`; doctors `doctor` / `doctor123` and `guestdoctor` / `guest123`. **Only a patient has lasting access to their own records. A doctor sees a patient only while that patient's QR / code share is open** (reading + review: ask, check-medicine, correct, resolve open questions; never upload, delete or share).
 
 ## 8. Folder structure
 

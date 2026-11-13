@@ -15,9 +15,8 @@ const DOCTOR_NAV = [
   { to: '/medication', key: 'nav.medication', icon: Pill, gated: true },
   { to: '/flags', key: 'nav.flags', icon: Flag, gated: true },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare, gated: true },
-  { to: '/upload', key: 'nav.upload', icon: Upload, gated: true },
-  { to: '/audit', key: 'nav.audit', icon: ShieldCheck },
-  { to: '/delete', key: 'nav.delete', icon: Trash2, gated: true },
+  // no upload / delete: a doctor's shared access is reading and reviewing only (backend/auth.py)
+  { to: '/audit', key: 'nav.audit', icon: ShieldCheck, gated: true },
 ];
 
 const PATIENT_NAV = [

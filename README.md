@@ -45,7 +45,7 @@ cd frontend && npm run dev
 python -m pipeline.llm
 ```
 
-Demo logins: `doctor` / `doctor123`, `sunita` / `sunita123`, `guestdoctor` / `guest123` (a doctor at another clinic: sees nobody until a patient shares by QR / code).
+Demo logins: patients `sunita` / `sunita123` (p1), `iqbal` / `iqbal123` (p2), `lakshmi` / `lakshmi123` (p3), `arjun` / `arjun123` (p4), `gopal` / `gopal123` (p5), `ravi` / `ravi123` (p6); doctors `doctor` / `doctor123` and `guestdoctor` / `guest123`. A doctor sees a patient **only** while that patient's QR / code share is open: log in as the patient, make a QR, then scan it (or type the code) as the doctor.
 
 ## What works right now
 
