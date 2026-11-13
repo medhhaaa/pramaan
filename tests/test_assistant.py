@@ -375,6 +375,49 @@ def test_the_claim_pack_zip_includes_what_the_patient_confirmed(client, sunita, 
         assert word not in checklist.lower()
 
 
+def doc_count():
+    with get_conn() as conn:
+        return conn.execute("SELECT COUNT(*) FROM documents WHERE patient_id = 'p1'").fetchone()[0]
+
+
+def test_upload_requests_point_to_the_upload_page(client, sunita, doctor, fake):
+    before = doc_count()
+    upload = {"to": "/upload", "kind": "upload"}
+    # the AI gives nothing usable: our code still answers, with the Upload page
+    fake({"answer": NOT_DOCUMENTED, "fact_ids": []})
+    out = ask(client, sunita, "Please upload my new blood test report").json()
+    assert out["answer"].startswith("I can't upload files") and out["links"] == [upload]
+    # the AI uses upload_help and cites it: its answer is kept, with the link
+    fake({"tool": "upload_help", "args": {}}, {"answer": "Open the Upload page to add it.", "fact_ids": ["upload_page"]})
+    out = ask(client, sunita, "attach this PDF").json()
+    assert out["answer"] == "Open the Upload page to add it." and out["links"] == [upload]
+    assert out["sources"] == ["upload_page"] and out["documents"] == []
+    # Hindi
+    try:
+        set_language("sunita", "hi")
+        fake({"answer": NOT_DOCUMENTED, "fact_ids": []})
+        assert ask(client, sunita, "मेरी रिपोर्ट अपलोड करो").json()["answer"].startswith("मैं फ़ाइल अपलोड नहीं कर सकता")
+    finally:
+        set_language("sunita", None)
+    # a doctor: only the patient uploads, and no link
+    share(client, sunita, doctor)
+    fake({"answer": NOT_DOCUMENTED, "fact_ids": []})
+    out = ask(client, doctor, "Upload her latest ECG").json()
+    assert out["answer"].startswith("Only the patient") and out["links"] == []
+    # an ordinary question gets no link
+    fake({"answer": "x", "fact_ids": []})
+    assert ask(client, sunita, "What medicines am I taking?").json()["links"] == []
+    assert doc_count() == before  # the assistant never uploads anything
+
+
+def test_missing_claim_documents_link_to_claim_documents(client, sunita, fake):
+    stay = make_stay(client, sunita)
+    fake({"tool": "claim_checklist", "args": {"stay": f"stay_{stay}"}},
+         {"answer": "The final bill is not saved yet.", "fact_ids": [f"stay_{stay}"]})
+    out = ask(client, sunita, "What is missing for my claim?").json()
+    assert {"to": "/claim-documents", "kind": "claim_upload"} in out["links"]
+
+
 def set_language(username, lang):
     with get_conn() as conn:
         conn.execute("UPDATE users SET language = ? WHERE username = ?", (lang, username))

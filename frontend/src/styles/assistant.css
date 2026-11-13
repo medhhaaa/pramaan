@@ -31,3 +31,5 @@
   .assistant-turn { max-width: 100%; }
   .assistant-input .btn-label { display: none; }
 }
+.assistant-links { display: flex; flex-wrap: wrap; gap: 8px; }
+.assistant-link { display: inline-flex; align-items: center; gap: 6px; text-decoration: none; }

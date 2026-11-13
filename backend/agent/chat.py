@@ -1,7 +1,9 @@
 """The assistant loop: the AI picks tools, our code runs them, the AI writes the answer. (Ashil)
 
     run_assistant(ctx, message, history) -> {"answer", "fact_ids", "citations", "sources", "documents",
-                                              "tools_used", "pending_action", "hidden"}
+                                              "tools_used", "pending_action", "hidden", "links"}
+    links: pages to open, [{"to": "/upload", "kind": "upload"}]. The assistant never uploads: an
+    upload request gets the Upload page (patients) or "only the patient can upload" (doctors).
     fact_ids / citations: cited facts. sources: other cited ids (document ids, stay_3, question_7,
     share_2, careteam_1). documents: the cited documents, for click-to-proof.
 
@@ -18,8 +20,9 @@ llm.call_llm gets every receipt and refuses a prompt whose patient text skipped 
 Raises privacy_layer.PrivacyBlocked if the message still has personal details after redaction.
 """
 import json
+import re
 
-from backend.agent.tools import tools_for
+from backend.agent.tools import UPLOAD_LINK, tools_for
 from backend.db import fact_from_row, get_conn
 from backend.routes.ask import KANNADA_RULE, NOT_DOCUMENTED, NOT_DOCUMENTED_KN, is_not_documented_reply, parse_json_reply
 from backend.scope import access_scope, scoped
@@ -30,6 +33,24 @@ MAX_STEPS = 3
 MAX_HISTORY = 6        # earlier turns sent with the message
 MAX_TURN_CHARS = 600
 NOT_DOCUMENTED_HI = "रिकॉर्ड में इसका ज़िक्र नहीं है।"
+
+# "upload my report", "attach this PDF", "add a new photo": the assistant can't upload. Our code (not
+# the AI) spots the request so the answer always points to the Upload page, whatever the model does.
+UPLOAD_INTENT = re.compile(
+    r"\b(?:upload|attach)|\badd (?:a |an |my |the |this )?(?:new\b|file|pdf|photo|picture|image|scan)"
+    r"|अपलोड|ಅಪ್‌ಲೋಡ್|ಅಪ್ಲೋಡ್", re.IGNORECASE)
+CANT_UPLOAD = {
+    "patient": {
+        "en": "I can't upload files. You can add the document yourself on the Upload page.",
+        "hi": "मैं फ़ाइल अपलोड नहीं कर सकता। आप अपलोड पेज पर खुद दस्तावेज़ जोड़ सकते हैं।",
+        "kn": "ನಾನು ಫೈಲ್ ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ಸಾಧ್ಯವಿಲ್ಲ. ಅಪ್‌ಲೋಡ್ ಪುಟದಲ್ಲಿ ನೀವೇ ದಾಖಲೆಯನ್ನು ಸೇರಿಸಬಹುದು.",
+    },
+    "doctor": {
+        "en": "Only the patient can upload documents. Ask the patient to upload it.",
+        "hi": "दस्तावेज़ सिर्फ़ मरीज़ अपलोड कर सकते हैं। मरीज़ से इसे अपलोड करने को कहें।",
+        "kn": "ದಾಖಲೆಗಳನ್ನು ರೋಗಿ ಮಾತ್ರ ಅಪ್‌ಲೋಡ್ ಮಾಡಬಹುದು. ಅದನ್ನು ಅಪ್‌ಲೋಡ್ ಮಾಡಲು ರೋಗಿಯನ್ನು ಕೇಳಿ.",
+    },
+}
 
 PERSONA = {
     "doctor": "a doctor reviewing one patient's records. Be brief and clinical; say how sure the records are "
@@ -137,7 +158,7 @@ def _citations(ctx, ids):
 
 def _documents(ctx, ids):
     """Cited document ids -> {id, filename, doc_type, document_date} (click-to-proof)."""
-    ids = [i for i in ids if not i.split("_")[0] in ("stay", "question", "share", "careteam", "sharing")]
+    ids = [i for i in ids if not i.split("_")[0] in ("stay", "question", "share", "careteam", "sharing", "upload")]
     if not ids:
         return []
     with get_conn() as conn:
@@ -185,6 +206,7 @@ def run_assistant(ctx, message, history=None):
             .replace("<<MESSAGE>>", message_r.text))
 
     results, valid_ids, valid_sources, tools_used, pending = [], set(), set(), [], None
+    links = []  # pages to open (Upload, Claim documents): from tool results, or the upload guard below
     data = {}
     for step in range(MAX_STEPS + 1):
         last = step == MAX_STEPS
@@ -211,6 +233,7 @@ def run_assistant(ctx, message, history=None):
             payload = result["data"]
             valid_ids.update(result.get("fact_ids") or [])
             valid_sources.update(result.get("source_ids") or [])
+            links += result.get("links") or []
         try:
             result_r = protect(json.dumps(payload, ensure_ascii=False, default=str), identity, mapping)
         except PrivacyBlocked:  # the result still holds a personal detail: never send it
@@ -225,11 +248,19 @@ def run_assistant(ctx, message, history=None):
                                    if isinstance(i, str) and (i in valid_ids or i in valid_sources)))
     cited = [i for i in cited_all if i in valid_ids]
     sources = [i for i in cited_all if i not in valid_ids]
-    out = {"tools_used": tools_used, "pending_action": pending, "hidden": hidden}
+    wants_upload = bool(UPLOAD_INTENT.search(message))
+    if wants_upload and ctx.role == "patient":
+        links.insert(0, UPLOAD_LINK)
+    links = list({link["to"]: link for link in links}.values())  # one of each page, first one first
+    out = {"tools_used": tools_used, "pending_action": pending, "hidden": hidden, "links": links}
     found = {"fact_ids": cited, "citations": _citations(ctx, cited), "sources": sources, "documents": _documents(ctx, sources)}
     if pending and answer and answer != NOT_DOCUMENTED:
         # a proposal needs no citation: it is a question to the user, not a statement about the records
         return {**out, **found, "answer": restore(answer, mapping)}
-    if not answer or not cited_all or answer in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN, NOT_DOCUMENTED_HI):
+    no_answer = not answer or not cited_all or answer in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN, NOT_DOCUMENTED_HI)
+    if no_answer and wants_upload:  # never "the records don't mention this" for an upload request
+        text = CANT_UPLOAD.get(ctx.role, CANT_UPLOAD["patient"])
+        return {**out, "answer": text.get(lang, text["en"]), "fact_ids": [], "citations": [], "sources": [], "documents": []}
+    if no_answer:
         return {**out, "answer": not_documented(lang), "fact_ids": [], "citations": [], "sources": [], "documents": []}
     return {**out, **found, "answer": restore(answer, mapping)}

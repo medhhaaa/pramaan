@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
-import { Send, Loader2, ShieldCheck, FileText, EyeOff, CheckCircle2, XCircle, Wrench } from 'lucide-react';
+import { Link } from 'react-router-dom';
+import { Send, Loader2, ShieldCheck, FileText, EyeOff, CheckCircle2, XCircle, Wrench, Upload, ClipboardCheck } from 'lucide-react';
 import { askAssistant, privacyPreview, confirmAssistantAction, cancelAssistantAction } from '../api.js';
 import DocDrawer from './DocDrawer.jsx';
 import { fmtDate } from '../lib/format.js';
@@ -128,6 +129,16 @@ export default function AssistantChat({ pid, persona }) {
                     </button>
                   ))}
                 </div>
+              </div>
+            )}
+            {turn.links?.length > 0 && (
+              <div className="assistant-links">
+                {turn.links.map((l) => (
+                  <Link key={l.to} to={l.to} className="btn btn-ghost btn-sm assistant-link">
+                    {l.kind === 'claim_upload' ? <ClipboardCheck size={15} aria-hidden="true" /> : <Upload size={15} aria-hidden="true" />}
+                    {t(`assistant.links.${l.kind}`, { defaultValue: l.to })}
+                  </Link>
+                ))}
               </div>
             )}
             {turn.pending_action && (
