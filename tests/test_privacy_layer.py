@@ -38,6 +38,18 @@ def test_medicines_and_eponym_diseases_are_never_redacted():
     assert "Parkinson's" in protect(text).text and "Telma 40" in protect(text).text
 
 
+def test_hospital_and_lab_names_are_redacted():
+    """NER alone missed these in typed questions; the upload path's deidentify() always caught them."""
+    for text, name in [
+        ("Dr. Ramesh Kulkarni saw the patient at Mercy Hospital. Tab. Metformin 500mg BD.", "Mercy Hospital"),
+        ("Follow up at Sunrise Diagnostics next week.", "Sunrise Diagnostics"),
+        ("Seen at Kasturba Medical College, Manipal.", "Kasturba Medical College"),
+    ]:
+        result = protect(text, IDENTITY)
+        assert name not in result.text, result.text
+        assert "Metformin 500mg BD" in result.text or "Metformin" not in text
+
+
 def test_dates_other_than_birth_date_are_kept():
     result = protect("HbA1c 8.1 % on 16/01/2023. DOB 14/06/1952.", IDENTITY)
     assert "16/01/2023" in result.text and "14/06/1952" not in result.text
