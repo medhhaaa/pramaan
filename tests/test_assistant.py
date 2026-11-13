@@ -319,6 +319,30 @@ def test_claim_answers_cite_the_stay_and_documents(client, sunita, fake):
     assert [d["id"] for d in out["documents"]] == ["p1_d3"]
 
 
+def set_language(username, lang):
+    with get_conn() as conn:
+        conn.execute("UPDATE users SET language = ? WHERE username = ?", (lang, username))
+
+
+def test_answers_in_hindi_and_kannada(client, sunita, fake):
+    from backend.agent.chat import NOT_DOCUMENTED_HI
+    from backend.routes.ask import NOT_DOCUMENTED_KN
+
+    try:
+        for lang, rule, sentence in [("hi", "Devanagari", NOT_DOCUMENTED_HI), ("kn", "Kannada script", NOT_DOCUMENTED_KN)]:
+            set_language("sunita", lang)
+            f = fake({"answer": "x", "fact_ids": []})
+            out = ask(client, sunita, "Any allergies?").json()
+            assert rule in f.prompts[0] and out["answer"] == sentence, lang
+        set_language("sunita", "hi")
+        fake({"tool": "my_medicines", "args": {}},
+             {"answer": "रिकॉर्ड में Metformin 1000mg BD लिखा है।", "fact_ids": ["p1_d4_f001"]})
+        out = ask(client, sunita, "मेरी दवाएँ?").json()
+        assert "Metformin 1000mg" in out["answer"] and out["fact_ids"] == ["p1_d4_f001"]
+    finally:
+        set_language("sunita", None)
+
+
 def test_delete_my_data_removes_assistant_rows(client, sunita):
     """Last test in this file: deletes p1."""
     with get_conn() as conn:

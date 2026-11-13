@@ -83,6 +83,14 @@ NEXT_STEP = "Reply with the next JSON object."
 LAST_STEP = "You have used all tool steps. Reply now with the answer JSON."
 
 
+def answer_language(ctx):
+    """The language the answer is written in: the user's saved choice, Hindi included.
+    (routes/language.user_language, and so ctx.lang, only returns "en" or "kn" so far.)"""
+    with get_conn() as conn:
+        row = conn.execute("SELECT language FROM users WHERE id = ?", (ctx.user["id"],)).fetchone()
+    return row["language"] if row and row["language"] in ("en", "kn", "hi") else ctx.lang
+
+
 def not_documented(lang):
     return {"kn": NOT_DOCUMENTED_KN, "hi": NOT_DOCUMENTED_HI}.get(lang, NOT_DOCUMENTED)
 
@@ -155,6 +163,7 @@ def hidden_info(ctx):
 def run_assistant(ctx, message, history=None):
     tools = tools_for(ctx.role)
     identity = ctx.identity or None
+    lang = answer_language(ctx)
     hidden = hidden_info(ctx)
 
     message_r = protect(message.strip(), identity)            # PrivacyBlocked goes to the route (422)
@@ -170,7 +179,7 @@ def run_assistant(ctx, message, history=None):
     base = (PROMPT.replace("<<PERSONA>>", PERSONA.get(ctx.role, PERSONA["patient"]))
             .replace("<<NOT_DOCUMENTED>>", NOT_DOCUMENTED)
             .replace("<<HIDDEN_RULE>>", HIDDEN_RULE if hidden else "")
-            .replace("<<LANGUAGE_RULE>>", {"kn": KANNADA_RULE, "hi": HINDI_RULE}.get(ctx.lang, ""))
+            .replace("<<LANGUAGE_RULE>>", {"kn": KANNADA_RULE, "hi": HINDI_RULE}.get(lang, ""))
             .replace("<<TOOLS>>", "\n".join(t.prompt_line() for t in tools.values()) or "(none)")
             .replace("<<HISTORY>>", history_part)
             .replace("<<MESSAGE>>", message_r.text))
@@ -222,5 +231,5 @@ def run_assistant(ctx, message, history=None):
         # a proposal needs no citation: it is a question to the user, not a statement about the records
         return {**out, **found, "answer": restore(answer, mapping)}
     if not answer or not cited_all or answer in (NOT_DOCUMENTED, NOT_DOCUMENTED_KN, NOT_DOCUMENTED_HI):
-        return {**out, "answer": not_documented(ctx.lang), "fact_ids": [], "citations": [], "sources": [], "documents": []}
+        return {**out, "answer": not_documented(lang), "fact_ids": [], "citations": [], "sources": [], "documents": []}
     return {**out, **found, "answer": restore(answer, mapping)}
