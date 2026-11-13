@@ -61,13 +61,19 @@ def check_contradictions(facts):
                 add_flag(present, "contradiction")
 
 
+def duplicate_key(fact):
+    """Two facts with the same key in different documents are duplicates of each other
+    (also used by backend/upload_report.py to say where the other copy is)."""
+    return (fact["type"], same_name(fact), fact["dose"], fact["value"], fact["unit"],
+            fact["status"], fact["event_date"])
+
+
 def check_duplicates(facts):
     """The same fact (type, name, dose, value, unit, status) on the same date in a second
     document is a duplicate: the copy in the later document gets the flag."""
     first_document = {}
     for fact in sorted(facts, key=document_order):
-        key = (fact["type"], same_name(fact), fact["dose"], fact["value"], fact["unit"],
-               fact["status"], fact["event_date"])
+        key = duplicate_key(fact)
         if key not in first_document:
             first_document[key] = fact["document_id"]
         elif first_document[key] != fact["document_id"]:

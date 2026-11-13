@@ -366,6 +366,10 @@ a { color: var(--brand); }
 .report-added { border-left-color: var(--verified); }
 .report-left { border-left-color: var(--neutral); }
 .report-missed { border-left-color: var(--warn); }
+.report-duplicates { border-left-color: var(--info); }
+.report-copy { display: flex; align-items: flex-start; gap: 8px; margin: 0 0 10px; color: var(--info); }
+.report-copy svg { flex: none; margin-top: 2px; }
+.report-stored { margin: 2px 0; }
 .report-list { list-style: none; padding: 0; margin: 6px 0 0; display: flex; flex-direction: column; gap: 10px; }
 .report-line { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 8px; }
 .report-type { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.04em; color: var(--text-muted); min-width: 6.5em; }

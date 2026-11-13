@@ -5,7 +5,10 @@
     "added"         the saved facts (contract format, with their flags)
     "left_out"      facts quote verification refused: type, name, dose..., quote, reason
                     ("quote_not_found" | "dose_not_in_line" | "value_not_in_line" | "unit_not_in_line")
-    "not_captured"  medical lines no fact quotes: [{"page", "line", "text"}]}. (Core backend)
+    "not_captured"  medical lines no fact quotes: [{"page", "line", "text"}]
+    "duplicates"    new facts already stored in another document, and where (document, page, line)
+    "copy_of_document"  the earlier document this one copies entirely, or null
+                    (backend/upload_report.py, Ashil)}. (Core backend)
 
 Accepts a PDF (digital or scanned) or a photo of a document (JPG, PNG, WEBP). Everything
 is turned into a searchable PDF first (pipeline.ocr.prepare_document), so storage, the
@@ -22,6 +25,7 @@ from starlette.concurrency import run_in_threadpool
 from backend.auth import get_current_user, require_patient_access
 from backend.db import log_action
 from backend.ingest import ingest_document
+from backend.upload_report import where_else
 from pipeline.ocr import prepare_document
 
 router = APIRouter()
@@ -63,13 +67,17 @@ async def upload(patient_id: str, file: UploadFile = File(...), doc_type: str = 
 
     summary = {key: result[key] for key in ("document_id", "facts_added", "held_back", "reasons",
                                             "dropped", "doc_type", "document_date", "needs_reading")}
-    log_action(user, "upload_document", patient_id, {"filename": file.filename, **summary})
+    found = where_else(patient_id, result["document_id"])  # duplicates: where the other copy is stored
+    log_action(user, "upload_document", patient_id, {
+        "filename": file.filename, **summary, "duplicates": len(found["duplicates"]),
+        "copy_of_document": (found["copy_of_document"] or {}).get("id")})
     return {
         **summary,
         "read_with": "ocr" if used_ocr else "text",
         "added": result["added_facts"],
         "left_out": [_left_out(f) for f in result["dropped_facts"]],
         "not_captured": result["not_captured"],
+        **found,
     }
 
 

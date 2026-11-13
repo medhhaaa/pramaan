@@ -1,11 +1,13 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
-import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText } from 'lucide-react';
+import { UploadCloud, CheckCircle2, AlertTriangle, Loader2, ScanText, Copy } from 'lucide-react';
 import { upload } from '../api.js';
 import { useActivePatientId } from '../context/AppContext.jsx';
 import PatientGate from '../components/PatientGate.jsx';
 import { StatusChip, FlagChip } from '../components/Chip.jsx';
+import DocDrawer from '../components/DocDrawer.jsx';
+import { fmtDate } from '../lib/format.js';
 
 const CONSENT_KEY = 'pramaan_consent_v1';
 // what the backend reads: PDFs (digital or scanned) and phone photos of documents
@@ -18,8 +20,17 @@ function what(f) {
 }
 
 function Report({ res }) {
-  const { t } = useTranslation();
+  const { t, i18n } = useTranslation();
+  const [open, setOpen] = useState(null); // {id, line}: the stored copy, opened at its line
+  const closeDoc = useCallback(() => setOpen(null), []);
   const added = res.added || [];
+  const duplicates = res.duplicates || [];
+  const copyOf = res.copy_of_document;
+  // "Lab report from 16 Jan 2023 (d5_lab_2023.pdf)": where the other copy is stored
+  const docName = (d) => [
+    t(`records.types.${d.doc_type}`, { defaultValue: (d.doc_type || '').replace(/_/g, ' ') }),
+    d.document_date ? t('upload.fromDate', { date: fmtDate(d.document_date, i18n.language) }) : null,
+  ].filter(Boolean).join(' ') + (d.filename ? ` (${d.filename})` : '');
   const leftOut = res.left_out || [];
   const missed = res.not_captured || [];
   const type = (f) => t(`upload.types.${f.type}`, { defaultValue: f.type });
@@ -34,6 +45,15 @@ function Report({ res }) {
           {t('upload.summary', { added: added.length, left: leftOut.length, missed: missed.length })}
         </span>
       </p>
+      {copyOf && (
+        <p className="report-copy" role="status">
+          <Copy size={16} aria-hidden="true" />
+          <span>
+            {t('upload.copyOf', { doc: docName(copyOf), n: copyOf.matching })}{' '}
+            <button type="button" className="link-btn small" onClick={() => setOpen({ id: copyOf.id })}>{t('upload.openStored')}</button>
+          </span>
+        </p>
+      )}
       {res.held_back && (
         <p className="report-held"><AlertTriangle size={16} className="warn-icon" /> {t('upload.heldNote')}
           {res.reasons?.length > 0 && <span className="muted small"> ({res.reasons.join('; ')})</span>}
@@ -58,6 +78,31 @@ function Report({ res }) {
           ))}
         </ul>
       </details>
+
+      {duplicates.length > 0 && (
+        <details open className="report-section report-duplicates">
+          <summary>{t('upload.duplicates', { n: duplicates.length })}</summary>
+          <p className="muted small">{t('upload.duplicatesHint')}</p>
+          <ul className="report-list">
+            {duplicates.map((d) => (
+              <li key={d.fact_id}>
+                <div className="report-line">
+                  <span className="report-type">{type(d)}</span>
+                  <strong>{what(d)}</strong>
+                  <span className="chip chip-neutral">{t(`upload.dupKind.${d.kind}`)}</span>
+                </div>
+                <p className="small report-stored">
+                  {t('upload.storedIn', { doc: docName(d.original), page: d.original.page, line: d.original.line })}
+                  {d.other_documents > 1 && <span className="muted"> {t('upload.alsoIn', { count: d.other_documents - 1, n: d.other_documents - 1 })}</span>}
+                  {d.original.held_back && <span className="muted"> · {t('upload.heldBackDoc')}</span>}
+                  {' '}<button type="button" className="link-btn small" onClick={() => setOpen({ id: d.original.document_id, line: d.original.line })}>{t('upload.openStored')}</button>
+                </p>
+                {d.original.quote && <q className="report-quote">{d.original.quote}</q>}
+              </li>
+            ))}
+          </ul>
+        </details>
+      )}
 
       {leftOut.length > 0 && (
         <details open className="report-section report-left">
@@ -92,6 +137,7 @@ function Report({ res }) {
           </ul>
         </details>
       )}
+      {open && <DocDrawer docId={open.id} highlightLine={open.line} onClose={closeDoc} />}
     </div>
   );
 }
