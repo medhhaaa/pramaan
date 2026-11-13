@@ -63,9 +63,16 @@ def where_else(patient_id, document_id):
 
     copy_of = None
     if new and docs_matching:
-        doc_id, matching = docs_matching.most_common(1)[0]
+        # the document matching the most facts; on a tie (the same paper stored twice already) the
+        # earliest one, so the answer never depends on set order (most_common alone would)
+        first_fact = {}
+        for f in facts:
+            first_fact.setdefault(f["document_id"], f)
+        matching = max(docs_matching.values())
+        doc_id = min((d for d, n in docs_matching.items() if n == matching),
+                     key=lambda d: document_order(first_fact[d]))
         if matching == len(new):
-            any_fact = next(f for f in facts if f["document_id"] == doc_id)
+            any_fact = first_fact[doc_id]
             copy_of = {"id": doc_id, "filename": any_fact["filename"], "doc_type": any_fact["doc_type"],
                        "document_date": any_fact["doc_date"], "uploaded_at": any_fact["uploaded_at"],
                        "matching": matching, "of": len(new)}
