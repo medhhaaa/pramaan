@@ -20,7 +20,7 @@ def list_patients(user=Depends(get_current_user)):
                JOIN user_patients up ON up.patient_id = p.id
                WHERE up.user_id = ? ORDER BY p.id""",
             (user["id"],),
-        ).fetchall()
+        ).fetchall() if user["role"] == "patient" else []  # doctors: only shared patients
         shared = conn.execute(
             """SELECT p.*, MAX(s.expires_at) AS expires_at FROM patients p
                JOIN share_links s ON s.patient_id = p.id

@@ -187,7 +187,11 @@ a { color: var(--brand); }
 .radio-row { display: flex; align-items: center; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 10px; cursor: pointer; }
 .radio-row.selected { border-color: var(--brand); background: var(--brand-soft); }
 .radio-label { flex: 1; font-size: 1.05rem; }
-.scan-box { height: 220px; border-radius: 12px; background: var(--surface-2); border: 1px dashed var(--border); margin-bottom: 12px; }
+.scan-box { position: relative; min-height: 220px; border-radius: 12px; background: var(--surface-2); border: 1px dashed var(--border); margin-bottom: 12px; overflow: hidden; }
+.scan-video { width: 100%; }
+.scan-video video { display: block; width: 100% !important; height: auto; }
+.scan-overlay { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 8px; margin: 0; padding: 16px; text-align: center; }
+.scan-box-off .scan-overlay { color: var(--warn); }
 .scan-box.placeholder { display: flex; align-items: center; justify-content: center; color: var(--text-muted); }
 .success-box { text-align: center; padding: 24px; display: flex; flex-direction: column; align-items: center; gap: 8px; }
 .drawer-backdrop { position: fixed; inset: 0; background: rgba(5,8,20,0.55); z-index: 40; display: flex; justify-content: flex-end; }
@@ -331,3 +335,45 @@ tr.row-check td { background: rgba(245, 185, 74, 0.07); }
 .edit-form input, .edit-form select { min-width: 0; max-width: 11rem; }
 .review-card { border-left: 4px solid var(--warn); margin-bottom: 16px; }
 .review-doc { padding: 8px 0; border-top: 1px solid var(--border, rgba(140, 151, 181, 0.2)); }
+
+/* Brief: red flag rows read left to right (chip, then its explanation) */
+.brief-redflag { justify-content: flex-start; align-items: flex-start; gap: 10px; }
+.brief-redflag .chip { flex-shrink: 0; }
+
+/* Share with a doctor (patient): make a QR on the left, who can see the records on the right */
+.share-page { max-width: 980px; }
+.share-intro { margin: -4px 0 16px; max-width: 68ch; }
+.share-layout { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); gap: 16px; align-items: start; }
+@media (max-width: 860px) { .share-layout { grid-template-columns: 1fr; } }
+.share-h { display: flex; align-items: center; gap: 8px; font-size: 1.05rem; margin: 0 0 12px; }
+.share-make { display: flex; flex-direction: column; align-items: center; gap: 12px; text-align: center; }
+.share-make .share-h { align-self: stretch; }
+.share-points { text-align: left; margin: 0; padding-left: 18px; color: var(--text-muted); display: flex; flex-direction: column; gap: 4px; }
+.share-code { display: flex; flex-direction: column; align-items: center; gap: 2px; }
+.share-code strong { font-size: 1.6rem; letter-spacing: 0.12em; }
+.share-list { margin: 0 0 10px; }
+.share-row { align-items: center; gap: 12px; }
+.share-who-name { display: flex; align-items: center; gap: 6px; }
+.share-who .muted.small svg { vertical-align: -2px; }
+
+/* In-page search (Medications, Records): related items move up, the rest stay dimmed below */
+.ips-bar { margin-bottom: 14px; }
+.ips-input { position: relative; margin-bottom: 0; }
+.ips-input input[type="search"]::-webkit-search-cancel-button { display: none; }
+.ips-clear { flex-shrink: 0; }
+.ips-status { min-height: 1.2em; margin: 6px 2px 0; }
+.ips-section-title { font-size: 1rem; margin: 6px 0 10px; }
+.ips-section-title.muted { margin-top: 22px; }
+.ips-dim > * { opacity: 0.55; transition: opacity 200ms ease-out; }
+.ips-dim > *:hover, .ips-dim > *:focus-within { opacity: 1; }
+.ips-match { box-shadow: inset 3px 0 0 var(--brand); }
+.ips-why { display: flex; flex-wrap: wrap; align-items: center; gap: 6px 10px; margin: 2px 0 8px; }
+.ips-reason { cursor: help; }
+.ips-source { color: var(--text-muted); font-size: 0.88rem; overflow-wrap: anywhere; }
+mark { background: rgba(245, 185, 74, 0.32); color: inherit; border-radius: 3px; padding: 0 2px; }
+.record-list { list-style: none; padding: 0; margin: 0 0 10px; display: flex; flex-direction: column; gap: 10px; }
+.record-card { padding-top: 14px; padding-bottom: 12px; }
+.record-head { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
+.record-title { display: flex; flex-direction: column; flex: 1; min-width: 12em; }
+.record-file { margin: 6px 0 4px; overflow-wrap: anywhere; }
+@media (prefers-reduced-motion: reduce) { .ips-dim > * { transition: none; } }

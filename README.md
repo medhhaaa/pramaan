@@ -15,6 +15,9 @@ cd pramaan
 python -m venv .venv
 .venv\Scripts\activate          # Windows   (Mac/Linux: source .venv/bin/activate)
 pip install -r requirements.txt
+# optional, for "Similar meaning" in the in-page search (see requirements-search.txt):
+#   pip install torch --index-url https://download.pytorch.org/whl/cpu
+#   pip install -r requirements-search.txt
 
 # secrets: copy the example and fill in your values (never commit .env)
 copy .env.example .env          # Mac/Linux: cp .env.example .env
@@ -45,7 +48,7 @@ cd frontend && npm run dev
 python -m pipeline.llm
 ```
 
-Demo logins: `doctor` / `doctor123`, `sunita` / `sunita123`, `guestdoctor` / `guest123` (a doctor at another clinic: sees nobody until a patient shares by QR / code).
+Demo logins: patients `sunita` / `sunita123` (p1), `iqbal` / `iqbal123` (p2), `lakshmi` / `lakshmi123` (p3), `arjun` / `arjun123` (p4), `gopal` / `gopal123` (p5), `ravi` / `ravi123` (p6); doctors `doctor` / `doctor123` and `guestdoctor` / `guest123`. A doctor sees a patient **only** while that patient's QR / code share is open: log in as the patient, make a QR, then scan it (or type the code) as the doctor.
 
 ## What works right now
 

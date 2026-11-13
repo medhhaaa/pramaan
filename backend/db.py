@@ -16,7 +16,7 @@ CREATE TABLE IF NOT EXISTS users (
     username TEXT UNIQUE NOT NULL,
     password_hash TEXT NOT NULL,
     role TEXT NOT NULL CHECK (role IN ('doctor', 'patient')),
-    language TEXT  -- 'en' or 'kn'; NULL until the user picks one at first login
+    language TEXT  -- 'en', 'kn' or 'hi'; NULL until the user picks one at first login
 );
 CREATE TABLE IF NOT EXISTS patients (
     id TEXT PRIMARY KEY,
@@ -73,6 +73,20 @@ CREATE TABLE IF NOT EXISTS questions (
 );
 -- a hospital stay, for the Claim Documents checklist (backend/routes/claims.py).
 -- surgery / implant_used / accident: 1 yes, 0 no, NULL not answered or "I don't know"
+-- in-page search (backend/search.py): one row per searchable item, rebuilt by recompute_patient.
+-- page 'medications': item = a medication fact; page 'records': item = a document.
+CREATE TABLE IF NOT EXISTS search_items (
+    patient_id TEXT NOT NULL,
+    page TEXT NOT NULL,
+    item_id TEXT NOT NULL,
+    search_text TEXT,   -- the item's source lines as JSON, ENCRYPTED (storage.encrypt_text)
+    names TEXT,         -- JSON: normalized names (a medicine also gets its generic and brand names)
+    synonyms TEXT,      -- JSON: synonym groups (data/synonyms.json) whose terms appear in the item
+    visits TEXT,        -- JSON: visit keys shared with other items (doc:<id>, day:<date>, stay:<id>)
+    text_hash TEXT,     -- sha256 of the text the embedding was made from (re-embed only on change)
+    embedding BLOB,     -- float32 vector from the local sentence-transformers model, or NULL
+    PRIMARY KEY (page, item_id)
+);
 CREATE TABLE IF NOT EXISTS hospital_stays (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     patient_id TEXT NOT NULL,

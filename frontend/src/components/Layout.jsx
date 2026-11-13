@@ -1,10 +1,10 @@
 import { useState } from 'react';
 import { NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck } from 'lucide-react';
+import { Menu, LogOut, Scan, X, LayoutDashboard, Clock, Pill, Flag, MessageSquare, Upload, ShieldCheck, Trash2, Gauge, QrCode, ListChecks, FileText, Sun, Moon, ClipboardCheck, FolderOpen } from 'lucide-react';
 import Logo from './Logo.jsx';
 import { useApp } from '../context/AppContext.jsx';
-import { isDummy } from '../api.js';
+import { isDummy, saveLanguage } from '../api.js';
 import { getTheme, toggleTheme } from '../lib/theme.js';
 
 const DOCTOR_NAV = [
@@ -12,12 +12,12 @@ const DOCTOR_NAV = [
   { to: '/accuracy', key: 'nav.accuracy', icon: Gauge },
   { to: '/scan', key: 'nav.scan', icon: Scan, action: 'scan' },
   { to: '/timeline', key: 'nav.timeline', icon: Clock, gated: true },
+  { to: '/records', key: 'nav.records', icon: FolderOpen, gated: true },
   { to: '/medication', key: 'nav.medication', icon: Pill, gated: true },
   { to: '/flags', key: 'nav.flags', icon: Flag, gated: true },
   { to: '/ask', key: 'nav.ask', icon: MessageSquare, gated: true },
-  { to: '/upload', key: 'nav.upload', icon: Upload, gated: true },
-  { to: '/audit', key: 'nav.audit', icon: ShieldCheck },
-  { to: '/delete', key: 'nav.delete', icon: Trash2, gated: true },
+  // no upload / delete: a doctor's shared access is reading and reviewing only (backend/auth.py)
+  { to: '/audit', key: 'nav.audit', icon: ShieldCheck, gated: true },
 ];
 
 const PATIENT_NAV = [
@@ -47,7 +47,7 @@ export function ThemeToggle() {
 
 export default function Layout() {
   const { t, i18n } = useTranslation();
-  const { user, session, setSession, logout, setScanOpen, setPendingPath } = useApp();
+  const { user, setUser, session, setSession, logout, setScanOpen, setPendingPath } = useApp();
   const [open, setOpen] = useState(true);
   const [drawer, setDrawer] = useState(false);
   const navigate = useNavigate();
@@ -55,8 +55,11 @@ export default function Layout() {
   const sessionActive = session && session.expiresAt > Date.now();
 
   const onLang = (e) => {
-    localStorage.setItem('pramaan_lang', e.target.value);
-    i18n.changeLanguage(e.target.value);
+    const language = e.target.value;
+    localStorage.setItem('pramaan_lang', language);
+    i18n.changeLanguage(language);
+    setUser({ ...user, language });
+    saveLanguage(user.username, language).catch(() => {}); // the screen still switches if saving fails
   };
 
   const handleLogout = () => { logout(); navigate('/login'); };

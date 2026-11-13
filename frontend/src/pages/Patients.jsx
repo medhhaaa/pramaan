@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
-import { Search } from 'lucide-react';
+import { Search, ScanLine } from 'lucide-react';
 import { listPatients } from '../api.js';
 import { useApp } from '../context/AppContext.jsx';
 
@@ -13,9 +13,10 @@ export default function Patients() {
   const [q, setQ] = useState('');
   const [loading, setLoading] = useState(true);
 
+  // a doctor sees only patients who shared with them, so reload after every scan
   useEffect(() => {
-    listPatients().then((p) => { setPatients(p); setLoading(false); });
-  }, []);
+    listPatients().then((p) => { setPatients(p); setLoading(false); }).catch(() => setLoading(false));
+  }, [session]);
 
   const shown = patients.filter((p) => p.name.toLowerCase().includes(q.toLowerCase()));
   const sessionOk = (pid) => session && session.patientId === pid && session.expiresAt > Date.now();
@@ -42,7 +43,15 @@ export default function Patients() {
       </div>
 
       {loading && <div className="skeleton" />}
-      {!loading && shown.length === 0 && <div className="empty-state card"><p>{t('patients.empty')}</p></div>}
+      {!loading && patients.length === 0 && (
+        <div className="empty-state card">
+          <p>{t('patients.emptyDoctor')}</p>
+          <button className="btn btn-primary" onClick={() => { setPendingPath('/brief'); setScanOpen(true); }}>
+            <ScanLine size={18} /> {t('patients.scanButton')}
+          </button>
+        </div>
+      )}
+      {!loading && patients.length > 0 && shown.length === 0 && <div className="empty-state card"><p>{t('patients.empty')}</p></div>}
 
       <div className="grid-cards">
         {shown.map((p) => (
@@ -54,7 +63,6 @@ export default function Patients() {
             <div className="btn-row">
               <button className="btn btn-primary" onClick={() => go(p.id, '/brief')}>{t('patients.brief')}</button>
               <button className="btn btn-ghost" onClick={() => go(p.id, '/timeline')}>{t('patients.timeline')}</button>
-              <button className="btn btn-ghost" onClick={() => go(p.id, '/upload')}>{t('patients.upload')}</button>
             </div>
           </article>
         ))}

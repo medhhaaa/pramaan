@@ -160,6 +160,8 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 | `GET /patients/{id}/questions` | Things to Check / Open Questions | Medha |
 | `POST /questions/{id}/answer` | `yes`, `no`, `value`, `dont_know`, `skip` | Medha |
 | `GET /patients/{id}/brief` | 60-second doctor brief | Medha |
+| `GET /patients/{id}/documents` | Documents for the Records page (type, date, held back, fact count) | Core backend |
+| `GET /patients/{id}/search?q=&page=medications\|records` | In-page search: `[{item_id, score, reason, matched_terms, source, via}]`, no LLM (`backend/search.py`) | Ashil |
 | `POST /patients/{id}/check-medicine` | Allergy / duplicate warning | Medha |
 | `GET /metrics` | Precision / recall results | Medha |
 | `GET /patients/{id}/audit` | Audit log | Medha |
@@ -183,8 +185,9 @@ All JSON. JWT auth on everything except `/login`. Backend runs on `http://localh
 - `audit_log` (id, user_id, action, patient_id, detail, created_at)
 - `questions` (id, patient_id, fact_ids, text, status `open`|`answered`|`sent_to_doctor`|`resolved`, answer, created_at)
 - `share_links` (id, patient_id, created_by, token_hash, code_hash, expires_at, opened_by, opened_at, created_at): QR / code sharing; only hashes stored; expired rows deleted
+- `search_items` (patient_id, page, item_id, search_text (encrypted), names, synonyms, visits, text_hash, embedding): in-page search index, rebuilt by `recompute_patient`
 
-Seed users: `doctor` / `doctor123` (role doctor), `sunita` / `sunita123` (role patient, access to p1), `guestdoctor` / `guest123` (role doctor, no patients: sees a patient only after opening their QR / code).
+Seed users: patients `sunita` (p1), `iqbal` (p2), `lakshmi` (p3), `arjun` (p4), `gopal` (p5), `ravi` (p6), `nisha` (p7, pneumonia episode for the search), password = username + `123`; doctors `doctor` / `doctor123` and `guestdoctor` / `guest123`. **Only a patient has lasting access to their own records. A doctor sees a patient only while that patient's QR / code share is open** (reading + review: ask, check-medicine, correct, resolve open questions; never upload, delete or share).
 
 ## 8. Folder structure
 

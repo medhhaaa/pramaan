@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Routes, Route, Navigate, useLocation } from 'react-router-dom';
 import { AppProvider, useApp } from './context/AppContext.jsx';
 import Layout from './components/Layout.jsx';
@@ -9,6 +8,7 @@ import Patients from './pages/Patients.jsx';
 import Brief from './pages/Brief.jsx';
 import Timeline from './pages/Timeline.jsx';
 import Medication from './pages/Medication.jsx';
+import Records from './pages/Records.jsx';
 import Flags from './pages/Flags.jsx';
 import Ask from './pages/Ask.jsx';
 import Upload from './pages/Upload.jsx';
@@ -39,9 +39,10 @@ function RoleRoute({ roles, children }) {
 }
 
 function Shell() {
-  const { scanOpen, user } = useApp();
+  const { scanOpen, user, setUser } = useApp();
   return (
     <>
+      {!user.language && <LanguagePopup username={user.username} onDone={(language) => setUser({ ...user, language })} />}
       <Routes>
         <Route element={<RequireLogin><Layout /></RequireLogin>}>
           <Route path="/" element={<Navigate to={user?.role === 'doctor' ? '/patients' : '/my-records'} replace />} />
@@ -54,6 +55,7 @@ function Shell() {
           <Route path="/claim-documents" element={<RoleRoute roles={['patient']}><ClaimDocuments /></RoleRoute>} />
           <Route path="/timeline" element={<Timeline />} />
           <Route path="/medication" element={<Medication />} />
+          <Route path="/records" element={<RoleRoute roles={['doctor']}><Records /></RoleRoute>} />
           <Route path="/flags" element={<Flags />} />
           <Route path="/ask" element={<Ask />} />
           <Route path="/upload" element={<Upload />} />
@@ -69,20 +71,13 @@ function Shell() {
 }
 
 function Root() {
-  const [langDone, setLangDone] = useState(() => !!localStorage.getItem('pramaan_lang'));
   const { user } = useApp();
+  if (user) return <Shell />;
   return (
-    <>
-      {!langDone && <LanguagePopup onDone={() => setLangDone(true)} />}
-      {!user ? (
-        <Routes>
-          <Route path="/login" element={<Login />} />
-          <Route path="*" element={<Navigate to="/login" replace />} />
-        </Routes>
-      ) : (
-        <Shell />
-      )}
-    </>
+    <Routes>
+      <Route path="/login" element={<Login />} />
+      <Route path="*" element={<Navigate to="/login" replace />} />
+    </Routes>
   );
 }
 

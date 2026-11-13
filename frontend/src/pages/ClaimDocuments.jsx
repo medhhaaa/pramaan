@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { useLocation } from 'react-router-dom';
 import {
   answerQuestion, createHospitalStay, downloadClaimPack, getClaimChecklist, getHospitalStays,
-  listPatients, updateHospitalStay,
+  listPatients, updateHospitalStay, upload,
 } from '../api.js';
+import { Loader2, UploadCloud } from 'lucide-react';
 import { useActivePatientId, useApp } from '../context/AppContext.jsx';
 import DocDrawer from '../components/DocDrawer.jsx';
 import '../styles/claim-docs.css';
@@ -19,6 +20,45 @@ import '../styles/claim-docs.css';
 const REFRESH_MS = 15000; // documents uploaded meanwhile show up without a reload
 const ANSWERS = ['yes', 'no', 'dont_know'];
 const CHIP = { saved: 'chip-verified', not_saved: 'chip-neutral', unsure: 'chip-warn', not_needed: 'chip-outline' };
+const ACCEPT = 'application/pdf,image/jpeg,image/png,image/webp'; // PDFs, scans and phone photos
+// older documents call lab and scan reports "lab_report" (same as pipeline/claim_checklist.py)
+const sameType = (docType, itemDoc) => docType === itemDoc || (itemDoc === 'investigation_report' && docType === 'lab_report');
+
+// Why an uploaded file does or doesn't count for this checklist item. The checklist only
+// counts a document whose type the pipeline verified from a quoted line (e.g. "FINAL BILL"),
+// so we never mark an item "saved" just because the patient picked that slot.
+function uploadOutcome(res, item, newItem) {
+  if (res.held_back) return { kind: 'held' };
+  if (newItem?.document_ids?.includes(res.document_id)) return { kind: 'counted' };
+  if (sameType(res.doc_type, item.doc)) return res.document_date ? { kind: 'outsideStay', date: res.document_date } : { kind: 'notRecognised' };
+  if (res.doc_type && !['unknown', 'other'].includes(res.doc_type)) return { kind: 'otherType', type: res.doc_type };
+  return { kind: 'notRecognised' };
+}
+
+// Upload button on one checklist item: the file goes through the normal upload pipeline
+// (OCR, extraction, quote checks), then the checklist is reloaded.
+function ItemUpload({ item, disabled, label, onUpload, outcome, working }) {
+  const { t } = useTranslation();
+  const input = useRef(null);
+  const typeLabel = (type) => t(`claimDocs.doc.${type}`, { defaultValue: type.replace(/_/g, ' ') });
+  return (
+    <div className="claim-upload">
+      <button className="btn btn-ghost btn-sm" disabled={disabled} onClick={() => input.current?.click()}>
+        {working ? <Loader2 size={16} className="spin" /> : <UploadCloud size={16} />} {label}
+      </button>
+      <input ref={input} type="file" accept={ACCEPT} hidden
+        onChange={(e) => { const f = e.target.files[0]; e.target.value = ''; if (f) onUpload(item, f); }} />
+      {working && <p className="muted small">{t('claimDocs.uploading')}</p>}
+      {outcome && !working && (
+        <p className={`small claim-outcome claim-outcome-${outcome.kind}`} role="status">
+          {outcome.kind === 'failed'
+            ? t('claimDocs.uploadFailed', { error: outcome.error })
+            : t(`claimDocs.upload_${outcome.kind}`, { type: outcome.type ? typeLabel(outcome.type) : '', date: outcome.date || '' })}
+        </p>
+      )}
+    </div>
+  );
+}
 
 // the patient's own id: from login in dummy mode, else their one record in the patient list
 function usePatientId() {
@@ -82,6 +122,8 @@ export default function ClaimDocuments() {
   const [doc, setDoc] = useState(null); // {id, line} open in the source drawer
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(null); // checklist item being uploaded (one at a time)
+  const [outcomes, setOutcomes] = useState({}); // item.doc -> what happened to its last upload
 
   const loadStays = useCallback(() => {
     if (pid) getHospitalStays(pid).then(setStays).catch((e) => setError(e.message));
@@ -120,6 +162,24 @@ export default function ClaimDocuments() {
     setStayId(created.id);
     loadStays();
   });
+
+  // takes ~20-40 s: OCR + AI extraction + quote checks, same as the Upload page
+  const uploadFor = async (item, file) => {
+    setUploadingDoc(item.doc);
+    setOutcomes((o) => ({ ...o, [item.doc]: null }));
+    try {
+      const res = await upload(pid, file);
+      const fresh = await getClaimChecklist(pid, activeId);
+      setList(fresh);
+      loadStays(); // a discharge summary can fill in the stay dates
+      const newItem = fresh.items.find((i) => i.doc === item.doc);
+      setOutcomes((o) => ({ ...o, [item.doc]: uploadOutcome(res, item, newItem) }));
+    } catch (e) {
+      setOutcomes((o) => ({ ...o, [item.doc]: { kind: 'failed', error: e.message } }));
+    } finally {
+      setUploadingDoc(null);
+    }
+  };
 
   const answer = (qid, value) => run(async () => { await answerQuestion(qid, value); refresh(); });
 
@@ -197,6 +257,11 @@ export default function ClaimDocuments() {
                     </button>
                   ))}
                   {item.status === 'not_saved' && <p className="muted small">{t('claimDocs.tipNotSaved')}</p>}
+                  {isPatient && item.status !== 'not_needed' && (
+                    <ItemUpload item={item} onUpload={uploadFor} outcome={outcomes[item.doc]}
+                      working={uploadingDoc === item.doc} disabled={busy || uploadingDoc !== null}
+                      label={t(item.status === 'saved' ? 'claimDocs.uploadAnother' : 'claimDocs.uploadHere')} />
+                  )}
                   {item.when !== 'always' && isPatient && q && (
                     <div className="mt">
                       <p className="small">{t(`claimDocs.question.${item.when}`)}</p>

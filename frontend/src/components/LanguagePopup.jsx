@@ -1,15 +1,28 @@
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import Logo from './Logo.jsx';
+import { saveLanguage } from '../api.js';
 
-export default function LanguagePopup({ onDone }) {
+// Shown once, right after the user's first login (their account has no language yet).
+// The choice is saved to the account (PUT /me/language); the header can change it later.
+export default function LanguagePopup({ username, onDone }) {
   const { i18n } = useTranslation();
   const [choice, setChoice] = useState(i18n.language || 'en');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState(false);
 
-  const confirm = () => {
-    localStorage.setItem('pramaan_lang', choice);
-    i18n.changeLanguage(choice);
-    onDone();
+  const confirm = async () => {
+    setBusy(true);
+    setError(false);
+    try {
+      await saveLanguage(username, choice);
+      localStorage.setItem('pramaan_lang', choice); // the login page opens in it next time
+      i18n.changeLanguage(choice);
+      onDone(choice);
+    } catch {
+      setError(true);
+      setBusy(false);
+    }
   };
 
   const opts = [
@@ -32,7 +45,8 @@ export default function LanguagePopup({ onDone }) {
             </label>
           ))}
         </div>
-        <button className="btn btn-primary btn-block" onClick={confirm}>OK</button>
+        <button className="btn btn-primary btn-block" onClick={confirm} disabled={busy}>OK</button>
+        {error && <p className="error-text small">Could not save. Please try again. / सहेजा नहीं जा सका। फिर से कोशिश करें। / ಉಳಿಸಲು ಆಗಲಿಲ್ಲ. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.</p>}
       </div>
     </div>
   );

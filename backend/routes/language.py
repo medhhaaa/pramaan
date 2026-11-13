@@ -1,10 +1,12 @@
-"""Each user's language: English or Kannada. (Medha)
+"""Each user's language: English, Kannada or Hindi. (Medha)
 
 PUT /me/language  {"language": "kn"}  -> {"language": "kn"}
-    Saved in users.language. The frontend asks once, at first login (language is null
-    until then), and the header lets the user switch later.
+    Saved in users.language. The frontend asks once, right after the first login
+    (language is null until then), and the header lets the user switch later.
+    "hi" is saved for the screens; text the backend writes has no Hindi yet, so it
+    falls back to English.
 
-user_language(user) -> "en" or "kn", for routes that build text (questions, brief,
+user_language(user) -> "en" or "kn" (Hindi users get "en"), for routes that build text (questions, brief,
 check-medicine, ask). Medicine names, doses, values, units, dates and quotes are never
 translated: they always stay exactly as written in the document.
 """
@@ -19,7 +21,7 @@ from backend.routes.audit_helper import log_action
 
 router = APIRouter()
 
-LANGUAGES = ("en", "kn")
+LANGUAGES = ("en", "kn")  # languages the backend writes text in
 
 
 def user_language(user):
@@ -29,7 +31,7 @@ def user_language(user):
 
 
 class LanguageBody(BaseModel):
-    language: Literal["en", "kn"]
+    language: Literal["en", "kn", "hi"]
 
 
 @router.put("/me/language")

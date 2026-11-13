@@ -8,30 +8,32 @@
   "translatedNote": "Medicine names, doses and values are shown as written in the original.",
   "nav": {
     "patients": "Patients", "accuracy": "Accuracy", "scan": "Scan", "timeline": "Timeline",
-    "medication": "Medication", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
+    "medication": "Medication", "records": "Records", "flags": "Flags", "ask": "Ask my records", "upload": "Upload",
     "audit": "Audit log", "delete": "Delete data", "myRecords": "My Records",
-    "thingsToCheck": "Things to check", "generateQr": "Generate QR",
+    "thingsToCheck": "Things to check", "generateQr": "Share with doctor",
     "claimDocuments": "Claim documents"
   },
   "auth": {
     "signup": "SIGN-UP", "login": "LOG IN", "alreadyUser": "Already a user?", "newHere": "New here?",
     "loginLink": "Login", "signupLink": "Sign up", "username": "Username", "password": "Password",
-    "demoHint": "Demo: doctor / doctor123 · sunita / sunita123", "signupDemoOnly": "Sign-up is demo only for now.",
+    "demoHint": "Demo: sunita / sunita123 makes a QR · doctor / doctor123 scans it", "signupDemoOnly": "Sign-up is demo only for now.",
     "badLogin": "Username or password is not right.", "logout": "Log out"
   },
   "scan": {
+    "locked": "Too many wrong codes. Try again in 10 minutes.",
+    "camStarting": "Starting the camera…", "camHint": "Hold the patient's QR code in front of the camera.", "cam_denied": "The camera is blocked for this site. Allow it with the camera icon in the address bar, or type the code below.", "cam_none": "No camera found on this computer. Type the code below.", "cam_error": "The camera could not start. Another app (Teams, Zoom…) may be using it. Type the code below.", "cam_insecure": "The camera only works on https or localhost. Type the code below.",
     "title": "Scan the patient's QR", "orCode": "Or enter the code", "check": "Check",
-    "simulate": "Simulate scan (demo)", "granted": "Access granted for 30 minutes",
-    "expired": "This code has expired. Ask the patient to generate a new one.",
+    "simulate": "Simulate scan (demo)", "granted": "Access granted until the patient's share ends",
+    "expired": "This code has expired or is not valid. Ask the patient to make a new one.",
     "sessionChip": "Session active", "endSession": "End session", "needScan": "Scan the patient's QR to open this."
   },
-  "patients": { "title": "PATIENTS", "count": "{{count}} patients", "empty": "No patients yet. Upload records to start.", "search": "Search patients", "brief": "BRIEF", "timeline": "TIMELINE", "upload": "UPLOAD", "born": "Born", "bloodGroup": "Blood group", "sex": "Sex" },
+  "patients": { "emptyDoctor": "Patients appear here only while they share their records with you. Ask the patient to open Pramaan and show you their QR code or share code.", "scanButton": "Scan QR or enter code", "title": "PATIENTS", "count": "{{count}} patients", "empty": "No patients yet. Upload records to start.", "search": "Search patients", "brief": "BRIEF", "timeline": "TIMELINE", "upload": "UPLOAD", "born": "Born", "bloodGroup": "Blood group", "sex": "Sex" },
   "brief": {
     "title": "Brief", "checkTitle": "Check a medicine", "checkPlaceholder": "Type a brand or generic name", "check": "Check",
     "noMatch": "No match in the records. This does not mean the medicine is safe.",
     "flags": "Flags", "currentMeds": "Current medicines", "allergies": "Allergies", "conditions": "Conditions in the record",
     "latestResults": "Latest results", "keyEvents": "Key events", "redFlags": "Red flags", "openQuestions": "Open questions",
-    "confirm": "Confirm", "correct": "Correct", "markUnclear": "Mark unclear", "since": "since"
+    "confirm": "Confirm", "correct": "Correct", "markUnclear": "Mark unclear", "since": "since", "lastEvidence": "last real evidence"
   },
   "status": {
     "documented": "Documented", "negated": "Explicitly absent", "not_documented": "Not in your records"
@@ -45,11 +47,13 @@
     "single_document": "Only one document mentions this.", "patient_reported": "You told us this.", "conflicting": "Two documents disagree. Both are shown."
   },
   "flagNames": {
+    "echo": "Copied (echo)",
     "handwriting": "Extracted from handwriting",
     "contradiction": "Contradiction", "duplicate": "Duplicate", "unit_mismatch": "Unit mismatch",
     "ambiguous_date": "Ambiguous date", "wrong_patient": "Wrong patient", "implausible_value": "Implausible value", "gap": "Gap"
   },
   "flagTips": {
+    "echo": "This medicine block was copied word for word from an older document. It is not new evidence.",
     "handwriting": "Read from a handwritten page by an AI model on this computer. Doctor: check it against the original image.",
     "contradiction": "Two documents disagree. Both are shown. Your doctor will check it.",
     "duplicate": "This document is an exact copy of another. It is counted once.",
@@ -88,16 +92,32 @@
     "types": {"medication": "Medicine", "allergy": "Allergy", "condition": "Condition", "lab_test": "Test", "event": "Event", "demographic": "Personal detail"}
   },
   "doc": { "title": "Source", "held": "Held back", "close": "Close" },
-  "myRecords": { "title": "My Records", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
+  "myRecords": { "title": "My Records", "shareButton": "Share with a doctor", "thingsButton": "Things to check", "latest": "Latest facts", "viewTimeline": "View timeline" },
   "things": {
     "title": "Things to check", "problem": "Problem", "yes": "Yes", "no": "No", "dontKnow": "I don't know", "skip": "Skip",
     "other": "Other", "send": "SEND", "why": "Why are we asking?", "sentDoctor": "Your doctor will check this.",
     "progress": "{{done}} of {{total}} answered", "empty": "Nothing to check right now."
   },
   "qr": {
-    "title": "Generate QR", "button": "Generate QR", "expires": "Expires in {{time}}",
-    "share": "Share this only with your doctor. It opens your records for 10 minutes, one time.",
-    "scope": "Brief and records. Your data is not changed.", "expired": "This QR has expired.", "new": "Generate a new one"
+    "title": "Share with a doctor",
+    "intro": "Doctors can only see your records while you share them. You decide who, and you can stop at any time.",
+    "makeTitle": "Show your doctor a QR code",
+    "button": "Show my QR code",
+    "new": "Make a new QR code",
+    "how": "Your doctor scans this QR code, or types the code under it. It works for {{minutes}} minutes.",
+    "scope": "They can read your records and check them. They cannot delete or upload anything.",
+    "oneDoctor": "Only the first doctor who opens it gets access.",
+    "codeLabel": "Or tell them this code",
+    "expires": "Expires in {{time}}",
+    "share": "Show this only to your doctor. It opens your records for {{minutes}} minutes, for one doctor.",
+    "stop": "Stop sharing",
+    "expired": "This QR has expired.",
+    "whoTitle": "Who can see your records now",
+    "nobody": "Nobody. Your records are private.",
+    "waiting": "Waiting for a doctor to scan",
+    "timeLeft": "{{time}} left",
+    "openedAt": "opened at {{time}}",
+    "auditNote": "Every time a doctor opens your records it is written in your audit log."
   },
   "accuracy": { "title": "Accuracy", "precision": "Precision", "recall": "Recall", "f1": "F1", "byType": "By fact type", "byPatient": "By patient", "note": "Checked against answer keys · synthetic data." },
   "audit": { "title": "Audit log", "time": "Time", "who": "Who", "action": "Action", "patient": "Patient", "detail": "Detail" },
@@ -114,8 +134,19 @@
     "pedTitle": "Pre-existing condition check", "policyStart": "Policy start date", "check": "Check",
     "scamTitle": "Scam shield", "scam": "Verify any agent or insurer on the IRDAI website. Never share OTPs or card details with someone who called you first. Genuine policies come with official policy documents. IRDAI helpline 155255 or policyholder.gov.in."
   },
+  "search": {"placeholderMeds": "Search medicines, e.g. pneumonia or Glycomet", "placeholderRecords": "Search records, e.g. pneumonia, X-ray or CRP", "clear": "Clear search", "related": "Related to “{{q}}” ({{n}})", "other": "Other", "none": "Nothing in these records is related to “{{q}}”. The list is unchanged.", "reason": {"mentioned": "Mentioned with it", "same_visit": "Same visit", "similar": "Similar meaning"}, "tipMentioned": "Source: “{{text}}” (page {{page}}, line {{line}})", "tipSameVisit": "Same document, day or hospital stay as {{item}}, which mentions it", "tipSimilar": "Close in meaning to your search. It does not use the same words: check the source."},
+  "records": {"title": "Records", "count_one": "{{count}} document", "count_other": "{{count}} documents", "facts_one": "{{count}} fact", "facts_other": "{{count}} facts", "open": "Open source", "noDate": "Date not known", "empty": "No documents yet.", "types": {"prescription": "Prescription", "lab_report": "Lab / scan report", "discharge_summary": "Discharge summary", "final_bill": "Final bill", "pharmacy_bill": "Pharmacy bill", "payment_receipt": "Payment receipt", "operation_notes": "Operation notes", "implant_invoice": "Implant invoice", "fir_or_mlc": "FIR / MLC", "other": "Other document", "unknown": "Document"}},
   "common": { "back": "Back", "close": "Close", "loading": "Loading…", "error": "Something went wrong. Please try again." },
   "claimDocs": {
+    "uploadHere": "Upload it here",
+    "uploadAnother": "Add another",
+    "uploading": "Reading the document… about 20–40 seconds",
+    "upload_counted": "Saved. It now counts for this item.",
+    "upload_otherType": "Saved to your records, but it was read as: {{type}}. It does not count for this item. Check you picked the right file.",
+    "upload_outsideStay": "Saved, but its date ({{date}}) is outside this hospital stay, so it does not count here. Check the stay dates below.",
+    "upload_notRecognised": "Saved to your records, but Pramaan could not confirm what kind of document it is, so it does not count here.",
+    "upload_held": "Saved but held back for review: it may belong to someone else.",
+    "uploadFailed": "Upload failed: {{error}}",
     "title": "Claim documents",
     "stayDates": "Hospital stay: {{from}} to {{to}}",
     "dateUnknown": "date not known",
@@ -129,7 +160,7 @@
       "unsure": "Not sure if needed",
       "not_needed": "Not needed"
     },
-    "tipNotSaved": "Ask the hospital billing desk",
+    "tipNotSaved": "Ask the hospital billing desk, then upload it here",
     "question": {
       "surgery": "Did you have surgery during this hospital stay?",
       "implant_used": "Was an implant used (e.g. stent, plate, lens, joint)?",

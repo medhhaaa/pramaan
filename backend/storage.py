@@ -52,3 +52,13 @@ def delete_file(rel_path):
     path = abs_path(rel_path)
     if os.path.exists(path):
         os.remove(path)
+
+
+def encrypt_text(text):
+    """Text kept in the database that is document content (e.g. the search index's source
+    lines) is encrypted with the same key as the stored files."""
+    return _fernet().encrypt(text.encode()).decode()
+
+
+def decrypt_text(token):
+    return _fernet().decrypt(token.encode()).decode()

@@ -87,7 +87,9 @@ export async function login(username, password) {
     const u = USERS[username];
     if (!u || u.password !== password) throw new Error('bad_login');
     token = `dummy-${username}`;
-    return { token, role: u.role, name: u.name, username, patientId: u.patientId || null };
+    // demo mode: each demo user's language choice is kept in this browser
+    const language = localStorage.getItem(`pramaan_lang:${username}`);
+    return { token, role: u.role, name: u.name, username, patientId: u.patientId || null, language };
   }
   const data = await http('POST', '/login', { username, password });
   setToken(data.token);
@@ -99,6 +101,12 @@ export async function login(username, password) {
     if (own) { patientId = own.id; name = own.name; }
   }
   return { ...data, name, patientId };
+}
+
+// Saves the user's language (en | kn | hi) to their account, so it follows them to any device.
+export async function saveLanguage(username, language) {
+  if (USE_DUMMY) { localStorage.setItem(`pramaan_lang:${username}`, language); return { language }; }
+  return http('PUT', '/me/language', { language });
 }
 
 export async function listPatients() {
@@ -114,6 +122,26 @@ export async function getTimeline(pid) {
 export async function getMedications(pid) {
   if (USE_DUMMY) { await wait(); return groupMedications(pid); }
   return http('GET', `/patients/${pid}/medications`);
+}
+
+// The patient's documents for the Records page (newest first)
+// -> [{id, filename, doc_type, document_date, held_back, facts}]
+export async function listDocuments(pid) {
+  if (USE_DUMMY) {
+    await wait();
+    return Object.values(DOCUMENTS).filter((d) => d.patient_id === pid)
+      .map((d) => ({ id: d.id, filename: d.filename, doc_type: d.doc_type, document_date: d.document_date,
+        held_back: Boolean(d.held_back), facts: facts(pid).filter((f) => f.document_id === d.id).length }))
+      .sort((a, b) => (b.document_date || '').localeCompare(a.document_date || ''));
+  }
+  return http('GET', `/patients/${pid}/documents`);
+}
+
+// In-page search (backend/search.py): matches only, best first
+// -> [{item_id, score, reason: mentioned|same_visit|similar, matched_terms, source, via}]
+export async function searchRecords(pid, q, page) {
+  if (USE_DUMMY) { await wait(); return []; } // the real search needs the backend's index
+  return http('GET', `/patients/${pid}/search?q=${encodeURIComponent(q)}&page=${page}`);
 }
 
 export async function getFlags(pid) {
@@ -141,7 +169,42 @@ export async function getBrief(pid) {
       open_questions: QUESTIONS_P1.filter((q) => q.patient_id === pid && q.status !== 'resolved'),
     };
   }
-  return http('GET', `/patients/${pid}/brief`);
+  return briefForScreen(await http('GET', `/patients/${pid}/brief`));
+}
+
+// fact ids look like "p1_d3_f009": the document is everything before "_f009"
+const docOf = (factId) => (factId || '').replace(/_f\d+$/, '');
+
+// The backend brief (backend/routes/brief.py) -> the shape the Brief screen uses (the same
+// shape the dummy data has). Values, units, doses and quotes are passed through unchanged.
+function briefForScreen(raw) {
+  const flags = {};
+  (raw.red_flags || []).forEach((rf) => {
+    (rf.fact_ids || []).forEach((id) => {
+      (flags[rf.flag] = flags[rf.flag] || []).push({ fact_id: id, document_id: docOf(id) });
+    });
+  });
+  return {
+    patient: raw.patient,
+    flags,
+    current_medicines: (raw.current_medicines || []).map((m) => ({
+      name: m.name,
+      last_fresh_evidence_date: m.last_fresh_evidence_date,
+      entries: [{ date: m.last_fresh_evidence_date, dose: m.dose, frequency: m.frequency }],
+      document_id: m.source?.document_id,
+    })),
+    allergies: (raw.allergies || []).map((a) => ({
+      fact_id: a.source?.fact_id, document_id: a.source?.document_id, status: a.status,
+      name: a.reaction ? `${a.name} (${a.reaction})` : a.name, quote: a.source?.quote,
+    })),
+    conditions: (raw.conditions || []).map((c) => ({ fact_id: c.source?.fact_id, name: c.name, badge: c.badge || null })),
+    latest_results: (raw.latest_results || []).map((r) => ({
+      fact_id: r.source?.fact_id, name: r.name, value: r.value, unit: r.unit, date_raw: r.date,
+    })),
+    key_events: (raw.events || []).map((e) => ({ fact_id: e.source?.fact_id, name: e.name, date: e.date, document_id: e.source?.document_id })),
+    red_flags: raw.red_flags || [],
+    open_questions: (raw.open_questions || []).map((q) => ({ ...q, source: null })),
+  };
 }
 
 export async function checkMedicine(pid, name) {
@@ -155,7 +218,11 @@ export async function checkMedicine(pid, name) {
     }
     return { warning: false, text: null };
   }
-  return http('POST', `/patients/${pid}/check-medicine`, { name });
+  // backend: {"warnings": [{"kind", "text", "source": {document_id...}}], ...}
+  const res = await http('POST', `/patients/${pid}/check-medicine`, { drug: name });
+  const warnings = res.warnings || [];
+  if (!warnings.length) return { warning: false, text: null };
+  return { warning: true, text: warnings.map((w) => w.text).join(' '), source: warnings[0].source?.document_id };
 }
 
 export async function ask(pid, question) {
@@ -234,14 +301,29 @@ export async function deletePatient(pid) {
 }
 
 // NEW ROUTES, not in CLAUDE.md yet. Agree with the core backend owner before merging.
+export const SHARE_MINUTES = 15; // how long one QR / code share lasts
+
 export async function createQR(pid) {
   if (USE_DUMMY) {
     await wait(200);
     return { token: `demo-${pid}-${Date.now()}`, expires_at: Date.now() + 10 * 60 * 1000 };
   }
-  const res = await http('POST', `/patients/${pid}/share`, { minutes: 15 });
+  const res = await http('POST', `/patients/${pid}/share`, { minutes: SHARE_MINUTES });
   // the screens use expires_at as a millisecond timestamp
   return { ...res, expires_at: Date.parse(res.expires_at) };
+}
+
+// The patient's shares: who can see their records right now (backend/routes/share.py)
+// -> [{share_id, created_at, expires_at, seconds_left, opened_by (username or null), opened_at}]
+export async function listShares(pid) {
+  if (USE_DUMMY) { await wait(); return []; }
+  return http('GET', `/patients/${pid}/shares`);
+}
+
+// the patient stops a share early: the doctor loses access at once
+export async function stopShare(shareId) {
+  if (USE_DUMMY) { await wait(); return { stopped: true }; }
+  return http('DELETE', `/share/${shareId}`);
 }
 
 export async function scanQR(code) {
@@ -250,8 +332,13 @@ export async function scanQR(code) {
     if (!code || !code.startsWith('demo-')) throw new Error('expired');
     return { session_id: 'demo-session', patient_id: code.split('-')[1], expires_at: Date.now() + 30 * 60 * 1000 };
   }
-  // a scanned QR holds the long token; a typed code is 8 letters/digits, e.g. K7P3-QXM9
-  const value = (code || '').trim();
+  // a scanned QR holds a link like http://localhost:5173/?share=<token>; a typed code is
+  // 8 letters/digits, e.g. K7P3-QXM9. Sending the whole link as the token never matched.
+  let value = (code || '').trim();
+  try {
+    const token = new URL(value).searchParams.get('share');
+    if (token) value = token;
+  } catch { /* not a link: a code or a bare token */ }
   const isCode = value.replace(/[^a-z0-9]/gi, '').length === 8;
   const res = await http('POST', '/share/open', isCode ? { code: value } : { token: value });
   return { ...res, patient_id: res.patient.id, expires_at: Date.parse(res.expires_at) };
