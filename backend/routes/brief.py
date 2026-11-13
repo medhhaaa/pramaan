@@ -19,6 +19,7 @@ names, values, units, dates and quotes inside them stay exactly as written.
 from fastapi import APIRouter, Depends, HTTPException
 
 from backend.auth import get_current_user, require_patient_access
+from backend.scope import scoped, scoped_questions
 from backend.db import get_conn
 from backend.logic.flags import find_gaps
 from backend.routes.audit_helper import log_action
@@ -198,16 +199,17 @@ def red_flags(all_facts, docs, meds, gaps, lang="en"):
 
 @router.get("/patients/{patient_id}/brief")
 def brief_route(patient_id: str, user=Depends(get_current_user)):
-    require_patient_access(user, patient_id)
+    access = require_patient_access(user, patient_id)
     lang = user_language(user)
     with get_conn() as conn:
         patient = conn.execute("SELECT * FROM patients WHERE id = ?", (patient_id,)).fetchone()
         if not patient:
             raise HTTPException(status_code=404, detail="Patient not found")
-        facts = load_facts(conn, patient_id)
-        all_facts = load_facts(conn, patient_id, include_held_back=True)
+        # a care-team doctor with a limited scope sees only in-scope facts (backend/scope.py)
+        facts = scoped(load_facts(conn, patient_id), access)
+        all_facts = scoped(load_facts(conn, patient_id, include_held_back=True), access)
         docs = load_documents(conn, patient_id)
-        questions = list_questions_for(conn, patient_id, lang)
+        questions = scoped_questions(list_questions_for(conn, patient_id, lang), access)
 
     meds = current_medicines(facts, docs)
     log_action(user, "view_brief", patient_id, "")
